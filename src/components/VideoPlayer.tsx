@@ -3,19 +3,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, Subtitles,
-  RotateCcw, ChevronLeft, Lock, Unlock, Cast
+  RotateCcw, ChevronLeft, Lock, Unlock, Cast,
+  List, ChevronDown
 } from "lucide-react";
 import type { Movie } from "@/data/movies";
+import { getSeriesData, type Episode, type Season } from "@/data/series";
 
 interface VideoPlayerProps {
   movie: Movie;
   onClose: () => void;
+  onProgressUpdate?: (movieId: string, currentTime: number, duration: number) => void;
+  initialTime?: number;
 }
 
-// Sample video for demo
 const SAMPLE_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
-export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialTime = 0 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -36,7 +39,35 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [brightness, setBrightness] = useState(100);
-  const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
+
+  // Episode selector state
+  const seriesInfo = getSeriesData(movie.id);
+  const [showEpisodes, setShowEpisodes] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(
+    seriesInfo ? seriesInfo.seasons[0].episodes[0] : null
+  );
+
+  // Save progress periodically
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  useEffect(() => {
+    progressIntervalRef.current = setInterval(() => {
+      const v = videoRef.current;
+      if (v && v.duration > 0 && onProgressUpdate) {
+        onProgressUpdate(movie.id, v.currentTime, v.duration);
+      }
+    }, 5000);
+    return () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); };
+  }, [movie.id, onProgressUpdate]);
+
+  // Save on close
+  const handleClose = () => {
+    const v = videoRef.current;
+    if (v && v.duration > 0 && onProgressUpdate) {
+      onProgressUpdate(movie.id, v.currentTime, v.duration);
+    }
+    onClose();
+  };
 
   // Auto-hide controls
   const resetControlsTimer = useCallback(() => {
@@ -64,13 +95,17 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
         case "ArrowDown": e.preventDefault(); adjustVolume(-0.1); break;
         case "f": toggleFullscreen(); break;
         case "m": toggleMute(); break;
-        case "Escape": if (isFullscreen) toggleFullscreen(); else onClose(); break;
+        case "Escape":
+          if (showEpisodes) setShowEpisodes(false);
+          else if (isFullscreen) toggleFullscreen();
+          else handleClose();
+          break;
       }
       resetControlsTimer();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isLocked, isFullscreen, volume, isPlaying]);
+  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes]);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -148,13 +183,13 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
 
   const handleScreenTap = (e: React.MouseEvent | React.TouchEvent) => {
     if (isLocked) { resetControlsTimer(); return; }
+    if (showEpisodes) return;
     const now = Date.now();
     const rect = containerRef.current?.getBoundingClientRect();
     const clientX = "touches" in e ? e.changedTouches[0].clientX : e.clientX;
     const relX = rect ? (clientX - rect.left) / rect.width : 0.5;
 
     if (now - lastTapRef.current.time < 300) {
-      // Double tap
       if (relX < 0.35) { skip(-10); setDoubleTapSide("left"); }
       else if (relX > 0.65) { skip(10); setDoubleTapSide("right"); }
       else { togglePlay(); }
@@ -164,6 +199,20 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
     }
     lastTapRef.current = { time: now, x: clientX };
   };
+
+  const playEpisode = (episode: Episode) => {
+    setCurrentEpisode(episode);
+    setShowEpisodes(false);
+    // In a real app, this would change the video source
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+    resetControlsTimer();
+  };
+
+  const currentSeasonData = seriesInfo?.seasons.find((s) => s.number === selectedSeason);
 
   return (
     <motion.div
@@ -176,7 +225,6 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
       onClick={handleScreenTap}
       onMouseMove={resetControlsTimer}
     >
-      {/* Video element */}
       <video
         ref={videoRef}
         src={SAMPLE_VIDEO}
@@ -185,7 +233,11 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
-          if (videoRef.current) setDuration(videoRef.current.duration);
+          const v = videoRef.current;
+          if (v) {
+            setDuration(v.duration);
+            if (initialTime > 0) v.currentTime = initialTime;
+          }
         }}
         onEnded={() => setIsPlaying(false)}
       />
@@ -201,13 +253,7 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
               doubleTapSide === "left" ? "left-[15%]" : "right-[15%]"
             } flex flex-col items-center gap-1 pointer-events-none`}
           >
-            <div className="flex gap-0.5">
-              {doubleTapSide === "left" ? (
-                <RotateCcw className="w-8 h-8 text-foreground" />
-              ) : (
-                <RotateCcw className="w-8 h-8 text-foreground rotate-180 scale-x-[-1]" />
-              )}
-            </div>
+            <RotateCcw className={`w-8 h-8 text-foreground ${doubleTapSide === "right" ? "rotate-180 scale-x-[-1]" : ""}`} />
             <span className="text-xs text-foreground font-medium">10s</span>
           </motion.div>
         )}
@@ -240,17 +286,28 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
             {/* Top gradient + controls */}
             <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-3 pb-12 px-4 md:px-6">
               <div className="flex items-center gap-3">
-                <button onClick={onClose} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
+                <button onClick={handleClose} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
                   <ChevronLeft className="w-6 h-6 text-foreground" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-foreground font-semibold text-sm md:text-base truncate">
                     {movie.title}
+                    {currentEpisode && (
+                      <span className="text-muted-foreground font-normal"> — S{selectedSeason} E{currentEpisode.number}</span>
+                    )}
                   </h2>
                   <p className="text-muted-foreground text-xs truncate">
-                    {movie.year} • {movie.genre.join(", ")} • {movie.language}
+                    {currentEpisode ? currentEpisode.title : `${movie.year} • ${movie.genre.join(", ")} • ${movie.language}`}
                   </p>
                 </div>
+                {seriesInfo && (
+                  <button
+                    onClick={() => setShowEpisodes(!showEpisodes)}
+                    className="p-2 rounded-full hover:bg-muted/30 transition-colors"
+                  >
+                    <List className="w-5 h-5 text-foreground" />
+                  </button>
+                )}
                 <button onClick={() => setIsLocked(true)} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
                   <Unlock className="w-5 h-5 text-foreground" />
                 </button>
@@ -277,36 +334,21 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
               </button>
             </div>
 
-            {/* Bottom gradient + controls */}
+            {/* Bottom controls */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-16 pb-4 px-4 md:px-6">
               {/* Progress bar */}
               <div className="relative group mb-3">
                 <div className="h-1 group-hover:h-2 transition-all bg-muted/40 rounded-full overflow-hidden relative">
-                  {/* Buffered */}
-                  <div
-                    className="absolute top-0 left-0 h-full bg-muted-foreground/30 rounded-full"
-                    style={{ width: `${bufferedPercent}%` }}
-                  />
-                  {/* Progress */}
-                  <div
-                    className="absolute top-0 left-0 h-full bg-primary rounded-full"
-                    style={{ width: `${progressPercent}%` }}
-                  />
+                  <div className="absolute top-0 left-0 h-full bg-muted-foreground/30 rounded-full" style={{ width: `${bufferedPercent}%` }} />
+                  <div className="absolute top-0 left-0 h-full bg-primary rounded-full" style={{ width: `${progressPercent}%` }} />
                 </div>
                 <input
-                  type="range"
-                  min={0}
-                  max={duration || 0}
-                  step={0.1}
-                  value={currentTime}
+                  type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
                   onChange={handleSeek}
-                  onMouseDown={() => setIsSeeking(true)}
-                  onMouseUp={() => setIsSeeking(false)}
-                  onTouchStart={() => setIsSeeking(true)}
-                  onTouchEnd={() => setIsSeeking(false)}
+                  onMouseDown={() => setIsSeeking(true)} onMouseUp={() => setIsSeeking(false)}
+                  onTouchStart={() => setIsSeeking(true)} onTouchEnd={() => setIsSeeking(false)}
                   className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                {/* Seek thumb */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
                   style={{ left: `calc(${progressPercent}% - 6px)` }}
@@ -319,44 +361,27 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
                   <button onClick={togglePlay} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                     {isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
                   </button>
-
-                  {/* Volume (desktop) */}
-                  <div
-                    className="hidden md:flex items-center gap-1 relative"
-                    onMouseEnter={() => setShowVolumeSlider(true)}
-                    onMouseLeave={() => setShowVolumeSlider(false)}
-                  >
+                  <div className="hidden md:flex items-center gap-1 relative" onMouseEnter={() => setShowVolumeSlider(true)} onMouseLeave={() => setShowVolumeSlider(false)}>
                     <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
-                      {isMuted || volume === 0 ? (
-                        <VolumeX className="w-5 h-5 text-foreground" />
-                      ) : (
-                        <Volume2 className="w-5 h-5 text-foreground" />
-                      )}
+                      {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
                     </button>
                     {showVolumeSlider && (
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={isMuted ? 0 : volume}
-                        onChange={(e) => {
-                          const v = parseFloat(e.target.value);
-                          setVolume(v);
-                          if (videoRef.current) videoRef.current.volume = v;
-                          if (v > 0) setIsMuted(false);
-                        }}
+                      <input type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume}
+                        onChange={(e) => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; if (v > 0) setIsMuted(false); }}
                         className="w-20 h-1 accent-primary"
                       />
                     )}
                   </div>
-
-                  <span className="text-xs text-foreground/80 tabular-nums">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
+                  <span className="text-xs text-foreground/80 tabular-nums">{formatTime(currentTime)} / {formatTime(duration)}</span>
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2">
+                  {/* Episodes button (mobile bottom) */}
+                  {seriesInfo && (
+                    <button onClick={() => setShowEpisodes(!showEpisodes)} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
+                      <List className="w-5 h-5 text-foreground" />
+                    </button>
+                  )}
                   {/* Subtitles */}
                   <div className="relative">
                     <button
@@ -369,64 +394,126 @@ export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
                       <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg p-2 min-w-[140px] shadow-lg">
                         <p className="text-xs text-muted-foreground px-2 mb-1">Subtitles</p>
                         {["Off", "English", "Hindi"].map((lang) => (
-                          <button
-                            key={lang}
-                            onClick={() => {
-                              setSubtitlesOn(lang !== "Off");
-                              setShowSubtitleMenu(false);
-                            }}
+                          <button key={lang} onClick={() => { setSubtitlesOn(lang !== "Off"); setShowSubtitleMenu(false); }}
                             className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                              (lang === "Off" && !subtitlesOn) || (lang === "English" && subtitlesOn)
-                                ? "text-primary bg-primary/10"
-                                : "text-foreground hover:bg-muted/30"
+                              (lang === "Off" && !subtitlesOn) || (lang === "English" && subtitlesOn) ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/30"
                             }`}
-                          >
-                            {lang}
-                          </button>
+                          >{lang}</button>
                         ))}
                       </div>
                     )}
                   </div>
-
-                  {/* Playback speed */}
+                  {/* Speed */}
                   <div className="relative">
-                    <button
-                      onClick={() => { setShowSpeedMenu(!showSpeedMenu); setShowSubtitleMenu(false); }}
-                      className="p-1.5 hover:bg-muted/30 rounded transition-colors"
-                    >
+                    <button onClick={() => { setShowSpeedMenu(!showSpeedMenu); setShowSubtitleMenu(false); }} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
                       <Settings className="w-5 h-5 text-foreground" />
                     </button>
                     {showSpeedMenu && (
                       <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg p-2 min-w-[120px] shadow-lg">
                         <p className="text-xs text-muted-foreground px-2 mb-1">Speed</p>
                         {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                          <button
-                            key={speed}
-                            onClick={() => changeSpeed(speed)}
+                          <button key={speed} onClick={() => changeSpeed(speed)}
                             className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                              playbackSpeed === speed
-                                ? "text-primary bg-primary/10"
-                                : "text-foreground hover:bg-muted/30"
+                              playbackSpeed === speed ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/30"
                             }`}
-                          >
-                            {speed}x
-                          </button>
+                          >{speed}x</button>
                         ))}
                       </div>
                     )}
                   </div>
-
                   {/* Mobile volume */}
                   <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                     {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
                   </button>
-
                   {/* Fullscreen */}
                   <button onClick={toggleFullscreen} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
                     {isFullscreen ? <Minimize className="w-5 h-5 text-foreground" /> : <Maximize className="w-5 h-5 text-foreground" />}
                   </button>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Episode Selector Panel */}
+      <AnimatePresence>
+        {showEpisodes && seriesInfo && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="absolute top-0 right-0 bottom-0 z-[110] w-full md:w-[380px] bg-card/95 backdrop-blur-md border-l border-border overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-card/90 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
+              <h3 className="text-foreground font-semibold text-base">Episodes</h3>
+              <button onClick={() => setShowEpisodes(false)} className="p-1.5 rounded-full hover:bg-muted/30 transition-colors">
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
+
+            {/* Season selector */}
+            {seriesInfo.seasons.length > 1 && (
+              <div className="px-4 py-3 border-b border-border">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {seriesInfo.seasons.map((season) => (
+                    <button
+                      key={season.number}
+                      onClick={() => setSelectedSeason(season.number)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                        selectedSeason === season.number
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      Season {season.number}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Episode list */}
+            <div className="p-4 space-y-3">
+              {currentSeasonData?.episodes.map((episode) => {
+                const isActive = currentEpisode?.id === episode.id;
+                return (
+                  <button
+                    key={episode.id}
+                    onClick={() => playEpisode(episode)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      isActive ? "bg-primary/15 border border-primary/30" : "bg-secondary/50 hover:bg-secondary border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Episode number */}
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {episode.number}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className={`text-sm font-medium truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                            {episode.title}
+                          </h4>
+                          <span className="text-xs text-muted-foreground flex-shrink-0">{episode.duration}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{episode.description}</p>
+                        {isActive && (
+                          <div className="flex items-center gap-1 mt-2 text-primary">
+                            <Play className="w-3 h-3 fill-current" />
+                            <span className="text-xs font-medium">Now Playing</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </motion.div>
         )}
