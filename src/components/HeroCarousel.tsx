@@ -5,9 +5,10 @@ import { featuredMovies, type Movie } from "@/data/movies";
 
 interface HeroCarouselProps {
   onMovieSelect: (movie: Movie) => void;
+  onWatch?: (movie: Movie) => void;
 }
 
-export default function HeroCarousel({ onMovieSelect }: HeroCarouselProps) {
+export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselProps) {
   const [current, setCurrent] = useState(0);
 
   const next = useCallback(() => {
@@ -74,7 +75,10 @@ export default function HeroCarousel({ onMovieSelect }: HeroCarouselProps) {
               {movie.description}
             </p>
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-semibold text-sm transition-colors">
+              <button
+                onClick={() => onWatch?.(movie)}
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-semibold text-sm transition-colors"
+              >
                 <Play className="w-4 h-4 fill-current" />
                 Watch Now
               </button>

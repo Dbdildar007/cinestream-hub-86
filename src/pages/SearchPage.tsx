@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { allMovies, genres, languages, type Movie } from "@/data/movies";
 import MovieCard from "@/components/MovieCard";
 import MovieModal from "@/components/MovieModal";
+import VideoPlayer from "@/components/VideoPlayer";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 
@@ -13,6 +14,7 @@ export default function SearchPage() {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
 
@@ -132,7 +134,14 @@ export default function SearchPage() {
         downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
+        onWatch={(movie) => { setSelectedMovie(null); setPlayingMovie(movie); }}
       />
+
+      <AnimatePresence>
+        {playingMovie && (
+          <VideoPlayer movie={playingMovie} onClose={() => setPlayingMovie(null)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
