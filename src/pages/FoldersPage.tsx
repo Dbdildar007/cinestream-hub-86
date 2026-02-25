@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Folder, Film } from "lucide-react";
 import { genres, languages, getMoviesByGenre, getMoviesByLanguage, type Movie } from "@/data/movies";
 import MovieRow from "@/components/MovieRow";
 import MovieModal from "@/components/MovieModal";
+import VideoPlayer from "@/components/VideoPlayer";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 
@@ -13,6 +14,7 @@ export default function FoldersPage() {
   const [activeTab, setActiveTab] = useState<FolderType>("genre");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
 
@@ -93,7 +95,14 @@ export default function FoldersPage() {
         downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
+        onWatch={(movie) => { setSelectedMovie(null); setPlayingMovie(movie); }}
       />
+
+      <AnimatePresence>
+        {playingMovie && (
+          <VideoPlayer movie={playingMovie} onClose={() => setPlayingMovie(null)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

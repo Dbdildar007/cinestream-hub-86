@@ -10,9 +10,10 @@ interface MovieModalProps {
   downloadState?: { progress: number; status: string };
   userRating: number;
   onRate: (movieId: string, rating: number) => void;
+  onWatch?: (movie: Movie) => void;
 }
 
-export default function MovieModal({ movie, onClose, onDownload, downloadState, userRating, onRate }: MovieModalProps) {
+export default function MovieModal({ movie, onClose, onDownload, downloadState, userRating, onRate, onWatch }: MovieModalProps) {
   const isMobile = useIsMobile();
 
   if (!movie) return null;
@@ -119,7 +120,10 @@ export default function MovieModal({ movie, onClose, onDownload, downloadState, 
 
               {/* Action buttons */}
               <div className="flex gap-3">
-                <button className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors">
+                <button
+                  onClick={() => onWatch?.(movie)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+                >
                   <Play className="w-4 h-4 fill-current" />
                   Watch Now
                 </button>

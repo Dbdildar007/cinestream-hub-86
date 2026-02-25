@@ -1,0 +1,445 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize,
+  SkipBack, SkipForward, Settings, X, Subtitles,
+  RotateCcw, ChevronLeft, Lock, Unlock, Cast
+} from "lucide-react";
+import type { Movie } from "@/data/movies";
+
+interface VideoPlayerProps {
+  movie: Movie;
+  onClose: () => void;
+}
+
+// Sample video for demo
+const SAMPLE_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
+export default function VideoPlayer({ movie, onClose }: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [subtitlesOn, setSubtitlesOn] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [buffered, setBuffered] = useState(0);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [brightness, setBrightness] = useState(100);
+  const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
+
+  // Auto-hide controls
+  const resetControlsTimer = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isPlaying && !isLocked) {
+      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3500);
+    }
+  }, [isPlaying, isLocked]);
+
+  useEffect(() => {
+    resetControlsTimer();
+    return () => { if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current); };
+  }, [isPlaying, resetControlsTimer]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (isLocked) return;
+      switch (e.key) {
+        case " ": case "k": e.preventDefault(); togglePlay(); break;
+        case "ArrowRight": skip(10); break;
+        case "ArrowLeft": skip(-10); break;
+        case "ArrowUp": e.preventDefault(); adjustVolume(0.1); break;
+        case "ArrowDown": e.preventDefault(); adjustVolume(-0.1); break;
+        case "f": toggleFullscreen(); break;
+        case "m": toggleMute(); break;
+        case "Escape": if (isFullscreen) toggleFullscreen(); else onClose(); break;
+      }
+      resetControlsTimer();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isLocked, isFullscreen, volume, isPlaying]);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setIsPlaying(true); }
+    else { v.pause(); setIsPlaying(false); }
+  };
+
+  const skip = (seconds: number) => {
+    const v = videoRef.current;
+    if (v) v.currentTime = Math.max(0, Math.min(v.currentTime + seconds, duration));
+  };
+
+  const adjustVolume = (delta: number) => {
+    const newVol = Math.max(0, Math.min(1, volume + delta));
+    setVolume(newVol);
+    if (videoRef.current) videoRef.current.volume = newVol;
+    if (newVol > 0) setIsMuted(false);
+  };
+
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const toggleFullscreen = async () => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      await el.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v || isSeeking) return;
+    setCurrentTime(v.currentTime);
+    if (v.buffered.length > 0) {
+      setBuffered(v.buffered.end(v.buffered.length - 1));
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (videoRef.current) videoRef.current.currentTime = time;
+  };
+
+  const changeSpeed = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) videoRef.current.playbackRate = speed;
+    setShowSpeedMenu(false);
+  };
+
+  const formatTime = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
+
+  // Double tap to seek (mobile)
+  const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
+  const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
+
+  const handleScreenTap = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isLocked) { resetControlsTimer(); return; }
+    const now = Date.now();
+    const rect = containerRef.current?.getBoundingClientRect();
+    const clientX = "touches" in e ? e.changedTouches[0].clientX : e.clientX;
+    const relX = rect ? (clientX - rect.left) / rect.width : 0.5;
+
+    if (now - lastTapRef.current.time < 300) {
+      // Double tap
+      if (relX < 0.35) { skip(-10); setDoubleTapSide("left"); }
+      else if (relX > 0.65) { skip(10); setDoubleTapSide("right"); }
+      else { togglePlay(); }
+      setTimeout(() => setDoubleTapSide(null), 600);
+    } else {
+      resetControlsTimer();
+    }
+    lastTapRef.current = { time: now, x: clientX };
+  };
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+      style={{ filter: `brightness(${brightness}%)` }}
+      onClick={handleScreenTap}
+      onMouseMove={resetControlsTimer}
+    >
+      {/* Video element */}
+      <video
+        ref={videoRef}
+        src={SAMPLE_VIDEO}
+        className="w-full h-full object-contain"
+        autoPlay
+        playsInline
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={() => {
+          if (videoRef.current) setDuration(videoRef.current.duration);
+        }}
+        onEnded={() => setIsPlaying(false)}
+      />
+
+      {/* Double tap indicators */}
+      <AnimatePresence>
+        {doubleTapSide && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className={`absolute top-1/2 -translate-y-1/2 ${
+              doubleTapSide === "left" ? "left-[15%]" : "right-[15%]"
+            } flex flex-col items-center gap-1 pointer-events-none`}
+          >
+            <div className="flex gap-0.5">
+              {doubleTapSide === "left" ? (
+                <RotateCcw className="w-8 h-8 text-foreground" />
+              ) : (
+                <RotateCcw className="w-8 h-8 text-foreground rotate-180 scale-x-[-1]" />
+              )}
+            </div>
+            <span className="text-xs text-foreground font-medium">10s</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lock screen overlay */}
+      {isLocked && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[110]">
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsLocked(false); resetControlsTimer(); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/60 backdrop-blur-sm text-foreground text-sm"
+          >
+            <Lock className="w-4 h-4" />
+            Tap to unlock
+          </button>
+        </div>
+      )}
+
+      {/* Controls overlay */}
+      <AnimatePresence>
+        {showControls && !isLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-[105]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top gradient + controls */}
+            <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-3 pb-12 px-4 md:px-6">
+              <div className="flex items-center gap-3">
+                <button onClick={onClose} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
+                  <ChevronLeft className="w-6 h-6 text-foreground" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-foreground font-semibold text-sm md:text-base truncate">
+                    {movie.title}
+                  </h2>
+                  <p className="text-muted-foreground text-xs truncate">
+                    {movie.year} • {movie.genre.join(", ")} • {movie.language}
+                  </p>
+                </div>
+                <button onClick={() => setIsLocked(true)} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
+                  <Unlock className="w-5 h-5 text-foreground" />
+                </button>
+                <button className="p-2 rounded-full hover:bg-muted/30 transition-colors">
+                  <Cast className="w-5 h-5 text-foreground" />
+                </button>
+              </div>
+            </div>
+
+            {/* Center play/pause */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8 md:gap-12">
+              <button onClick={() => skip(-10)} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors">
+                <SkipBack className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
+              </button>
+              <button onClick={togglePlay} className="p-4 md:p-5 rounded-full bg-primary/90 hover:bg-primary transition-colors">
+                {isPlaying ? (
+                  <Pause className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground" />
+                ) : (
+                  <Play className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground fill-current" />
+                )}
+              </button>
+              <button onClick={() => skip(10)} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors">
+                <SkipForward className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
+              </button>
+            </div>
+
+            {/* Bottom gradient + controls */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-16 pb-4 px-4 md:px-6">
+              {/* Progress bar */}
+              <div className="relative group mb-3">
+                <div className="h-1 group-hover:h-2 transition-all bg-muted/40 rounded-full overflow-hidden relative">
+                  {/* Buffered */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-muted-foreground/30 rounded-full"
+                    style={{ width: `${bufferedPercent}%` }}
+                  />
+                  {/* Progress */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-primary rounded-full"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 0}
+                  step={0.1}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  onMouseDown={() => setIsSeeking(true)}
+                  onMouseUp={() => setIsSeeking(false)}
+                  onTouchStart={() => setIsSeeking(true)}
+                  onTouchEnd={() => setIsSeeking(false)}
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                {/* Seek thumb */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
+                  style={{ left: `calc(${progressPercent}% - 6px)` }}
+                />
+              </div>
+
+              {/* Bottom row */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 md:gap-3 flex-1">
+                  <button onClick={togglePlay} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
+                    {isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
+                  </button>
+
+                  {/* Volume (desktop) */}
+                  <div
+                    className="hidden md:flex items-center gap-1 relative"
+                    onMouseEnter={() => setShowVolumeSlider(true)}
+                    onMouseLeave={() => setShowVolumeSlider(false)}
+                  >
+                    <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
+                      {isMuted || volume === 0 ? (
+                        <VolumeX className="w-5 h-5 text-foreground" />
+                      ) : (
+                        <Volume2 className="w-5 h-5 text-foreground" />
+                      )}
+                    </button>
+                    {showVolumeSlider && (
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={isMuted ? 0 : volume}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          setVolume(v);
+                          if (videoRef.current) videoRef.current.volume = v;
+                          if (v > 0) setIsMuted(false);
+                        }}
+                        className="w-20 h-1 accent-primary"
+                      />
+                    )}
+                  </div>
+
+                  <span className="text-xs text-foreground/80 tabular-nums">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 md:gap-2">
+                  {/* Subtitles */}
+                  <div className="relative">
+                    <button
+                      onClick={() => { setShowSubtitleMenu(!showSubtitleMenu); setShowSpeedMenu(false); }}
+                      className={`p-1.5 rounded transition-colors ${subtitlesOn ? "bg-primary/30 text-primary" : "hover:bg-muted/30 text-foreground"}`}
+                    >
+                      <Subtitles className="w-5 h-5" />
+                    </button>
+                    {showSubtitleMenu && (
+                      <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg p-2 min-w-[140px] shadow-lg">
+                        <p className="text-xs text-muted-foreground px-2 mb-1">Subtitles</p>
+                        {["Off", "English", "Hindi"].map((lang) => (
+                          <button
+                            key={lang}
+                            onClick={() => {
+                              setSubtitlesOn(lang !== "Off");
+                              setShowSubtitleMenu(false);
+                            }}
+                            className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
+                              (lang === "Off" && !subtitlesOn) || (lang === "English" && subtitlesOn)
+                                ? "text-primary bg-primary/10"
+                                : "text-foreground hover:bg-muted/30"
+                            }`}
+                          >
+                            {lang}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Playback speed */}
+                  <div className="relative">
+                    <button
+                      onClick={() => { setShowSpeedMenu(!showSpeedMenu); setShowSubtitleMenu(false); }}
+                      className="p-1.5 hover:bg-muted/30 rounded transition-colors"
+                    >
+                      <Settings className="w-5 h-5 text-foreground" />
+                    </button>
+                    {showSpeedMenu && (
+                      <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg p-2 min-w-[120px] shadow-lg">
+                        <p className="text-xs text-muted-foreground px-2 mb-1">Speed</p>
+                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                          <button
+                            key={speed}
+                            onClick={() => changeSpeed(speed)}
+                            className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
+                              playbackSpeed === speed
+                                ? "text-primary bg-primary/10"
+                                : "text-foreground hover:bg-muted/30"
+                            }`}
+                          >
+                            {speed}x
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile volume */}
+                  <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
+                    {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
+                  </button>
+
+                  {/* Fullscreen */}
+                  <button onClick={toggleFullscreen} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
+                    {isFullscreen ? <Minimize className="w-5 h-5 text-foreground" /> : <Maximize className="w-5 h-5 text-foreground" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Subtitle display */}
+      {subtitlesOn && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[106] pointer-events-none">
+          <p className="bg-black/70 text-foreground text-sm md:text-base px-4 py-1.5 rounded text-center max-w-[80vw]">
+            [Sample subtitle text for demonstration]
+          </p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
