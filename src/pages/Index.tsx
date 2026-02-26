@@ -9,6 +9,7 @@ import { categories, getMoviesByCategory, allMovies, type Movie } from "@/data/m
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";
+import { useWatchlist } from "@/hooks/useWatchlist";
 
 export default function Index() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -16,6 +17,7 @@ export default function Index() {
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
+  const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
 
   const continueWatchingMovies = useMemo(() => {
     const progressList = getContinueWatching();
@@ -28,6 +30,13 @@ export default function Index() {
       .filter(Boolean) as (Movie & { progress: { movieId: string; currentTime: number; duration: number; lastWatched: number } })[];
   }, [getContinueWatching]);
 
+  // My List row
+  const myListMovies = useMemo(() => {
+    return watchlist
+      .map((id) => allMovies.find((m) => m.id === id))
+      .filter(Boolean) as Movie[];
+  }, [watchlist]);
+
   const handleWatch = (movie: Movie) => {
     setSelectedMovie(null);
     setPlayingMovie(movie);
@@ -39,15 +48,34 @@ export default function Index() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background pb-20 md:pb-0"
     >
-      <HeroCarousel onMovieSelect={setSelectedMovie} onWatch={handleWatch} />
+      <HeroCarousel
+        onMovieSelect={setSelectedMovie}
+        onWatch={handleWatch}
+        isInWatchlist={isInWatchlist}
+        onToggleWatchlist={toggleWatchlist}
+      />
 
       <div className="-mt-20 relative z-10">
-        {/* Continue Watching row first */}
         <ContinueWatchingRow
           movies={continueWatchingMovies}
           onWatch={handleWatch}
           onRemove={clearProgress}
         />
+
+        {/* My List row */}
+        {myListMovies.length > 0 && (
+          <MovieRow
+            title="My List"
+            movies={myListMovies}
+            onMovieSelect={setSelectedMovie}
+            onDownload={startDownload}
+            getDownloadState={getDownloadState}
+            getRating={getRating}
+            onRate={setRating}
+            isInWatchlist={isInWatchlist}
+            onToggleWatchlist={toggleWatchlist}
+          />
+        )}
 
         {categories.map((category) => (
           <MovieRow
@@ -59,6 +87,8 @@ export default function Index() {
             getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
+            isInWatchlist={isInWatchlist}
+            onToggleWatchlist={toggleWatchlist}
           />
         ))}
       </div>
@@ -71,6 +101,8 @@ export default function Index() {
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
         onWatch={handleWatch}
+        isInWatchlist={selectedMovie ? isInWatchlist(selectedMovie.id) : false}
+        onToggleWatchlist={toggleWatchlist}
       />
 
       <AnimatePresence>
