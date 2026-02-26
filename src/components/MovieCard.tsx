@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Star, Check } from "lucide-react";
+import { Download, Star, Check, Plus, CheckCircle, Tv } from "lucide-react";
 import type { Movie } from "@/data/movies";
 
 interface MovieCardProps {
@@ -10,9 +10,11 @@ interface MovieCardProps {
   downloadState?: { progress: number; status: string };
   userRating: number;
   onRate: (movieId: string, rating: number) => void;
+  isInWatchlist?: boolean;
+  onToggleWatchlist?: (movieId: string) => void;
 }
 
-export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate }: MovieCardProps) {
+export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -31,6 +33,14 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
           className="w-full h-full object-cover"
           loading="lazy"
         />
+
+        {/* Series badge */}
+        {movie.isSeries && (
+          <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary/90 px-1.5 py-0.5 rounded text-[10px] font-semibold text-primary-foreground z-10">
+            <Tv className="w-2.5 h-2.5" />
+            Series
+          </div>
+        )}
 
         {/* Hover overlay */}
         <motion.div
@@ -57,6 +67,19 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
             ))}
           </div>
           <p className="text-xs text-muted-foreground">{movie.year} • {movie.duration}</p>
+          
+          {/* Watchlist button on hover */}
+          {onToggleWatchlist && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWatchlist(movie.id); }}
+              className={`mt-2 flex items-center gap-1 text-xs font-medium transition-colors ${
+                isInWatchlist ? "text-primary" : "text-foreground"
+              }`}
+            >
+              {isInWatchlist ? <CheckCircle className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              {isInWatchlist ? "Listed" : "My List"}
+            </button>
+          )}
         </motion.div>
 
         {/* Download button */}

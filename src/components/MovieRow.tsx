@@ -12,9 +12,14 @@ interface MovieRowProps {
   getDownloadState: (movieId: string) => { progress: number; status: string } | undefined;
   getRating: (movieId: string) => number;
   onRate: (movieId: string, rating: number) => void;
+  isInWatchlist?: (movieId: string) => boolean;
+  onToggleWatchlist?: (movieId: string) => void;
 }
 
-export default function MovieRow({ title, movies, onMovieSelect, onDownload, getDownloadState, getRating, onRate }: MovieRowProps) {
+export default function MovieRow({
+  title, movies, onMovieSelect, onDownload, getDownloadState, getRating, onRate,
+  isInWatchlist, onToggleWatchlist,
+}: MovieRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
@@ -56,6 +61,8 @@ export default function MovieRow({ title, movies, onMovieSelect, onDownload, get
               downloadState={getDownloadState(movie.id)}
               userRating={getRating(movie.id)}
               onRate={onRate}
+              isInWatchlist={isInWatchlist?.(movie.id)}
+              onToggleWatchlist={onToggleWatchlist}
             />
           ))}
         </div>

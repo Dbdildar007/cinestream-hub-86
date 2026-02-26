@@ -1,9 +1,10 @@
-import { Home, Search, Download, User } from "lucide-react";
+import { Home, Search, Download, User, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const items = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Search, label: "Search", path: "/search" },
+  { icon: Users, label: "Friends", path: "/friends" },
   { icon: Download, label: "Downloads", path: "/downloads" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
@@ -19,7 +20,7 @@ export default function BottomNav() {
           <Link
             key={path}
             to={path}
-            className={`flex flex-col items-center gap-1 px-4 py-1 transition-colors ${
+            className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors ${
               active ? "text-primary" : "text-muted-foreground"
             }`}
           >

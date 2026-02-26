@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Info, ChevronLeft, ChevronRight, Plus, CheckCircle } from "lucide-react";
 import { featuredMovies, type Movie } from "@/data/movies";
 
 interface HeroCarouselProps {
   onMovieSelect: (movie: Movie) => void;
   onWatch?: (movie: Movie) => void;
+  isInWatchlist?: (movieId: string) => boolean;
+  onToggleWatchlist?: (movieId: string) => void;
 }
 
-export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselProps) {
+export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, onToggleWatchlist }: HeroCarouselProps) {
   const [current, setCurrent] = useState(0);
 
   const next = useCallback(() => {
@@ -25,6 +27,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselPro
   }, [next]);
 
   const movie = featuredMovies[current];
+  const inList = isInWatchlist?.(movie.id);
 
   return (
     <div className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden">
@@ -43,13 +46,11 @@ export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselPro
             className="w-full h-full object-cover"
             loading="eager"
           />
-          {/* Gradient overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Content */}
       <div className="absolute bottom-[15%] md:bottom-[20%] left-0 right-0 px-6 md:px-12">
         <AnimatePresence mode="wait">
           <motion.div
@@ -70,6 +71,12 @@ export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselPro
               <span>{movie.duration}</span>
               <span>•</span>
               <span>{movie.genre.join(", ")}</span>
+              {movie.isSeries && (
+                <>
+                  <span>•</span>
+                  <span className="text-primary font-medium">Series</span>
+                </>
+              )}
             </div>
             <p className="text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none">
               {movie.description}
@@ -89,12 +96,22 @@ export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselPro
                 <Info className="w-4 h-4" />
                 More Info
               </button>
+              <button
+                onClick={() => onToggleWatchlist?.(movie.id)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-md font-semibold text-sm transition-colors backdrop-blur-sm ${
+                  inList
+                    ? "bg-primary/20 text-primary border border-primary/30"
+                    : "bg-secondary/80 hover:bg-secondary text-secondary-foreground"
+                }`}
+              >
+                {inList ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span className="hidden md:inline">{inList ? "Listed" : "My List"}</span>
+              </button>
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Navigation dots */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
         {featuredMovies.map((_, i) => (
           <button
@@ -107,7 +124,6 @@ export default function HeroCarousel({ onMovieSelect, onWatch }: HeroCarouselPro
         ))}
       </div>
 
-      {/* Desktop arrows */}
       <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex p-2 rounded-full bg-background/50 hover:bg-background/80 transition-colors">
         <ChevronLeft className="w-6 h-6 text-foreground" />
       </button>

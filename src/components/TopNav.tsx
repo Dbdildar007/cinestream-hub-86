@@ -1,4 +1,4 @@
-import { Search, Bell, User } from "lucide-react";
+import { Search, Bell, User, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -6,6 +6,7 @@ const navItems = [
   { label: "Home", path: "/" },
   { label: "Search", path: "/search" },
   { label: "Folders", path: "/folders" },
+  { label: "Friends", path: "/friends" },
   { label: "Downloads", path: "/downloads" },
 ];
 
@@ -43,6 +44,9 @@ export default function TopNav() {
         <button className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Bell className="w-5 h-5 text-foreground" />
         </button>
+        <Link to="/friends" className="p-2 rounded-full hover:bg-secondary transition-colors">
+          <Users className="w-5 h-5 text-foreground" />
+        </Link>
         <Link to="/profile" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <User className="w-5 h-5 text-foreground" />
         </Link>

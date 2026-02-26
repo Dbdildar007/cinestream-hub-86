@@ -4,7 +4,7 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, Subtitles,
   RotateCcw, ChevronLeft, Lock, Unlock, Cast,
-  List, ChevronDown
+  List, ChevronDown, SkipForward as NextIcon
 } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { getSeriesData, type Episode, type Season } from "@/data/series";
@@ -40,13 +40,36 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const [isSeeking, setIsSeeking] = useState(false);
   const [brightness, setBrightness] = useState(100);
 
-  // Episode selector state
-  const seriesInfo = getSeriesData(movie.id);
+  // Episode selector state - only for series
+  const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(
     seriesInfo ? seriesInfo.seasons[0].episodes[0] : null
   );
+
+  // Next episode auto-play
+  const [showNextEpisode, setShowNextEpisode] = useState(false);
+  const [nextEpisodeCountdown, setNextEpisodeCountdown] = useState(10);
+  const countdownRef = useRef<ReturnType<typeof setInterval>>();
+
+  const getNextEpisode = useCallback((): Episode | null => {
+    if (!seriesInfo || !currentEpisode) return null;
+    const currentSeasonData = seriesInfo.seasons.find(s => s.number === selectedSeason);
+    if (!currentSeasonData) return null;
+    
+    const currentIdx = currentSeasonData.episodes.findIndex(e => e.id === currentEpisode.id);
+    // Next in same season
+    if (currentIdx < currentSeasonData.episodes.length - 1) {
+      return currentSeasonData.episodes[currentIdx + 1];
+    }
+    // First ep of next season
+    const nextSeason = seriesInfo.seasons.find(s => s.number === selectedSeason + 1);
+    if (nextSeason && nextSeason.episodes.length > 0) {
+      return nextSeason.episodes[0];
+    }
+    return null;
+  }, [seriesInfo, currentEpisode, selectedSeason]);
 
   // Save progress periodically
   const progressIntervalRef = useRef<ReturnType<typeof setInterval>>();
@@ -60,12 +83,12 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     return () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); };
   }, [movie.id, onProgressUpdate]);
 
-  // Save on close
   const handleClose = () => {
     const v = videoRef.current;
     if (v && v.duration > 0 && onProgressUpdate) {
       onProgressUpdate(movie.id, v.currentTime, v.duration);
     }
+    if (countdownRef.current) clearInterval(countdownRef.current);
     onClose();
   };
 
@@ -95,8 +118,10 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
         case "ArrowDown": e.preventDefault(); adjustVolume(-0.1); break;
         case "f": toggleFullscreen(); break;
         case "m": toggleMute(); break;
+        case "n": { const next = getNextEpisode(); if (next) playEpisode(next); break; }
         case "Escape":
-          if (showEpisodes) setShowEpisodes(false);
+          if (showNextEpisode) setShowNextEpisode(false);
+          else if (showEpisodes) setShowEpisodes(false);
           else if (isFullscreen) toggleFullscreen();
           else handleClose();
           break;
@@ -105,7 +130,33 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes]);
+  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes, showNextEpisode]);
+
+  // Handle video ended - trigger next episode countdown
+  const handleVideoEnded = useCallback(() => {
+    setIsPlaying(false);
+    const next = getNextEpisode();
+    if (next) {
+      setShowNextEpisode(true);
+      setNextEpisodeCountdown(10);
+      countdownRef.current = setInterval(() => {
+        setNextEpisodeCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            playEpisode(next);
+            setShowNextEpisode(false);
+            return 10;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [getNextEpisode]);
+
+  // Cleanup countdown
+  useEffect(() => {
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, []);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -183,7 +234,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
 
   const handleScreenTap = (e: React.MouseEvent | React.TouchEvent) => {
     if (isLocked) { resetControlsTimer(); return; }
-    if (showEpisodes) return;
+    if (showEpisodes || showNextEpisode) return;
     const now = Date.now();
     const rect = containerRef.current?.getBoundingClientRect();
     const clientX = "touches" in e ? e.changedTouches[0].clientX : e.clientX;
@@ -203,7 +254,13 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const playEpisode = (episode: Episode) => {
     setCurrentEpisode(episode);
     setShowEpisodes(false);
-    // In a real app, this would change the video source
+    setShowNextEpisode(false);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    // Find the season for this episode
+    if (seriesInfo) {
+      const season = seriesInfo.seasons.find(s => s.episodes.some(e => e.id === episode.id));
+      if (season) setSelectedSeason(season.number);
+    }
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play();
@@ -212,7 +269,13 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     resetControlsTimer();
   };
 
+  const cancelNextEpisode = () => {
+    setShowNextEpisode(false);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  };
+
   const currentSeasonData = seriesInfo?.seasons.find((s) => s.number === selectedSeason);
+  const nextEpisode = getNextEpisode();
 
   return (
     <motion.div
@@ -239,7 +302,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
             if (initialTime > 0) v.currentTime = initialTime;
           }
         }}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={handleVideoEnded}
       />
 
       {/* Double tap indicators */}
@@ -271,6 +334,78 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
           </button>
         </div>
       )}
+
+      {/* Next Episode Auto-play Overlay */}
+      <AnimatePresence>
+        {showNextEpisode && nextEpisode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-24 right-4 md:right-8 z-[115] w-[280px] md:w-[340px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-card/95 backdrop-blur-md rounded-xl border border-border overflow-hidden shadow-2xl">
+              {/* Next episode preview */}
+              <div className="relative aspect-video bg-secondary">
+                <img
+                  src={movie.poster}
+                  alt="Next episode"
+                  className="w-full h-full object-cover opacity-60"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-xs text-muted-foreground mb-1">Next Episode</p>
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    E{nextEpisode.number}: {nextEpisode.title}
+                  </p>
+                </div>
+              </div>
+
+              {/* Countdown + buttons */}
+              <div className="p-3 space-y-3">
+                {/* Progress ring / countdown */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-8 h-8">
+                      <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
+                        <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="2" />
+                        <circle
+                          cx="16" cy="16" r="14" fill="none"
+                          stroke="hsl(var(--primary))" strokeWidth="2"
+                          strokeDasharray={`${(nextEpisodeCountdown / 10) * 88} 88`}
+                          strokeLinecap="round"
+                          className="transition-all duration-1000"
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
+                        {nextEpisodeCountdown}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Playing in {nextEpisodeCountdown}s</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => playEpisode(nextEpisode)}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-lg font-semibold text-xs transition-colors"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Play Now
+                  </button>
+                  <button
+                    onClick={cancelNextEpisode}
+                    className="px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Controls overlay */}
       <AnimatePresence>
@@ -306,6 +441,16 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                     className="p-2 rounded-full hover:bg-muted/30 transition-colors"
                   >
                     <List className="w-5 h-5 text-foreground" />
+                  </button>
+                )}
+                {/* Next episode button in controls */}
+                {nextEpisode && (
+                  <button
+                    onClick={() => playEpisode(nextEpisode)}
+                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 hover:bg-muted/50 text-foreground text-xs font-medium transition-colors"
+                  >
+                    <NextIcon className="w-4 h-4" />
+                    Next
                   </button>
                 )}
                 <button onClick={() => setIsLocked(true)} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
@@ -361,6 +506,15 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                   <button onClick={togglePlay} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                     {isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
                   </button>
+                  {/* Next episode button mobile */}
+                  {nextEpisode && (
+                    <button
+                      onClick={() => playEpisode(nextEpisode)}
+                      className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden"
+                    >
+                      <NextIcon className="w-5 h-5 text-foreground" />
+                    </button>
+                  )}
                   <div className="hidden md:flex items-center gap-1 relative" onMouseEnter={() => setShowVolumeSlider(true)} onMouseLeave={() => setShowVolumeSlider(false)}>
                     <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
                       {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
@@ -376,13 +530,11 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2">
-                  {/* Episodes button (mobile bottom) */}
                   {seriesInfo && (
                     <button onClick={() => setShowEpisodes(!showEpisodes)} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                       <List className="w-5 h-5 text-foreground" />
                     </button>
                   )}
-                  {/* Subtitles */}
                   <div className="relative">
                     <button
                       onClick={() => { setShowSubtitleMenu(!showSubtitleMenu); setShowSpeedMenu(false); }}
@@ -403,7 +555,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                       </div>
                     )}
                   </div>
-                  {/* Speed */}
                   <div className="relative">
                     <button onClick={() => { setShowSpeedMenu(!showSpeedMenu); setShowSubtitleMenu(false); }} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
                       <Settings className="w-5 h-5 text-foreground" />
@@ -421,11 +572,9 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                       </div>
                     )}
                   </div>
-                  {/* Mobile volume */}
                   <button onClick={toggleMute} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                     {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
                   </button>
-                  {/* Fullscreen */}
                   <button onClick={toggleFullscreen} className="p-1.5 hover:bg-muted/30 rounded transition-colors">
                     {isFullscreen ? <Minimize className="w-5 h-5 text-foreground" /> : <Maximize className="w-5 h-5 text-foreground" />}
                   </button>
@@ -447,7 +596,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
             className="absolute top-0 right-0 bottom-0 z-[110] w-full md:w-[380px] bg-card/95 backdrop-blur-md border-l border-border overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="sticky top-0 bg-card/90 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
               <h3 className="text-foreground font-semibold text-base">Episodes</h3>
               <button onClick={() => setShowEpisodes(false)} className="p-1.5 rounded-full hover:bg-muted/30 transition-colors">
@@ -455,7 +603,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
               </button>
             </div>
 
-            {/* Season selector */}
             {seriesInfo.seasons.length > 1 && (
               <div className="px-4 py-3 border-b border-border">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
@@ -476,7 +623,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
               </div>
             )}
 
-            {/* Episode list */}
             <div className="p-4 space-y-3">
               {currentSeasonData?.episodes.map((episode) => {
                 const isActive = currentEpisode?.id === episode.id;
@@ -489,7 +635,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Episode number */}
                       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                       }`}>

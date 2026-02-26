@@ -25,6 +25,7 @@ export interface Movie {
   duration: string;
   isTrending?: boolean;
   isEditorChoice?: boolean;
+  isSeries?: boolean;
 }
 
 export const featuredMovies: Movie[] = [
@@ -41,6 +42,7 @@ export const featuredMovies: Movie[] = [
     heroImage: hero1,
     duration: "2h 18m",
     isTrending: true,
+    isSeries: true,
   },
   {
     id: "f2",
@@ -56,6 +58,7 @@ export const featuredMovies: Movie[] = [
     duration: "2h 34m",
     isTrending: true,
     isEditorChoice: true,
+    isSeries: true,
   },
   {
     id: "f3",
@@ -87,6 +90,7 @@ export const allMovies: Movie[] = [
     poster: poster1,
     duration: "2h 05m",
     isTrending: true,
+    isSeries: true,
   },
   {
     id: "m2",
@@ -138,6 +142,7 @@ export const allMovies: Movie[] = [
     poster: poster5,
     duration: "2h 30m",
     isTrending: true,
+    isSeries: true,
   },
   {
     id: "m6",
@@ -164,6 +169,7 @@ export const allMovies: Movie[] = [
     poster: poster7,
     duration: "2h 45m",
     isTrending: true,
+    isSeries: true,
   },
   {
     id: "m8",
@@ -201,6 +207,7 @@ export const allMovies: Movie[] = [
     poster: poster4,
     duration: "2h 00m",
     isTrending: true,
+    isSeries: true,
   },
   {
     id: "m11",
@@ -214,6 +221,7 @@ export const allMovies: Movie[] = [
     poster: poster7,
     duration: "2h 50m",
     isEditorChoice: true,
+    isSeries: true,
   },
   {
     id: "m12",
