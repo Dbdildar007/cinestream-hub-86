@@ -7,6 +7,7 @@ import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
+import Footer from "@/components/Footer";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -142,6 +143,7 @@ export default function SearchPage() {
           <VideoPlayer movie={playingMovie} onClose={() => setPlayingMovie(null)} />
         )}
       </AnimatePresence>
+      <Footer />
     </motion.div>
   );
 }
