@@ -55,7 +55,7 @@ export default function Index() {
         onToggleWatchlist={toggleWatchlist}
       />
 
-      <div className="-mt-20 relative z-10">
+      <div className="-mt-10 md:-mt-20 relative z-10">
         <ContinueWatchingRow
           movies={continueWatchingMovies}
           onWatch={handleWatch}
