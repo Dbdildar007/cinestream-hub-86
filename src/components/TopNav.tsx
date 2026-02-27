@@ -1,6 +1,8 @@
-import { Search, Bell, User, Users } from "lucide-react";
+import { Search, User, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import NotificationDropdown from "./NotificationDropdown";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -12,6 +14,7 @@ const navItems = [
 
 export default function TopNav() {
   const location = useLocation();
+  const { notifications, unreadCount, markAsRead, markAllRead, clearNotification } = useNotifications();
 
   return (
     <motion.header
@@ -41,9 +44,13 @@ export default function TopNav() {
         <Link to="/search" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Search className="w-5 h-5 text-foreground" />
         </Link>
-        <button className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Bell className="w-5 h-5 text-foreground" />
-        </button>
+        <NotificationDropdown
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllRead={markAllRead}
+          onClear={clearNotification}
+        />
         <Link to="/friends" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Users className="w-5 h-5 text-foreground" />
         </Link>

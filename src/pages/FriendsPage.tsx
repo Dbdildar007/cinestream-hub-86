@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film } from "lucide-react";
+import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface Profile {
   id: string;
@@ -23,28 +25,33 @@ interface Friendship {
   profile?: Profile;
 }
 
-export default function FriendsPage() {
+interface FriendsPageProps {
+  onStartCall?: (remoteUserId: string, remoteDisplayName: string) => void;
+}
+
+export default function FriendsPage({ onStartCall }: FriendsPageProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { sendNotification } = useNotifications();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
+  const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     loadFriends();
     loadPendingRequests();
 
-    // Update online status
     supabase
       .from("profiles")
       .update({ is_online: true, last_seen: new Date().toISOString() })
       .eq("user_id", user.id)
       .then();
 
-    // Realtime subscription for friendships
     const channel = supabase
       .channel("friendships-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
@@ -85,6 +92,7 @@ export default function FriendsPage() {
       );
       setFriends(friendsWithProfiles);
     }
+    setLoading(false);
   };
 
   const loadPendingRequests = async () => {
@@ -112,6 +120,7 @@ export default function FriendsPage() {
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
+    setSearching(true);
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -119,27 +128,45 @@ export default function FriendsPage() {
       .neq("user_id", user.id)
       .limit(10);
     setSearchResults(data || []);
+    setSearching(false);
   };
 
-  const sendFriendRequest = async (addresseeUserId: string) => {
+  const sendFriendRequest = async (profile: Profile) => {
     if (!user) return;
     const { error } = await supabase.from("friendships").insert({
       requester_id: user.id,
-      addressee_id: addresseeUserId,
+      addressee_id: profile.user_id,
     });
     if (error) {
       toast.error("Could not send request. Maybe already sent?");
     } else {
+      // Get current user's name
+      const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+      await sendNotification(
+        profile.user_id,
+        "friend_request",
+        "Friend Request",
+        `${myProfile?.display_name || "Someone"} sent you a friend request`
+      );
       toast.success("Friend request sent!");
     }
   };
 
-  const acceptRequest = async (friendshipId: string) => {
+  const acceptRequest = async (friendshipId: string, requesterProfile?: Profile) => {
     const { error } = await supabase
       .from("friendships")
       .update({ status: "accepted" })
       .eq("id", friendshipId);
     if (!error) {
+      if (requesterProfile && user) {
+        const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+        await sendNotification(
+          requesterProfile.user_id,
+          "friend_request",
+          "Request Accepted",
+          `${myProfile?.display_name || "Someone"} accepted your friend request`
+        );
+      }
       toast.success("Friend request accepted!");
       loadFriends();
       loadPendingRequests();
@@ -147,13 +174,8 @@ export default function FriendsPage() {
   };
 
   const declineRequest = async (friendshipId: string) => {
-    const { error } = await supabase
-      .from("friendships")
-      .delete()
-      .eq("id", friendshipId);
-    if (!error) {
-      loadPendingRequests();
-    }
+    const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
+    if (!error) loadPendingRequests();
   };
 
   if (!user) {
@@ -175,6 +197,14 @@ export default function FriendsPage() {
           Sign In / Sign Up
         </button>
       </motion.div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pt-20 md:pt-24">
+        <LoadingSpinner fullScreen text="Loading friends..." />
+      </div>
     );
   }
 
@@ -229,14 +259,16 @@ export default function FriendsPage() {
             </div>
             <button
               onClick={searchUsers}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 rounded-lg transition-colors"
+              disabled={searching}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 rounded-lg transition-colors disabled:opacity-50"
             >
-              <Search className="w-4 h-4" />
+              {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             </button>
           </div>
 
           <div className="space-y-2">
-            {searchResults.map((profile) => (
+            {searching && <LoadingSpinner size="sm" text="Searching..." />}
+            {!searching && searchResults.map((profile) => (
               <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-sm font-bold text-primary">
@@ -248,14 +280,14 @@ export default function FriendsPage() {
                   <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
                 </div>
                 <button
-                  onClick={() => sendFriendRequest(profile.user_id)}
+                  onClick={() => sendFriendRequest(profile)}
                   className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                 </button>
               </div>
             ))}
-            {searchResults.length === 0 && searchQuery && (
+            {!searching && searchResults.length === 0 && searchQuery && (
               <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
             )}
           </div>
@@ -281,7 +313,7 @@ export default function FriendsPage() {
                   </div>
                   <Circle
                     className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
-                      f.profile?.is_online ? "text-green-500 fill-green-500" : "text-muted-foreground fill-muted-foreground"
+                      f.profile?.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
                     }`}
                   />
                 </div>
@@ -291,6 +323,16 @@ export default function FriendsPage() {
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
+                {/* Call button - only for online friends */}
+                {f.profile?.is_online && onStartCall && (
+                  <button
+                    onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}
+                    className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                    title="Video Call"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
                   title="Watch Together"
@@ -324,7 +366,7 @@ export default function FriendsPage() {
                   <p className="text-xs text-muted-foreground">{req.profile?.unique_id}</p>
                 </div>
                 <button
-                  onClick={() => acceptRequest(req.id)}
+                  onClick={() => acceptRequest(req.id, req.profile)}
                   className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                 >
                   <UserCheck className="w-4 h-4" />
