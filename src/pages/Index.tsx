@@ -10,6 +10,7 @@ import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import {Footer} from "@/components/Footer";
 
 export default function Index() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -115,6 +116,7 @@ export default function Index() {
           />
         )}
       </AnimatePresence>
+      <Footer />
     </motion.div>
   );
 }
