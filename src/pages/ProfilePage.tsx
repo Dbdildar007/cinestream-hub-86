@@ -48,7 +48,7 @@ export default function ProfilePage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background pt-20 md:pt-24 px-4 md:px-12 pb-24"
+      className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24"
     >
       {/* Profile header */}
       <div className="flex items-center gap-5 mb-6">
