@@ -96,3 +96,15 @@
 .animate-download {
   animation: download-progress 3s ease-in-out forwards;
 }
+
+/* Hide vertical scrollbar for the entire application */
+html, body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari and Opera */
+}
+
