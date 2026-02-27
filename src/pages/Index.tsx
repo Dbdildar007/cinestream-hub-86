@@ -46,7 +46,7 @@ export default function Index() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background pb-20 md:pb-0"
+      className="min-h-screen bg-background pb-20 md:pb-0 scrollbar-hide"
     >
       <HeroCarousel
         onMovieSelect={setSelectedMovie}
