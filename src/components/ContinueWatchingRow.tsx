@@ -27,7 +27,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onRemove }: Conti
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5 }}
-      className="relative px-4 md:px-12 pt-6 md:pt-0 mb-8"
+      className="relative px-4 md:px-12 pt-4 md:pt-0 mb-8"
     >
       <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4">
         CONTINUE WATCHING
