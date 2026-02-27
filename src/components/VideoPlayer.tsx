@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, Subtitles,
@@ -39,6 +40,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [brightness, setBrightness] = useState(100);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   // Episode selector state - only for series
   const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
@@ -303,7 +305,27 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
           }
         }}
         onEnded={handleVideoEnded}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
+        onCanPlay={() => setIsBuffering(false)}
       />
+
+      {/* Buffering loader */}
+      <AnimatePresence>
+        {isBuffering && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center z-[103] pointer-events-none"
+          >
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <span className="text-xs text-foreground/70">Loading...</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Double tap indicators */}
       <AnimatePresence>
