@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User ,MailCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ export default function AuthPage() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -32,6 +33,7 @@ export default function AuthPage() {
       if (error) {
         toast.error(error.message);
       } else {
+        setIsVerificationSent(true);
         toast.success("Account created! Please check your email to verify.");
       }
     }
@@ -48,29 +50,68 @@ export default function AuthPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-display tracking-wider text-primary mb-2">CINESTREAM</h1>
           <p className="text-muted-foreground text-sm">
-            {isLogin ? "Sign in to continue" : "Create your account"}
+            {isVerificationSent ? "Verify your account" : (isLogin ? "Sign in to continue" : "Create your account")}
           </p>
         </div>
 
-        <motion.form
+        {isVerificationSent ? (
+        /* --- NEW VERIFICATION UI --- */
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          onSubmit={handleSubmit}
-          className="bg-card rounded-xl p-6 md:p-8 border border-border space-y-4"
+          className="bg-card rounded-xl p-8 border border-border text-center space-y-6 shadow-xl"
         >
-          {!isLogin && (
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Display Name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required={!isLogin}
-                className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MailCheck className="w-10 h-10 text-primary animate-bounce" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground">Check your email</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed px-2">
+              We've sent a verification link to <br/>
+              <span className="text-primary font-medium font-mono">{email}</span>
+            </p>
+          </div>
+
+          <div className="pt-4 space-y-4">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-bold transition-all active:scale-95"
+            >
+              I've Verified My Email
+            </button>
+            <button 
+              onClick={() => setIsVerificationSent(false)}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto"
+            >
+              ← Back to Sign Up
+            </button>
+          </div>
+        </motion.div>
+      ) : (
+        
+       <>
+          <motion.form
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            onSubmit={handleSubmit}
+            className="bg-card rounded-xl p-6 md:p-8 border border-border space-y-4 shadow-lg"
+          >
+            {/* ... Your existing input fields (Display Name, Email, Password) ... */}
+          </motion.form>
+          
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-primary hover:underline font-medium"
+            >
+              {isLogin ? "Sign Up" : "Sign In"}
+            </button>
+          </p>
+        </>
           )}
 
           <div className="relative">
