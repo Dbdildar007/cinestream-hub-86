@@ -5,7 +5,7 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, Subtitles,
   RotateCcw, ChevronLeft, Lock, Unlock, Cast,
-  List, ChevronDown, SkipForward as NextIcon
+  List, ChevronDown, SkipForward as NextIcon, Users
 } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { getSeriesData, type Episode, type Season } from "@/data/series";
@@ -15,11 +15,23 @@ interface VideoPlayerProps {
   onClose: () => void;
   onProgressUpdate?: (movieId: string, currentTime: number, duration: number) => void;
   initialTime?: number;
+  // Watch party props
+  watchPartyActive?: boolean;
+  isHost?: boolean;
+  onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
+  onEndParty?: () => void;
+  guestName?: string;
 }
 
 const SAMPLE_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
-export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialTime = 0 }: VideoPlayerProps) {
+export default function VideoPlayer({
+  movie, onClose, onProgressUpdate, initialTime = 0,
+  watchPartyActive = false, isHost = true,
+  onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -42,7 +54,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const [brightness, setBrightness] = useState(100);
   const [isBuffering, setIsBuffering] = useState(true);
 
-  // Episode selector state - only for series
+  // Episode state
   const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -55,21 +67,48 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const [nextEpisodeCountdown, setNextEpisodeCountdown] = useState(10);
   const countdownRef = useRef<ReturnType<typeof setInterval>>();
 
+  // Guest: controls disabled in watch party
+  const controlsDisabled = watchPartyActive && !isHost;
+
+  // Register sync callback for guest
+  useEffect(() => {
+    if (!watchPartyActive || isHost || !onSyncReceived) return;
+    onSyncReceived((state) => {
+      const v = videoRef.current;
+      if (!v) return;
+      // Sync time if drift > 1s
+      if (Math.abs(v.currentTime - state.currentTimeSec) > 1) {
+        v.currentTime = state.currentTimeSec;
+      }
+      if (state.isPlaying && v.paused) {
+        v.play();
+        setIsPlaying(true);
+      } else if (!state.isPlaying && !v.paused) {
+        v.pause();
+        setIsPlaying(false);
+      }
+    });
+  }, [watchPartyActive, isHost, onSyncReceived]);
+
+  // Host: send periodic sync
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  useEffect(() => {
+    if (!watchPartyActive || !isHost || !onSyncPlayback) return;
+    syncIntervalRef.current = setInterval(() => {
+      const v = videoRef.current;
+      if (v) onSyncPlayback(!v.paused, v.currentTime);
+    }, 2000);
+    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
+  }, [watchPartyActive, isHost, onSyncPlayback]);
+
   const getNextEpisode = useCallback((): Episode | null => {
     if (!seriesInfo || !currentEpisode) return null;
     const currentSeasonData = seriesInfo.seasons.find(s => s.number === selectedSeason);
     if (!currentSeasonData) return null;
-    
     const currentIdx = currentSeasonData.episodes.findIndex(e => e.id === currentEpisode.id);
-    // Next in same season
-    if (currentIdx < currentSeasonData.episodes.length - 1) {
-      return currentSeasonData.episodes[currentIdx + 1];
-    }
-    // First ep of next season
+    if (currentIdx < currentSeasonData.episodes.length - 1) return currentSeasonData.episodes[currentIdx + 1];
     const nextSeason = seriesInfo.seasons.find(s => s.number === selectedSeason + 1);
-    if (nextSeason && nextSeason.episodes.length > 0) {
-      return nextSeason.episodes[0];
-    }
+    if (nextSeason && nextSeason.episodes.length > 0) return nextSeason.episodes[0];
     return null;
   }, [seriesInfo, currentEpisode, selectedSeason]);
 
@@ -91,10 +130,10 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
       onProgressUpdate(movie.id, v.currentTime, v.duration);
     }
     if (countdownRef.current) clearInterval(countdownRef.current);
+    if (watchPartyActive && onEndParty) onEndParty();
     onClose();
   };
 
-  // Auto-hide controls
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
@@ -108,10 +147,9 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     return () => { if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current); };
   }, [isPlaying, resetControlsTimer]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (isLocked) return;
+      if (isLocked || controlsDisabled) return;
       switch (e.key) {
         case " ": case "k": e.preventDefault(); togglePlay(); break;
         case "ArrowRight": skip(10); break;
@@ -132,9 +170,8 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes, showNextEpisode]);
+  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes, showNextEpisode, controlsDisabled]);
 
-  // Handle video ended - trigger next episode countdown
   const handleVideoEnded = useCallback(() => {
     setIsPlaying(false);
     const next = getNextEpisode();
@@ -155,21 +192,31 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     }
   }, [getNextEpisode]);
 
-  // Cleanup countdown
   useEffect(() => {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, []);
 
   const togglePlay = () => {
+    if (controlsDisabled) return;
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) { v.play(); setIsPlaying(true); }
     else { v.pause(); setIsPlaying(false); }
+    // Immediate sync for host
+    if (watchPartyActive && isHost && onForceSyncPlayback) {
+      onForceSyncPlayback(!v.paused, v.currentTime);
+    }
   };
 
   const skip = (seconds: number) => {
+    if (controlsDisabled) return;
     const v = videoRef.current;
-    if (v) v.currentTime = Math.max(0, Math.min(v.currentTime + seconds, duration));
+    if (v) {
+      v.currentTime = Math.max(0, Math.min(v.currentTime + seconds, duration));
+      if (watchPartyActive && isHost && onForceSyncPlayback) {
+        onForceSyncPlayback(!v.paused, v.currentTime);
+      }
+    }
   };
 
   const adjustVolume = (delta: number) => {
@@ -208,9 +255,13 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (controlsDisabled) return;
     const time = parseFloat(e.target.value);
     setCurrentTime(time);
     if (videoRef.current) videoRef.current.currentTime = time;
+    if (watchPartyActive && isHost && onForceSyncPlayback) {
+      onForceSyncPlayback(isPlaying, time);
+    }
   };
 
   const changeSpeed = (speed: number) => {
@@ -230,7 +281,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
 
-  // Double tap to seek (mobile)
   const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
   const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
 
@@ -243,6 +293,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
     const relX = rect ? (clientX - rect.left) / rect.width : 0.5;
 
     if (now - lastTapRef.current.time < 300) {
+      if (controlsDisabled) return;
       if (relX < 0.35) { skip(-10); setDoubleTapSide("left"); }
       else if (relX > 0.65) { skip(10); setDoubleTapSide("right"); }
       else { togglePlay(); }
@@ -254,11 +305,11 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
   };
 
   const playEpisode = (episode: Episode) => {
+    if (controlsDisabled) return;
     setCurrentEpisode(episode);
     setShowEpisodes(false);
     setShowNextEpisode(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
-    // Find the season for this episode
     if (seriesInfo) {
       const season = seriesInfo.seasons.find(s => s.episodes.some(e => e.id === episode.id));
       if (season) setSelectedSeason(season.number);
@@ -327,6 +378,26 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
         )}
       </AnimatePresence>
 
+      {/* Watch party indicator */}
+      {watchPartyActive && (
+        <div className="absolute top-4 right-16 z-[112] flex items-center gap-2 bg-primary/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+          <Users className="w-3.5 h-3.5 text-primary-foreground" />
+          <span className="text-xs font-medium text-primary-foreground">
+            {isHost ? `Hosting${guestName ? ` • ${guestName}` : ""}` : "Watching together"}
+          </span>
+          {!isHost && (
+            <span className="text-[10px] text-primary-foreground/70 ml-1">Host controls</span>
+          )}
+        </div>
+      )}
+
+      {/* Guest overlay - controls disabled message */}
+      {controlsDisabled && showControls && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[108] bg-card/80 backdrop-blur-sm px-4 py-2 rounded-full">
+          <p className="text-xs text-muted-foreground">Host is controlling playback</p>
+        </div>
+      )}
+
       {/* Double tap indicators */}
       <AnimatePresence>
         {doubleTapSide && (
@@ -364,17 +435,12 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-24 right-4 md:right-8 z-[115] w-[280px] md:w-[340px]"
+            className="absolute bottom-24 right-4 md:right-8 z-[115] w-[260px] md:w-[340px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card/95 backdrop-blur-md rounded-xl border border-border overflow-hidden shadow-2xl">
-              {/* Next episode preview */}
               <div className="relative aspect-video bg-secondary">
-                <img
-                  src={movie.poster}
-                  alt="Next episode"
-                  className="w-full h-full object-cover opacity-60"
-                />
+                <img src={movie.poster} alt="Next episode" className="w-full h-full object-cover opacity-60" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3">
                   <p className="text-xs text-muted-foreground mb-1">Next Episode</p>
@@ -383,10 +449,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                   </p>
                 </div>
               </div>
-
-              {/* Countdown + buttons */}
               <div className="p-3 space-y-3">
-                {/* Progress ring / countdown */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8">
@@ -407,7 +470,6 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                     <span className="text-xs text-muted-foreground">Playing in {nextEpisodeCountdown}s</span>
                   </div>
                 </div>
-
                 <div className="flex gap-2">
                   <button
                     onClick={() => playEpisode(nextEpisode)}
@@ -465,8 +527,7 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                     <List className="w-5 h-5 text-foreground" />
                   </button>
                 )}
-                {/* Next episode button in controls */}
-                {nextEpisode && (
+                {nextEpisode && !controlsDisabled && (
                   <button
                     onClick={() => playEpisode(nextEpisode)}
                     className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 hover:bg-muted/50 text-foreground text-xs font-medium transition-colors"
@@ -486,17 +547,17 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
 
             {/* Center play/pause */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8 md:gap-12">
-              <button onClick={() => skip(-10)} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors">
+              <button onClick={() => skip(-10)} disabled={controlsDisabled} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors disabled:opacity-40">
                 <SkipBack className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
               </button>
-              <button onClick={togglePlay} className="p-4 md:p-5 rounded-full bg-primary/90 hover:bg-primary transition-colors">
+              <button onClick={togglePlay} disabled={controlsDisabled} className="p-4 md:p-5 rounded-full bg-primary/90 hover:bg-primary transition-colors disabled:opacity-40">
                 {isPlaying ? (
                   <Pause className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground" />
                 ) : (
                   <Play className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground fill-current" />
                 )}
               </button>
-              <button onClick={() => skip(10)} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors">
+              <button onClick={() => skip(10)} disabled={controlsDisabled} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors disabled:opacity-40">
                 <SkipForward className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
               </button>
             </div>
@@ -512,9 +573,10 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                 <input
                   type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
                   onChange={handleSeek}
+                  disabled={controlsDisabled}
                   onMouseDown={() => setIsSeeking(true)} onMouseUp={() => setIsSeeking(false)}
                   onTouchStart={() => setIsSeeking(true)} onTouchEnd={() => setIsSeeking(false)}
-                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
                 />
                 <div
                   className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
@@ -525,11 +587,10 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
               {/* Bottom row */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 md:gap-3 flex-1">
-                  <button onClick={togglePlay} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
+                  <button onClick={togglePlay} disabled={controlsDisabled} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden disabled:opacity-40">
                     {isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
                   </button>
-                  {/* Next episode button mobile */}
-                  {nextEpisode && (
+                  {nextEpisode && !controlsDisabled && (
                     <button
                       onClick={() => playEpisode(nextEpisode)}
                       className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden"
@@ -552,6 +613,15 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2">
+                  {/* End party button for host */}
+                  {watchPartyActive && isHost && onEndParty && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEndParty(); }}
+                      className="px-2 py-1 rounded bg-destructive/80 hover:bg-destructive text-destructive-foreground text-[10px] font-medium transition-colors"
+                    >
+                      End Party
+                    </button>
+                  )}
                   {seriesInfo && (
                     <button onClick={() => setShowEpisodes(!showEpisodes)} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                       <List className="w-5 h-5 text-foreground" />
@@ -651,8 +721,9 @@ export default function VideoPlayer({ movie, onClose, onProgressUpdate, initialT
                 return (
                   <button
                     key={episode.id}
-                    onClick={() => playEpisode(episode)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    onClick={() => !controlsDisabled && playEpisode(episode)}
+                    disabled={controlsDisabled}
+                    className={`w-full text-left p-3 rounded-lg transition-colors disabled:opacity-50 ${
                       isActive ? "bg-primary/15 border border-primary/30" : "bg-secondary/50 hover:bg-secondary border border-transparent"
                     }`}
                   >

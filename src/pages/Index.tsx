@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
@@ -10,15 +10,58 @@ import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { useWatchParty } from "@/hooks/useWatchParty";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { toast } from "sonner";
 
 export default function Index() {
+  const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
+  const { activeParty, isHost, joinParty, syncPlayback, forceSyncPlayback, endParty, onSyncReceived } = useWatchParty();
+  const { sendNotification } = useNotifications();
+
+  // Simulate initial data load
+  useEffect(() => {
+    const t = setTimeout(() => setInitialLoad(false), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Listen for watch party invites via notifications
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("watch-party-invite-listener")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "watch_parties",
+        filter: `friend_id=eq.${user.id}`,
+      }, async (payload) => {
+        const party = payload.new as any;
+        if (party.status === "active") {
+          const movie = allMovies.find(m => m.id === party.movie_id);
+          // Auto-join the party
+          const joined = await joinParty(party.id);
+          if (joined && movie) {
+            setPlayingMovie(movie);
+            toast.info("You've joined a watch party!");
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, joinParty]);
 
   const continueWatchingMovies = useMemo(() => {
     const progressList = getContinueWatching();
@@ -31,7 +74,6 @@ export default function Index() {
       .filter(Boolean) as (Movie & { progress: { movieId: string; currentTime: number; duration: number; lastWatched: number } })[];
   }, [getContinueWatching]);
 
-  // My List row
   const myListMovies = useMemo(() => {
     return watchlist
       .map((id) => allMovies.find((m) => m.id === id))
@@ -42,6 +84,14 @@ export default function Index() {
     setSelectedMovie(null);
     setPlayingMovie(movie);
   };
+
+  if (initialLoad) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingSpinner fullScreen text="Loading CineStream..." />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -63,7 +113,6 @@ export default function Index() {
           onRemove={clearProgress}
         />
 
-        {/* My List row */}
         {myListMovies.length > 0 && (
           <MovieRow
             title="My List"
@@ -113,6 +162,12 @@ export default function Index() {
             onClose={() => setPlayingMovie(null)}
             onProgressUpdate={updateProgress}
             initialTime={getProgress(playingMovie.id)?.currentTime || 0}
+            watchPartyActive={!!activeParty}
+            isHost={isHost}
+            onSyncPlayback={syncPlayback}
+            onForceSyncPlayback={forceSyncPlayback}
+            onSyncReceived={onSyncReceived}
+            onEndParty={endParty}
           />
         )}
       </AnimatePresence>
