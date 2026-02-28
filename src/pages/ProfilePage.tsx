@@ -23,6 +23,8 @@ export default function ProfilePage() {
       });
   }, [user]);
 
+  console.log("data",profile)
+
   const menuItems = [
     { icon: Heart, label: "My Watchlist", count: "12", action: () => {} },
     { icon: Clock, label: "Watch History", count: "48", action: () => {} },
