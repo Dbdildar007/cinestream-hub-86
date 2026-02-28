@@ -23,7 +23,7 @@ export default function ProfilePage() {
       });
   }, [user]);
 
-  console.log("dataf",user)
+  console.log("user",user)
 
   const menuItems = [
     { icon: Heart, label: "My Watchlist", count: "12", action: () => {} },
