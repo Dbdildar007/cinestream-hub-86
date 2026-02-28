@@ -107,7 +107,7 @@ export default function SearchPage() {
 
       {/* Results */}
       <p className="text-sm text-muted-foreground mb-4">{filtered.length} results</p>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
         {filtered.map((movie) => (
           <MovieCard
             key={movie.id}
