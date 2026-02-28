@@ -18,20 +18,11 @@ export function useWatchParty() {
   const [isHost, setIsHost] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const syncCallbackRef = useRef<((state: { isPlaying: boolean; currentTimeSec: number }) => void) | null>(null);
+  const lastSyncRef = useRef(0);
 
-  // Poll for incoming watch party invites
+  // Listen for watch party changes targeting this user
   useEffect(() => {
     if (!user) return;
-
-    const checkInvites = async () => {
-      const { data } = await supabase
-        .from("watch_parties")
-        .select("*")
-        .eq("friend_id", user.id)
-        .eq("status", "pending")
-        .limit(1);
-      // Handled via notifications instead
-    };
 
     const channel = supabase
       .channel("watch-party-updates")
@@ -50,7 +41,7 @@ export function useWatchParty() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, activeParty]);
 
   const createParty = useCallback(async (friendId: string, movieId: string) => {
     if (!user) return null;
@@ -113,13 +104,15 @@ export function useWatchParty() {
       supabase.removeChannel(channelRef.current);
     }
 
-    const channel = supabase.channel(`watch-party-${partyId}`);
+    const channel = supabase.channel(`watch-party-${partyId}`, {
+      config: { broadcast: { self: false } },
+    });
 
     if (!host) {
       // Guest listens for sync commands from host
       channel.on("broadcast", { event: "sync" }, (payload) => {
         const { isPlaying, currentTimeSec } = payload.payload;
-        setActiveParty((prev) => prev ? { ...prev, isPlaying, currentTimeSec } : prev);
+        setActiveParty(prev => prev ? { ...prev, isPlaying, currentTimeSec } : prev);
         syncCallbackRef.current?.({ isPlaying, currentTimeSec });
       });
     }
@@ -128,14 +121,34 @@ export function useWatchParty() {
     channelRef.current = channel;
   };
 
+  // Throttled sync - host sends max every 500ms
   const syncPlayback = useCallback((isPlaying: boolean, currentTimeSec: number) => {
     if (!channelRef.current || !isHost || !activeParty) return;
+    const now = Date.now();
+    if (now - lastSyncRef.current < 500) return;
+    lastSyncRef.current = now;
+
     channelRef.current.send({
       type: "broadcast",
       event: "sync",
       payload: { isPlaying, currentTimeSec },
     });
-    // Also persist to DB periodically
+    // Persist to DB less frequently
+    supabase.from("watch_parties").update({
+      is_playing: isPlaying,
+      current_time_sec: currentTimeSec,
+    }).eq("id", activeParty.id).then();
+  }, [isHost, activeParty]);
+
+  // Force sync for play/pause/seek (immediate)
+  const forceSyncPlayback = useCallback((isPlaying: boolean, currentTimeSec: number) => {
+    if (!channelRef.current || !isHost || !activeParty) return;
+    lastSyncRef.current = Date.now();
+    channelRef.current.send({
+      type: "broadcast",
+      event: "sync",
+      payload: { isPlaying, currentTimeSec },
+    });
     supabase.from("watch_parties").update({
       is_playing: isPlaying,
       current_time_sec: currentTimeSec,
@@ -164,6 +177,7 @@ export function useWatchParty() {
     createParty,
     joinParty,
     syncPlayback,
+    forceSyncPlayback,
     endParty,
     onSyncReceived,
   };

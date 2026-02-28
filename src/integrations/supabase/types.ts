@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          movie_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movie_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movie_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -143,6 +170,33 @@ export type Database = {
           movie_id?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      watch_progress: {
+        Row: {
+          current_time_sec: number
+          duration_sec: number
+          id: string
+          last_watched: string
+          movie_id: string
+          user_id: string
+        }
+        Insert: {
+          current_time_sec?: number
+          duration_sec?: number
+          id?: string
+          last_watched?: string
+          movie_id: string
+          user_id: string
+        }
+        Update: {
+          current_time_sec?: number
+          duration_sec?: number
+          id?: string
+          last_watched?: string
+          movie_id?: string
+          user_id?: string
         }
         Relationships: []
       }
