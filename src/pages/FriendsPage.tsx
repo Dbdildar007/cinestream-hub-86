@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { allMovies, type Movie } from "@/data/movies";
 
 interface Profile {
   id: string;
@@ -27,9 +28,10 @@ interface Friendship {
 
 interface FriendsPageProps {
   onStartCall?: (remoteUserId: string, remoteDisplayName: string) => void;
+  onStartWatchParty?: (friendId: string, movieId: string) => void;
 }
 
-export default function FriendsPage({ onStartCall }: FriendsPageProps) {
+export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsPageProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
@@ -40,6 +42,14 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+
+  // Watch party invite state
+  const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
+  const [movieSearch, setMovieSearch] = useState("");
+
+  const filteredMovies = movieSearch
+    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
+    : allMovies.slice(0, 8);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -140,7 +150,6 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
     if (error) {
       toast.error("Could not send request. Maybe already sent?");
     } else {
-      // Get current user's name
       const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
       await sendNotification(
         profile.user_id,
@@ -176,6 +185,43 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
   const declineRequest = async (friendshipId: string) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
     if (!error) loadPendingRequests();
+  };
+
+  const handleInviteToWatchParty = async (movie: Movie) => {
+    if (!user || !invitingFriend?.profile) return;
+    const friendUserId = invitingFriend.profile.user_id;
+
+    // Create watch party
+    const { data, error } = await supabase.from("watch_parties").insert({
+      host_id: user.id,
+      friend_id: friendUserId,
+      movie_id: movie.id,
+      status: "active",
+      is_playing: true,
+      current_time_sec: 0,
+    }).select().single();
+
+    if (error) {
+      toast.error("Failed to create watch party");
+      return;
+    }
+
+    // Send notification
+    const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+    await sendNotification(
+      friendUserId,
+      "watch_party",
+      "Watch Party Invite",
+      `${myProfile?.display_name || "Someone"} invited you to watch "${movie.title}"`,
+      { party_id: data.id, movie_id: movie.id }
+    );
+
+    toast.success(`Watch party started! ${invitingFriend.profile.display_name} will join automatically.`);
+    setInvitingFriend(null);
+    setMovieSearch("");
+
+    // Navigate home to start watching
+    navigate("/");
   };
 
   if (!user) {
@@ -231,7 +277,7 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-cine-surface-hover"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
             {tab.label}
@@ -304,7 +350,7 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
             </div>
           ) : (
             friends.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary hover:bg-cine-surface-hover transition-colors">
+              <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-sm font-bold text-primary">
@@ -323,7 +369,7 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
-                {/* Call button - only for online friends */}
+                {/* Call button */}
                 {f.profile?.is_online && onStartCall && (
                   <button
                     onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}
@@ -333,7 +379,9 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
                     <Phone className="w-4 h-4" />
                   </button>
                 )}
+                {/* Watch party button */}
                 <button
+                  onClick={() => setInvitingFriend(f)}
                   className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
                   title="Watch Together"
                 >
@@ -382,6 +430,70 @@ export default function FriendsPage({ onStartCall }: FriendsPageProps) {
           )}
         </div>
       )}
+
+      {/* Watch Party Movie Picker Modal */}
+      <AnimatePresence>
+        {invitingFriend && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-end md:items-center justify-center p-0 md:p-4"
+            onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-card rounded-t-2xl md:rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-display tracking-wider text-foreground">
+                    Watch with {invitingFriend.profile?.display_name}
+                  </h3>
+                  <button onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}>
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={movieSearch}
+                    onChange={(e) => setMovieSearch(e.target.value)}
+                    placeholder="Search for a movie..."
+                    className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <div className="overflow-y-auto max-h-[60vh] p-2">
+                {filteredMovies.map((movie) => (
+                  <button
+                    key={movie.id}
+                    onClick={() => handleInviteToWatchParty(movie)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
+                  >
+                    <img
+                      src={movie.poster}
+                      alt={movie.title}
+                      className="w-12 h-16 rounded object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{movie.title}</p>
+                      <p className="text-xs text-muted-foreground">{movie.year} • {movie.genre.join(", ")}</p>
+                      <p className="text-xs text-primary">{movie.duration}</p>
+                    </div>
+                    <Film className="w-4 h-4 text-primary flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

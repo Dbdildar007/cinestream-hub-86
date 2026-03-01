@@ -22,8 +22,8 @@ export interface Movie {
   description: string;
   poster: string;
   heroImage?: string;
-  url: string,
-  newly_added:String,
+  url?: string;
+  newly_added?: string;
   duration: string;
   isTrending?: boolean;
   isEditorChoice?: boolean;
