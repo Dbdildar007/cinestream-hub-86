@@ -5,7 +5,8 @@ import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
-import { getMoviesByCategory, type Movie } from "@/data/movies";
+import WatchPartyHistory from "@/components/WatchPartyHistory";
+import { type Movie } from "@/data/movies";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";
@@ -17,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { toast } from "sonner";
-import { useMovies, useCategories } from '@/hooks/useMovies';
+import { useMovies } from '@/hooks/useMovies';
 
 export default function Index() {
   const { user } = useAuth();
@@ -31,8 +32,7 @@ export default function Index() {
   const { activeParty, isHost, joinParty, syncPlayback, forceSyncPlayback, endParty, onSyncReceived } = useWatchParty();
   const { sendNotification } = useNotifications();
 
-  const { allMovies, loading } = useMovies();
-  const categories = useCategories();
+  const { allMovies, categories, featuredMovies, loading } = useMovies();
 
   // Simulate initial data load
   useEffect(() => {
@@ -116,6 +116,8 @@ export default function Index() {
           onRemove={clearProgress}
         />
 
+        <WatchPartyHistory />
+
         {myListMovies.length > 0 && (
           <MovieRow
             title="My List"
@@ -134,7 +136,7 @@ export default function Index() {
           <MovieRow
             key={category}
             title={category}
-            movies={getMoviesByCategory(category)}
+            movies={allMovies.filter(m => m.category.includes(category))}
             onMovieSelect={setSelectedMovie}
             onDownload={startDownload}
             getDownloadState={getDownloadState}

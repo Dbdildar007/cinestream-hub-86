@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Info, ChevronLeft, ChevronRight, Plus, CheckCircle } from "lucide-react";
-import { featuredMovies, type Movie } from "@/data/movies";
+import { useFeaturedMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/data/movies";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface HeroCarouselProps {
   onMovieSelect: (movie: Movie) => void;
@@ -11,20 +13,32 @@ interface HeroCarouselProps {
 }
 
 export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, onToggleWatchlist }: HeroCarouselProps) {
+  const { movies: featuredMovies, loading } = useFeaturedMovies();
   const [current, setCurrent] = useState(0);
 
   const next = useCallback(() => {
+    if (featuredMovies.length === 0) return;
     setCurrent((c) => (c + 1) % featuredMovies.length);
-  }, []);
+  }, [featuredMovies.length]);
 
   const prev = useCallback(() => {
+    if (featuredMovies.length === 0) return;
     setCurrent((c) => (c - 1 + featuredMovies.length) % featuredMovies.length);
-  }, []);
+  }, [featuredMovies.length]);
 
   useEffect(() => {
+    if (featuredMovies.length === 0) return;
     const timer = setInterval(next, 6000);
     return () => clearInterval(timer);
-  }, [next]);
+  }, [next, featuredMovies.length]);
+
+  if (loading || featuredMovies.length === 0) {
+    return (
+      <div className="relative w-full h-[70vh] md:h-[85vh] bg-background flex items-center justify-center">
+        <LoadingSpinner text="Loading..." />
+      </div>
+    );
+  }
 
   const movie = featuredMovies[current];
   const inList = isInWatchlist?.(movie.id);
@@ -41,7 +55,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
           className="absolute inset-0"
         >
           <img
-            src={movie.heroImage}
+            src={movie.heroImage || movie.poster}
             alt={movie.title}
             className="w-full h-full object-cover"
             loading="eager"
@@ -63,7 +77,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             <h1 className="text-4xl md:text-7xl font-display tracking-wider text-foreground mb-3">
               {movie.title.toUpperCase()}
             </h1>
-            <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground flex-wrap">
               <span className="text-primary font-semibold">{movie.rating}/10</span>
               <span>•</span>
               <span>{movie.year}</span>
@@ -81,7 +95,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             <p className="text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none">
               {movie.description}
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => onWatch?.(movie)}
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-semibold text-sm transition-colors"

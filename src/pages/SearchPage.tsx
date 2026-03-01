@@ -1,15 +1,19 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
-import { allMovies, genres, languages, type Movie } from "@/data/movies";
+import { useMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/data/movies";
+import { genres, languages } from "@/data/movies";
 import MovieCard from "@/components/MovieCard";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import Footer from "@/components/Footer";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function SearchPage() {
+  const { allMovies, loading } = useMovies();
   const [query, setQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
@@ -33,7 +37,15 @@ export default function SearchPage() {
       }
       return true;
     });
-  }, [query, selectedGenre, selectedYear, selectedRating]);
+  }, [query, selectedGenre, selectedYear, selectedRating, allMovies]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pt-20">
+        <LoadingSpinner fullScreen text="Loading movies..." />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -60,7 +72,6 @@ export default function SearchPage() {
 
       {/* Filters */}
       <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-6 pb-1">
-        {/* Genre */}
         {genres.map((g) => (
           <button
             key={g}
@@ -68,7 +79,7 @@ export default function SearchPage() {
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
               selectedGenre === g
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-cine-surface-hover"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
             {g}
@@ -84,7 +95,7 @@ export default function SearchPage() {
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
               selectedYear === y
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-cine-surface-hover"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
             {y}
@@ -97,7 +108,7 @@ export default function SearchPage() {
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
               selectedRating === r
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-cine-surface-hover"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
             ★ {r}

@@ -68,6 +68,69 @@ export type Database = {
         }
         Relationships: []
       }
+      movies: {
+        Row: {
+          category: string[]
+          created_at: string
+          description: string
+          duration: string
+          genre: string[]
+          hero_image: string | null
+          id: string
+          is_editor_choice: boolean
+          is_featured: boolean
+          is_series: boolean
+          is_trending: boolean
+          language: string
+          newly_added: string | null
+          poster: string
+          rating: number
+          title: string
+          url: string | null
+          year: number
+        }
+        Insert: {
+          category?: string[]
+          created_at?: string
+          description?: string
+          duration?: string
+          genre?: string[]
+          hero_image?: string | null
+          id: string
+          is_editor_choice?: boolean
+          is_featured?: boolean
+          is_series?: boolean
+          is_trending?: boolean
+          language?: string
+          newly_added?: string | null
+          poster?: string
+          rating?: number
+          title: string
+          url?: string | null
+          year: number
+        }
+        Update: {
+          category?: string[]
+          created_at?: string
+          description?: string
+          duration?: string
+          genre?: string[]
+          hero_image?: string | null
+          id?: string
+          is_editor_choice?: boolean
+          is_featured?: boolean
+          is_series?: boolean
+          is_trending?: boolean
+          language?: string
+          newly_added?: string | null
+          poster?: string
+          rating?: number
+          title?: string
+          url?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -172,6 +235,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      watch_party_history: {
+        Row: {
+          duration_watched_sec: number
+          ended_at: string | null
+          friend_id: string
+          host_id: string
+          id: string
+          movie_id: string
+          started_at: string
+        }
+        Insert: {
+          duration_watched_sec?: number
+          ended_at?: string | null
+          friend_id: string
+          host_id: string
+          id?: string
+          movie_id: string
+          started_at?: string
+        }
+        Update: {
+          duration_watched_sec?: number
+          ended_at?: string | null
+          friend_id?: string
+          host_id?: string
+          id?: string
+          movie_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_party_history_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       watch_progress: {
         Row: {
