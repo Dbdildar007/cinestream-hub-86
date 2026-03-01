@@ -161,11 +161,21 @@ export function useWatchParty() {
       channelRef.current = null;
     }
     if (activeParty) {
+      // Save to watch party history
+      if (user) {
+        await supabase.from("watch_party_history").insert({
+          host_id: activeParty.hostId,
+          friend_id: activeParty.friendId,
+          movie_id: activeParty.movieId,
+          duration_watched_sec: activeParty.currentTimeSec,
+          ended_at: new Date().toISOString(),
+        });
+      }
       await supabase.from("watch_parties").delete().eq("id", activeParty.id);
     }
     setActiveParty(null);
     setIsHost(false);
-  }, [activeParty]);
+  }, [activeParty, user]);
 
   const onSyncReceived = useCallback((cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => {
     syncCallbackRef.current = cb;

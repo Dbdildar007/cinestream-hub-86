@@ -7,7 +7,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { allMovies, type Movie } from "@/data/movies";
+import { useMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/data/movies";
 
 interface Profile {
   id: string;
@@ -35,6 +36,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
+  const { allMovies } = useMovies();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [friends, setFriends] = useState<Friendship[]>([]);
