@@ -5,7 +5,7 @@ import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
-import { categories, getMoviesByCategory, allMovies, type Movie } from "@/data/movies";
+import { getMoviesByCategory, type Movie } from "@/data/movies";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";
@@ -17,8 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { toast } from "sonner";
-import { useMovies } from '@/hooks/useMovies';
-import { useMoviesByCategory } from '@/hooks/useMovies';
+import { useMovies, useCategories } from '@/hooks/useMovies';
 
 export default function Index() {
   const { user } = useAuth();
@@ -33,7 +32,7 @@ export default function Index() {
   const { sendNotification } = useNotifications();
 
   const { allMovies, loading } = useMovies();
-  const { categories } = useCategoriesList();
+  const categories = useCategories();
 
   // Simulate initial data load
   useEffect(() => {
@@ -55,7 +54,6 @@ export default function Index() {
         const party = payload.new as any;
         if (party.status === "active") {
           const movie = allMovies.find(m => m.id === party.movie_id);
-          // Auto-join the party
           const joined = await joinParty(party.id);
           if (joined && movie) {
             setPlayingMovie(movie);
@@ -66,7 +64,7 @@ export default function Index() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, joinParty]);
+  }, [user, joinParty, allMovies]);
 
   const continueWatchingMovies = useMemo(() => {
     const progressList = getContinueWatching();
@@ -77,28 +75,26 @@ export default function Index() {
         return { ...movie, progress };
       })
       .filter(Boolean) as (Movie & { progress: { movieId: string; currentTime: number; duration: number; lastWatched: number } })[];
-  }, [getContinueWatching]);
+  }, [getContinueWatching, allMovies]);
 
   const myListMovies = useMemo(() => {
     return watchlist
       .map((id) => allMovies.find((m) => m.id === id))
       .filter(Boolean) as Movie[];
-  }, [watchlist]);
+  }, [watchlist, allMovies]);
 
   const handleWatch = (movie: Movie) => {
     setSelectedMovie(null);
     setPlayingMovie(movie);
   };
 
-  if (initialLoad) {
+  if (initialLoad || loading) {
     return (
       <div className="min-h-screen bg-background">
         <LoadingSpinner fullScreen text="Loading CineStream..." />
       </div>
     );
   }
-
-  if (loading) return <LoadingSpinner fullScreen text="Loading CineStream..." />;
 
   return (
     <motion.div
