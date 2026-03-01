@@ -75,6 +75,9 @@ export const movieService = {
       .select('*')
       .order('created_at', { ascending: true });
 
+    console.log("Supabase Raw Data:", data);
+    console.log("error is",error)
+    
     if (error) throw error;
 
     // 3. Fallback logic: If Supabase returns nothing, use local data
