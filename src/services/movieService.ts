@@ -32,25 +32,25 @@ const heroMap: Record<string, string> = {
 
 function mapDbMovie(row: any): Movie {
   const isUrl = (path: string) => path?.startsWith('http') || path?.startsWith('https');
+
   return {
     id: row.id,
-    title: row.title,
-    year: row.year,
-    rating: Number(row.rating),
-    genre: row.genre || [],
-    category: row.category || [],
-    language: row.language,
-    description: row.description,
+    title: row.title || 'Untitled',
+    year: row.year || new Date().getFullYear(),
+    rating: Number(row.rating) || 0,
+    genre: Array.isArray(row.genre) ? row.genre : [],
+    category: Array.isArray(row.category) ? row.category : [],
+    language: row.language || 'English',
+    description: row.description || '',
+    // If DB has a URL, use it. Otherwise, look in our local map.
     poster: isUrl(row.poster) ? row.poster : (posterMap[row.poster] || row.poster),
-    heroImage: row.hero_image 
-      ? (isUrl(row.hero_image) ? row.hero_image : (heroMap[row.hero_image] || row.hero_image))
-      : undefined,
-    url: row.url,
-    newly_added: row.newly_added,
-    duration: row.duration,
-    isTrending: row.is_trending,
-    isEditorChoice: row.is_editor_choice,
-    isSeries: row.is_series,
+    heroImage: isUrl(row.hero_image) ? row.hero_image : (heroMap[row.hero_image] || row.hero_image),
+    url: row.url || '#',
+    newly_added: !!row.newly_added,
+    duration: row.duration || '',
+    isTrending: !!row.is_trending,
+    isEditorChoice: !!row.is_editor_choice,
+    isSeries: !!row.is_series,
   };
 }
 
@@ -60,6 +60,8 @@ const CACHE_DURATION = 5 * 60 * 1000;
 export const movieService = {
   async getAllMovies(): Promise<Movie[]> {
   // 1. Check Cache first
+
+  try {
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
     const { data, timestamp } = JSON.parse(cached);
@@ -67,7 +69,10 @@ export const movieService = {
       return data.map(mapDbMovie);
     }
   }
-
+  } catch(e){
+    console.log("cache read error:"e)
+  }
+    
   try {
     // 2. Try fetching from Supabase
     const { data, error } = await supabase
