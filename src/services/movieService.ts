@@ -31,6 +31,7 @@ const heroMap: Record<string, string> = {
 };
 
 function mapDbMovie(row: any): Movie {
+  const isUrl = (path: string) => path?.startsWith('http') || path?.startsWith('https');
   return {
     id: row.id,
     title: row.title,
@@ -40,8 +41,10 @@ function mapDbMovie(row: any): Movie {
     category: row.category || [],
     language: row.language,
     description: row.description,
-    poster: posterMap[row.poster] || row.poster,
-    heroImage: row.hero_image ? (heroMap[row.hero_image] || row.hero_image) : undefined,
+    poster: isUrl(row.poster) ? row.poster : (posterMap[row.poster] || row.poster),
+    heroImage: row.hero_image 
+      ? (isUrl(row.hero_image) ? row.hero_image : (heroMap[row.hero_image] || row.hero_image))
+      : undefined,
     url: row.url,
     newly_added: row.newly_added,
     duration: row.duration,
@@ -56,13 +59,43 @@ const CACHE_DURATION = 5 * 60 * 1000;
 
 export const movieService = {
   async getAllMovies(): Promise<Movie[]> {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        return data.map(mapDbMovie);
-      }
+  // 1. Check Cache first
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < CACHE_DURATION) {
+      return data.map(mapDbMovie);
     }
+  }
+
+  try {
+    // 2. Try fetching from Supabase
+    const { data, error } = await supabase
+      .from('movies')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    // 3. Fallback logic: If Supabase returns nothing, use local data
+    if (!data || data.length === 0) {
+      console.log("No data in Supabase, falling back to local data");
+      return MOVIES; 
+    }
+
+    // 4. Update cache with Supabase data
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      data: data,
+      timestamp: Date.now()
+    }));
+
+    return data.map(mapDbMovie);
+  } catch (error) {
+    console.error("Supabase fetch failed, using local fallback:", error);
+    return MOVIES; // Fallback to local data on network error
+  }
+}
+    
 
     const { data, error } = await supabase
       .from('movies')
