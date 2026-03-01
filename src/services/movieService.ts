@@ -102,23 +102,7 @@ export const movieService = {
     console.error("Supabase fetch failed, using local fallback:", error);
     return MOVIES; // Fallback to local data on network error
   }
-}
-    
-
-    const { data, error } = await supabase
-      .from('movies')
-      .select('*')
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data: data || [],
-      timestamp: Date.now()
-    }));
-
-    return (data || []).map(mapDbMovie);
-  },
+},
 
   async getFeaturedMovies(): Promise<Movie[]> {
     const { data, error } = await supabase
