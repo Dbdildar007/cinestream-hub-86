@@ -126,7 +126,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
         </AnimatePresence>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
         {featuredMovies.map((_, i) => (
           <button
             key={i}
