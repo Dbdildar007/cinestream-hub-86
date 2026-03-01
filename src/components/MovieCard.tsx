@@ -19,7 +19,7 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
 
   return (
     <motion.div
-      className="relative flex-shrink-0 w-[140px] md:w-[180px] group cursor-pointer"
+      <motion.div className="relative w-full group cursor-pointer"
       whileHover={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.2 }}
       onHoverStart={() => setHovered(true)}
