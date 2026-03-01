@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { toast } from "sonner";
+import { useMovies } from '@/hooks/useMovies';
+import { useMoviesByCategory } from '@/hooks/useMovies';
 
 export default function Index() {
   const { user } = useAuth();
@@ -29,6 +31,9 @@ export default function Index() {
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
   const { activeParty, isHost, joinParty, syncPlayback, forceSyncPlayback, endParty, onSyncReceived } = useWatchParty();
   const { sendNotification } = useNotifications();
+
+  const { allMovies, loading } = useMovies();
+  const { categories } = useCategoriesList();
 
   // Simulate initial data load
   useEffect(() => {
@@ -92,6 +97,8 @@ export default function Index() {
       </div>
     );
   }
+
+  if (loading) return <LoadingSpinner fullScreen text="Loading CineStream..." />;
 
   return (
     <motion.div
