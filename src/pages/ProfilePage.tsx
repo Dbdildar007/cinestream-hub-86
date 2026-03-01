@@ -9,7 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ display_name: string; unique_id: string } | null>(null);
+
+  const [profile, setProfile] = useState<{ display_name: string; unique_id: string } | null>(() => {
+  const saved = localStorage.getItem('user_profile');
+  return saved ? JSON.parse(saved) : null;
+});
 
   useEffect(() => {
     if (!user) return;
@@ -20,6 +24,7 @@ export default function ProfilePage() {
       .single()
       .then(({ data }) => {
         if (data) setProfile(data);
+        localStorage.setItem('user_profile', JSON.stringify(data));
       });
   }, [user]);
 
@@ -33,6 +38,7 @@ export default function ProfilePage() {
 
   const handleSignOut = async () => {
     await signOut();
+    localStorage.removeItem('user_profile');
     toast.success("Signed out");
     navigate("/");
   };
