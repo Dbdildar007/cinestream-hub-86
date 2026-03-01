@@ -30,8 +30,7 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
         <img
           src={movie.poster}
           alt={movie.title}
-          className="w-full h-full object-contain"
-          alt="Movie Thumbnail"
+          className="w-full h-full object-cover"
           loading="lazy"
         />
 
