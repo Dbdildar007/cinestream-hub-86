@@ -57,7 +57,9 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
           <img
             src={movie.heroImage || movie.poster}
             alt={movie.title}
-            className="w-full h-full object-cover"
+             className="w-full h-full object-cover"
+            loading="eager" 
+/>
             loading="eager"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
