@@ -330,6 +330,23 @@ export default function VideoPlayer({
   const currentSeasonData = seriesInfo?.seasons.find((s) => s.number === selectedSeason);
   const nextEpisode = getNextEpisode();
 
+
+if (!movie.url) {
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center text-white">
+      <p>Oh, File not found.</p>
+       <button 
+  onClick={onClose} 
+  className="ml-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/80 transition-colors"
+>
+  Go Back
+</button>
+    </div>
+  );
+}
+
+  
+
   return (
     <motion.div
       ref={containerRef}
