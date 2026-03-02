@@ -16,6 +16,10 @@ import DownloadsPage from "./pages/DownloadsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import FriendsPage from "./pages/FriendsPage";
+import WatchlistPage from "./pages/WatchlistPage";
+import WatchHistoryPage from "./pages/WatchHistoryPage";
+import MyRatingsPage from "./pages/MyRatingsPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,11 +38,14 @@ function AppContent() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/friends" element={<FriendsPage onStartCall={startCall} />} />
+        <Route path="/watchlist" element={<WatchlistPage />} />
+        <Route path="/watch-history" element={<WatchHistoryPage />} />
+        <Route path="/my-ratings" element={<MyRatingsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
 
-      {/* Incoming call overlay */}
       <AnimatePresence>
         {callState.status === "incoming" && (
           <IncomingCallOverlay
@@ -49,7 +56,6 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      {/* Floating video call window */}
       <FloatingVideoCall
         callState={callState}
         onToggleMute={toggleMute}

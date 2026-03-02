@@ -173,6 +173,8 @@ export default function Index() {
             onForceSyncPlayback={forceSyncPlayback}
             onSyncReceived={onSyncReceived}
             onEndParty={endParty}
+            allMovies={allMovies}
+            onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }}
           />
         )}
       </AnimatePresence>

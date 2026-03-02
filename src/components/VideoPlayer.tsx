@@ -5,7 +5,8 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, Subtitles,
   RotateCcw, ChevronLeft, Lock, Unlock, Cast,
-  List, ChevronDown, SkipForward as NextIcon, Users
+  List, ChevronDown, SkipForward as NextIcon, Users,
+  RefreshCw, ChevronUp
 } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { getSeriesData, type Episode, type Season } from "@/data/series";
@@ -15,7 +16,6 @@ interface VideoPlayerProps {
   onClose: () => void;
   onProgressUpdate?: (movieId: string, currentTime: number, duration: number) => void;
   initialTime?: number;
-  // Watch party props
   watchPartyActive?: boolean;
   isHost?: boolean;
   onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
@@ -23,14 +23,15 @@ interface VideoPlayerProps {
   onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
   onEndParty?: () => void;
   guestName?: string;
+  allMovies?: Movie[];
+  onPlayMovie?: (movie: Movie) => void;
 }
-
-const SAMPLE_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 export default function VideoPlayer({
   movie, onClose, onProgressUpdate, initialTime = 0,
   watchPartyActive = false, isHost = true,
   onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
+  allMovies = [], onPlayMovie,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,26 +54,8 @@ export default function VideoPlayer({
   const [isSeeking, setIsSeeking] = useState(false);
   const [brightness, setBrightness] = useState(100);
   const [isBuffering, setIsBuffering] = useState(true);
-
-
-
-// INSERT THIS IMMEDIATELY AFTER:
-if (!movie.url && !movie.isSeries) {
-  return (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center text-white p-6 text-center">
-      <div className="bg-secondary/20 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
-        <p className="text-xl font-semibold mb-4">Movie Unavailable</p>
-        <p className="text-muted-foreground mb-6">We couldn't find the video file for "{movie.title}" in our database.</p>
-        <button 
-          onClick={onClose} 
-          className="px-8 py-3 bg-primary text-primary-foreground rounded-full font-bold hover:scale-105 transition-transform"
-        >
-          Go Back
-        </button>
-      </div>
-    </div>
-  );
-}
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   // Episode state
   const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
@@ -90,23 +73,25 @@ if (!movie.url && !movie.isSeries) {
   // Guest: controls disabled in watch party
   const controlsDisabled = watchPartyActive && !isHost;
 
+  // Check if movie has a valid URL
+  const hasValidUrl = !!(movie.url && movie.url.trim() !== '' && movie.url !== '#');
+
+  // Get recommended movies (same genre, exclude current)
+  const recommendedMovies = allMovies
+    .filter(m => m.id !== movie.id && m.genre.some(g => movie.genre.includes(g)))
+    .slice(0, 8);
+
   // Register sync callback for guest
   useEffect(() => {
     if (!watchPartyActive || isHost || !onSyncReceived) return;
     onSyncReceived((state) => {
       const v = videoRef.current;
       if (!v) return;
-      // Sync time if drift > 1s
       if (Math.abs(v.currentTime - state.currentTimeSec) > 1) {
         v.currentTime = state.currentTimeSec;
       }
-      if (state.isPlaying && v.paused) {
-        v.play();
-        setIsPlaying(true);
-      } else if (!state.isPlaying && !v.paused) {
-        v.pause();
-        setIsPlaying(false);
-      }
+      if (state.isPlaying && v.paused) { v.play(); setIsPlaying(true); }
+      else if (!state.isPlaying && !v.paused) { v.pause(); setIsPlaying(false); }
     });
   }, [watchPartyActive, isHost, onSyncReceived]);
 
@@ -135,6 +120,7 @@ if (!movie.url && !movie.isSeries) {
   // Save progress periodically
   const progressIntervalRef = useRef<ReturnType<typeof setInterval>>();
   useEffect(() => {
+    if (!hasValidUrl) return;
     progressIntervalRef.current = setInterval(() => {
       const v = videoRef.current;
       if (v && v.duration > 0 && onProgressUpdate) {
@@ -142,7 +128,7 @@ if (!movie.url && !movie.isSeries) {
       }
     }, 5000);
     return () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); };
-  }, [movie.id, onProgressUpdate]);
+  }, [movie.id, onProgressUpdate, hasValidUrl]);
 
   const handleClose = () => {
     const v = videoRef.current;
@@ -180,7 +166,8 @@ if (!movie.url && !movie.isSeries) {
         case "m": toggleMute(); break;
         case "n": { const next = getNextEpisode(); if (next) playEpisode(next); break; }
         case "Escape":
-          if (showNextEpisode) setShowNextEpisode(false);
+          if (showRecommendations) setShowRecommendations(false);
+          else if (showNextEpisode) setShowNextEpisode(false);
           else if (showEpisodes) setShowEpisodes(false);
           else if (isFullscreen) toggleFullscreen();
           else handleClose();
@@ -190,10 +177,11 @@ if (!movie.url && !movie.isSeries) {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes, showNextEpisode, controlsDisabled]);
+  }, [isLocked, isFullscreen, volume, isPlaying, showEpisodes, showNextEpisode, controlsDisabled, showRecommendations]);
 
   const handleVideoEnded = useCallback(() => {
     setIsPlaying(false);
+    setVideoEnded(true);
     const next = getNextEpisode();
     if (next) {
       setShowNextEpisode(true);
@@ -204,11 +192,15 @@ if (!movie.url && !movie.isSeries) {
             clearInterval(countdownRef.current!);
             playEpisode(next);
             setShowNextEpisode(false);
+            setVideoEnded(false);
             return 10;
           }
           return prev - 1;
         });
       }, 1000);
+    } else {
+      // No next episode - show recommendations
+      setShowRecommendations(true);
     }
   }, [getNextEpisode]);
 
@@ -218,11 +210,22 @@ if (!movie.url && !movie.isSeries) {
 
   const togglePlay = () => {
     if (controlsDisabled) return;
+    if (videoEnded) {
+      // Replay
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = 0;
+        v.play();
+        setIsPlaying(true);
+        setVideoEnded(false);
+        setShowRecommendations(false);
+      }
+      return;
+    }
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) { v.play(); setIsPlaying(true); }
     else { v.pause(); setIsPlaying(false); }
-    // Immediate sync for host
     if (watchPartyActive && isHost && onForceSyncPlayback) {
       onForceSyncPlayback(!v.paused, v.currentTime);
     }
@@ -306,7 +309,7 @@ if (!movie.url && !movie.isSeries) {
 
   const handleScreenTap = (e: React.MouseEvent | React.TouchEvent) => {
     if (isLocked) { resetControlsTimer(); return; }
-    if (showEpisodes || showNextEpisode) return;
+    if (showEpisodes || showNextEpisode || showRecommendations) return;
     const now = Date.now();
     const rect = containerRef.current?.getBoundingClientRect();
     const clientX = "touches" in e ? e.changedTouches[0].clientX : e.clientX;
@@ -329,6 +332,8 @@ if (!movie.url && !movie.isSeries) {
     setCurrentEpisode(episode);
     setShowEpisodes(false);
     setShowNextEpisode(false);
+    setVideoEnded(false);
+    setShowRecommendations(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (seriesInfo) {
       const season = seriesInfo.seasons.find(s => s.episodes.some(e => e.id === episode.id));
@@ -347,11 +352,56 @@ if (!movie.url && !movie.isSeries) {
     if (countdownRef.current) clearInterval(countdownRef.current);
   };
 
+  const handlePlayRecommended = (rec: Movie) => {
+    if (onPlayMovie) {
+      onPlayMovie(rec);
+    }
+  };
+
   const currentSeasonData = seriesInfo?.seasons.find((s) => s.number === selectedSeason);
   const nextEpisode = getNextEpisode();
 
-
-  
+  // No valid URL - show unavailable screen
+  if (!hasValidUrl && !movie.isSeries) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center text-white p-6 text-center"
+      >
+        <div className="bg-secondary/20 p-8 rounded-2xl border border-white/10 backdrop-blur-md max-w-sm w-full">
+          <p className="text-xl font-semibold mb-4">Movie Unavailable</p>
+          <p className="text-muted-foreground mb-6 text-sm">We couldn't find the video file for "{movie.title}" in our database.</p>
+          
+          {/* Show recommendations */}
+          {recommendedMovies.length > 0 && (
+            <div className="mb-6">
+              <p className="text-xs text-muted-foreground mb-3">You might like</p>
+              <div className="grid grid-cols-3 gap-2">
+                {recommendedMovies.slice(0, 3).map(rec => (
+                  <button
+                    key={rec.id}
+                    onClick={() => handlePlayRecommended(rec)}
+                    className="rounded-lg overflow-hidden hover:ring-2 ring-primary transition-all"
+                  >
+                    <img src={rec.poster} alt={rec.title} className="w-full aspect-[2/3] object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <button 
+            onClick={onClose} 
+            className="w-full px-8 py-3 bg-primary text-primary-foreground rounded-full font-bold hover:scale-105 transition-transform"
+          >
+            Go Back
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -387,7 +437,7 @@ if (!movie.url && !movie.isSeries) {
 
       {/* Buffering loader */}
       <AnimatePresence>
-        {isBuffering && (
+        {isBuffering && !videoEnded && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -409,13 +459,10 @@ if (!movie.url && !movie.isSeries) {
           <span className="text-xs font-medium text-primary-foreground">
             {isHost ? `Hosting${guestName ? ` • ${guestName}` : ""}` : "Watching together"}
           </span>
-          {!isHost && (
-            <span className="text-[10px] text-primary-foreground/70 ml-1">Host controls</span>
-          )}
         </div>
       )}
 
-      {/* Guest overlay - controls disabled message */}
+      {/* Guest overlay */}
       {controlsDisabled && showControls && (
         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[108] bg-card/80 backdrop-blur-sm px-4 py-2 rounded-full">
           <p className="text-xs text-muted-foreground">Host is controlling playback</p>
@@ -452,6 +499,94 @@ if (!movie.url && !movie.isSeries) {
         </div>
       )}
 
+      {/* Recommendations Bottom Sheet */}
+      <AnimatePresence>
+        {(showRecommendations || videoEnded) && recommendedMovies.length > 0 && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="absolute bottom-0 left-0 right-0 z-[120] max-h-[70vh] bg-gradient-to-t from-black via-black/95 to-black/80 backdrop-blur-xl rounded-t-3xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
+            </div>
+            
+            {/* Header with replay button */}
+            <div className="flex items-center justify-between px-5 py-3">
+              <div>
+                <h3 className="text-foreground font-semibold text-base">
+                  {videoEnded ? "What's Next?" : "Recommended"}
+                </h3>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Based on {movie.title}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {videoEnded && (
+                  <button
+                    onClick={togglePlay}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Replay
+                  </button>
+                )}
+                <button
+                  onClick={() => { setShowRecommendations(false); if (videoEnded) setVideoEnded(false); }}
+                  className="p-2 rounded-full hover:bg-muted/30 transition-colors"
+                >
+                  <X className="w-4 h-4 text-foreground" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable grid */}
+            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh]">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                {recommendedMovies.map((rec) => (
+                  <button
+                    key={rec.id}
+                    onClick={() => handlePlayRecommended(rec)}
+                    className="group text-left rounded-lg overflow-hidden bg-secondary/30 hover:bg-secondary/60 transition-all hover:scale-[1.03]"
+                  >
+                    <div className="relative aspect-[2/3]">
+                      <img src={rec.poster} alt={rec.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white fill-white" />
+                      </div>
+                      {rec.rating > 0 && (
+                        <div className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] text-primary font-bold">
+                          {rec.rating}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-foreground text-xs font-medium truncate">{rec.title}</p>
+                      <p className="text-muted-foreground text-[10px]">{rec.year} • {rec.genre[0]}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Recommendations peek arrow (during playback) */}
+      {!videoEnded && !showRecommendations && recommendedMovies.length > 0 && showControls && !isLocked && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowRecommendations(true); }}
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[106] flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/60 backdrop-blur-sm text-foreground text-xs hover:bg-card/80 transition-colors"
+        >
+          <ChevronUp className="w-3.5 h-3.5" />
+          More like this
+        </button>
+      )}
+
       {/* Next Episode Auto-play Overlay */}
       <AnimatePresence>
         {showNextEpisode && nextEpisode && (
@@ -479,11 +614,8 @@ if (!movie.url && !movie.isSeries) {
                     <div className="relative w-8 h-8">
                       <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
                         <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="2" />
-                        <circle
-                          cx="16" cy="16" r="14" fill="none"
-                          stroke="hsl(var(--primary))" strokeWidth="2"
-                          strokeDasharray={`${(nextEpisodeCountdown / 10) * 88} 88`}
-                          strokeLinecap="round"
+                        <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"
+                          strokeDasharray={`${(nextEpisodeCountdown / 10) * 88} 88`} strokeLinecap="round"
                           className="transition-all duration-1000"
                         />
                       </svg>
@@ -495,17 +627,12 @@ if (!movie.url && !movie.isSeries) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => playEpisode(nextEpisode)}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-lg font-semibold text-xs transition-colors"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    Play Now
+                  <button onClick={() => playEpisode(nextEpisode)}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-lg font-semibold text-xs transition-colors">
+                    <Play className="w-3.5 h-3.5 fill-current" /> Play Now
                   </button>
-                  <button
-                    onClick={cancelNextEpisode}
-                    className="px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium transition-colors"
-                  >
+                  <button onClick={cancelNextEpisode}
+                    className="px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium transition-colors">
                     Cancel
                   </button>
                 </div>
@@ -544,20 +671,14 @@ if (!movie.url && !movie.isSeries) {
                   </p>
                 </div>
                 {seriesInfo && (
-                  <button
-                    onClick={() => setShowEpisodes(!showEpisodes)}
-                    className="p-2 rounded-full hover:bg-muted/30 transition-colors"
-                  >
+                  <button onClick={() => setShowEpisodes(!showEpisodes)} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
                     <List className="w-5 h-5 text-foreground" />
                   </button>
                 )}
                 {nextEpisode && !controlsDisabled && (
-                  <button
-                    onClick={() => playEpisode(nextEpisode)}
-                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 hover:bg-muted/50 text-foreground text-xs font-medium transition-colors"
-                  >
-                    <NextIcon className="w-4 h-4" />
-                    Next
+                  <button onClick={() => playEpisode(nextEpisode)}
+                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 hover:bg-muted/50 text-foreground text-xs font-medium transition-colors">
+                    <NextIcon className="w-4 h-4" /> Next
                   </button>
                 )}
                 <button onClick={() => setIsLocked(true)} className="p-2 rounded-full hover:bg-muted/30 transition-colors">
@@ -569,13 +690,15 @@ if (!movie.url && !movie.isSeries) {
               </div>
             </div>
 
-            {/* Center play/pause */}
+            {/* Center play/pause/replay */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8 md:gap-12">
               <button onClick={() => skip(-10)} disabled={controlsDisabled} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors disabled:opacity-40">
                 <SkipBack className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
               </button>
               <button onClick={togglePlay} disabled={controlsDisabled} className="p-4 md:p-5 rounded-full bg-primary/90 hover:bg-primary transition-colors disabled:opacity-40">
-                {isPlaying ? (
+                {videoEnded ? (
+                  <RefreshCw className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground" />
+                ) : isPlaying ? (
                   <Pause className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground" />
                 ) : (
                   <Play className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground fill-current" />
@@ -594,16 +717,13 @@ if (!movie.url && !movie.isSeries) {
                   <div className="absolute top-0 left-0 h-full bg-muted-foreground/30 rounded-full" style={{ width: `${bufferedPercent}%` }} />
                   <div className="absolute top-0 left-0 h-full bg-primary rounded-full" style={{ width: `${progressPercent}%` }} />
                 </div>
-                <input
-                  type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
-                  onChange={handleSeek}
-                  disabled={controlsDisabled}
+                <input type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
+                  onChange={handleSeek} disabled={controlsDisabled}
                   onMouseDown={() => setIsSeeking(true)} onMouseUp={() => setIsSeeking(false)}
                   onTouchStart={() => setIsSeeking(true)} onTouchEnd={() => setIsSeeking(false)}
                   className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
                 />
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
+                <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
                   style={{ left: `calc(${progressPercent}% - 6px)` }}
                 />
               </div>
@@ -612,13 +732,11 @@ if (!movie.url && !movie.isSeries) {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 md:gap-3 flex-1">
                   <button onClick={togglePlay} disabled={controlsDisabled} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden disabled:opacity-40">
-                    {isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
+                    {videoEnded ? <RefreshCw className="w-5 h-5 text-foreground" /> :
+                     isPlaying ? <Pause className="w-5 h-5 text-foreground" /> : <Play className="w-5 h-5 text-foreground fill-current" />}
                   </button>
                   {nextEpisode && !controlsDisabled && (
-                    <button
-                      onClick={() => playEpisode(nextEpisode)}
-                      className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden"
-                    >
+                    <button onClick={() => playEpisode(nextEpisode)} className="p-1.5 hover:bg-muted/30 rounded transition-colors md:hidden">
                       <NextIcon className="w-5 h-5 text-foreground" />
                     </button>
                   )}
@@ -629,20 +747,16 @@ if (!movie.url && !movie.isSeries) {
                     {showVolumeSlider && (
                       <input type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume}
                         onChange={(e) => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; if (v > 0) setIsMuted(false); }}
-                        className="w-20 h-1 accent-primary"
-                      />
+                        className="w-20 h-1 accent-primary" />
                     )}
                   </div>
                   <span className="text-xs text-foreground/80 tabular-nums">{formatTime(currentTime)} / {formatTime(duration)}</span>
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2">
-                  {/* End party button for host */}
                   {watchPartyActive && isHost && onEndParty && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onEndParty(); }}
-                      className="px-2 py-1 rounded bg-destructive/80 hover:bg-destructive text-destructive-foreground text-[10px] font-medium transition-colors"
-                    >
+                    <button onClick={(e) => { e.stopPropagation(); onEndParty(); }}
+                      className="px-2 py-1 rounded bg-destructive/80 hover:bg-destructive text-destructive-foreground text-[10px] font-medium transition-colors">
                       End Party
                     </button>
                   )}
@@ -652,10 +766,8 @@ if (!movie.url && !movie.isSeries) {
                     </button>
                   )}
                   <div className="relative">
-                    <button
-                      onClick={() => { setShowSubtitleMenu(!showSubtitleMenu); setShowSpeedMenu(false); }}
-                      className={`p-1.5 rounded transition-colors ${subtitlesOn ? "bg-primary/30 text-primary" : "hover:bg-muted/30 text-foreground"}`}
-                    >
+                    <button onClick={() => { setShowSubtitleMenu(!showSubtitleMenu); setShowSpeedMenu(false); }}
+                      className={`p-1.5 rounded transition-colors ${subtitlesOn ? "bg-primary/30 text-primary" : "hover:bg-muted/30 text-foreground"}`}>
                       <Subtitles className="w-5 h-5" />
                     </button>
                     {showSubtitleMenu && (
@@ -665,8 +777,7 @@ if (!movie.url && !movie.isSeries) {
                           <button key={lang} onClick={() => { setSubtitlesOn(lang !== "Off"); setShowSubtitleMenu(false); }}
                             className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
                               (lang === "Off" && !subtitlesOn) || (lang === "English" && subtitlesOn) ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/30"
-                            }`}
-                          >{lang}</button>
+                            }`}>{lang}</button>
                         ))}
                       </div>
                     )}
@@ -682,8 +793,7 @@ if (!movie.url && !movie.isSeries) {
                           <button key={speed} onClick={() => changeSpeed(speed)}
                             className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
                               playbackSpeed === speed ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/30"
-                            }`}
-                          >{speed}x</button>
+                            }`}>{speed}x</button>
                         ))}
                       </div>
                     )}
@@ -723,15 +833,10 @@ if (!movie.url && !movie.isSeries) {
               <div className="px-4 py-3 border-b border-border">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   {seriesInfo.seasons.map((season) => (
-                    <button
-                      key={season.number}
-                      onClick={() => setSelectedSeason(season.number)}
+                    <button key={season.number} onClick={() => setSelectedSeason(season.number)}
                       className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                        selectedSeason === season.number
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
+                        selectedSeason === season.number ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}>
                       Season {season.number}
                     </button>
                   ))}
@@ -743,20 +848,15 @@ if (!movie.url && !movie.isSeries) {
               {currentSeasonData?.episodes.map((episode) => {
                 const isActive = currentEpisode?.id === episode.id;
                 return (
-                  <button
-                    key={episode.id}
-                    onClick={() => !controlsDisabled && playEpisode(episode)}
+                  <button key={episode.id} onClick={() => !controlsDisabled && playEpisode(episode)}
                     disabled={controlsDisabled}
                     className={`w-full text-left p-3 rounded-lg transition-colors disabled:opacity-50 ${
                       isActive ? "bg-primary/15 border border-primary/30" : "bg-secondary/50 hover:bg-secondary border border-transparent"
-                    }`}
-                  >
+                    }`}>
                     <div className="flex items-start gap-3">
                       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {episode.number}
-                      </div>
+                      }`}>{episode.number}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className={`text-sm font-medium truncate ${isActive ? "text-primary" : "text-foreground"}`}>
@@ -780,15 +880,6 @@ if (!movie.url && !movie.isSeries) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Subtitle display */}
-      {subtitlesOn && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[106] pointer-events-none">
-          <p className="bg-black/70 text-foreground text-sm md:text-base px-4 py-1.5 rounded text-center max-w-[80vw]">
-            [Sample subtitle text for demonstration]
-          </p>
-        </div>
-      )}
     </motion.div>
   );
 }

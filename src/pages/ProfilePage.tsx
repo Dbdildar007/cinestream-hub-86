@@ -5,15 +5,21 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useRatings } from "@/hooks/useRatings";
+import { useWatchProgress } from "@/hooks/useWatchProgress";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { watchlist } = useWatchlist();
+  const { ratings } = useRatings();
+  const { getContinueWatching } = useWatchProgress();
 
   const [profile, setProfile] = useState<{ display_name: string; unique_id: string } | null>(() => {
-  const saved = localStorage.getItem('user_profile');
-  return saved ? JSON.parse(saved) : null;
-});
+    const saved = localStorage.getItem('user_profile');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -28,12 +34,15 @@ export default function ProfilePage() {
       });
   }, [user]);
 
+  const historyCount = getContinueWatching().length;
+  const ratingsCount = Object.keys(ratings).length;
+
   const menuItems = [
-    { icon: Heart, label: "My Watchlist", count: "12", action: () => {} },
-    { icon: Clock, label: "Watch History", count: "48", action: () => {} },
-    { icon: Star, label: "My Ratings", count: "23", action: () => {} },
+    { icon: Heart, label: "My Watchlist", count: String(watchlist.length), action: () => navigate("/watchlist") },
+    { icon: Clock, label: "Watch History", count: String(historyCount), action: () => navigate("/watch-history") },
+    { icon: Star, label: "My Ratings", count: String(ratingsCount), action: () => navigate("/my-ratings") },
     { icon: Users, label: "Friends", count: null, action: () => navigate("/friends") },
-    { icon: Settings, label: "Settings", count: null, action: () => {} },
+    { icon: Settings, label: "Settings", count: null, action: () => navigate("/settings") },
   ];
 
   const handleSignOut = async () => {
@@ -75,7 +84,7 @@ export default function ProfilePage() {
       {profile?.unique_id && (
         <button
           onClick={copyUniqueId}
-          className="w-full flex items-center gap-3 p-4 rounded-lg bg-secondary mb-6 hover:bg-cine-surface-hover transition-colors"
+          className="w-full flex items-center gap-3 p-4 rounded-lg bg-secondary mb-6 hover:bg-secondary/80 transition-colors"
         >
           <div className="flex-1 text-left">
             <p className="text-xs text-muted-foreground mb-0.5">Your Unique ID</p>
@@ -100,11 +109,11 @@ export default function ProfilePage() {
           <button
             key={label}
             onClick={action}
-            className="w-full flex items-center gap-4 p-4 rounded-lg bg-secondary hover:bg-cine-surface-hover transition-colors"
+            className="w-full flex items-center gap-4 p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
           >
             <Icon className="w-5 h-5 text-primary" />
             <span className="flex-1 text-left text-sm font-medium text-foreground">{label}</span>
-            {count && (
+            {count && count !== "0" && (
               <span className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">{count}</span>
             )}
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
