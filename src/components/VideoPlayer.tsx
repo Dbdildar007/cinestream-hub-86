@@ -54,6 +54,26 @@ export default function VideoPlayer({
   const [brightness, setBrightness] = useState(100);
   const [isBuffering, setIsBuffering] = useState(true);
 
+
+
+// INSERT THIS IMMEDIATELY AFTER:
+if (!movie.url && !movie.isSeries) {
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center text-white p-6 text-center">
+      <div className="bg-secondary/20 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
+        <p className="text-xl font-semibold mb-4">Movie Unavailable</p>
+        <p className="text-muted-foreground mb-6">We couldn't find the video file for "{movie.title}" in our database.</p>
+        <button 
+          onClick={onClose} 
+          className="px-8 py-3 bg-primary text-primary-foreground rounded-full font-bold hover:scale-105 transition-transform"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
   // Episode state
   const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
   const [showEpisodes, setShowEpisodes] = useState(false);
@@ -330,20 +350,6 @@ export default function VideoPlayer({
   const currentSeasonData = seriesInfo?.seasons.find((s) => s.number === selectedSeason);
   const nextEpisode = getNextEpisode();
 
-
-if (!movie.url) {
-  return (
-    <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center text-white">
-      <p>Oh, File not found.</p>
-       <button 
-  onClick={onClose} 
-  className="ml-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/80 transition-colors"
->
-  Go Back
-</button>
-    </div>
-  );
-}
 
   
 
