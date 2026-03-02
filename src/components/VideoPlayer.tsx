@@ -343,7 +343,8 @@ export default function VideoPlayer({
     >
       <video
         ref={videoRef}
-        src={SAMPLE_VIDEO}
+        key={movie.url}
+        src={movie.url}
         className="w-full h-full object-contain"
         autoPlay
         playsInline
