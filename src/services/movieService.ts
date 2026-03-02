@@ -109,7 +109,7 @@ export const movieService = {
       .from('movies')
       .select('*')
       .eq('is_featured', true)
-      .limit(3);
+      .limit(10);
  
     if (error) throw error;
     return (data || []).map(mapDbMovie);
