@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Trash2, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -9,13 +9,17 @@ import VideoPlayer from "@/components/VideoPlayer";
 
 export default function WatchlistPage() {
   const navigate = useNavigate();
-  const { watchlist, toggleWatchlist } = useWatchlist();
-  const { allMovies } = useMovies();
-  const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
+const { watchlist, toggleWatchlist } = useWatchlist();
+const { allMovies, isLoading } = useMovies(); // 1. Added isLoading here
+const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
 
-  const movies = watchlist
-    .map(id => allMovies.find(m => m.id === id))
+// 2. Added useMemo and the loading check here
+const movies = useMemo(() => {
+  if (isLoading) return []; 
+  return watchlist
+    .map((id) => allMovies.find((m) => m.id === id))
     .filter(Boolean) as Movie[];
+}, [allMovies, watchlist, isLoading]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24">
