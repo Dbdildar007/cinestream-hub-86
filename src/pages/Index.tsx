@@ -9,7 +9,7 @@ import WatchPartyHistory from "@/components/WatchPartyHistory";
 import SeriesRow from "@/components/SeriesRow";
 import SeriesModal from "@/components/SeriesModal";
 import SeriesVideoPlayer from "@/components/SeriesVideoPlayer";
-import { type Movie } from "@/data/movies";
+import { type Movie } from "@/services/movieService";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress } from "@/hooks/useWatchProgress";

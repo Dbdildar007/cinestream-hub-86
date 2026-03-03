@@ -72,8 +72,8 @@ export default function SettingsPage() {
                     <span className="text-xs text-muted-foreground">{item.subtitle}</span>
                   )}
                   {'toggle' in item && item.toggle && (
-                    <div className={`w-10 h-6 rounded-full transition-colors relative ${item.value ? 'bg-primary' : 'bg-muted'}`}>
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-primary-foreground transition-transform ${item.value ? 'left-5' : 'left-1'}`} />
+                    <div className={`w-10 h-6 rounded-full transition-colors relative ${item.value ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                      <div className={`absolute top-1 w-4 h-4 rounded-full transition-transform ${item.value ? 'left-5 bg-primary-foreground' : 'left-1 bg-foreground'}`} />
                     </div>
                   )}
                 </button>

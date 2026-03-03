@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Movie } from "@/data/movies";
+import type { Movie } from "@/services/movieService";
 import MovieCard from "./MovieCard";
 
 interface MovieRowProps {

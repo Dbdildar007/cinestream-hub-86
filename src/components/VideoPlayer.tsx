@@ -8,8 +8,7 @@ import {
   List, ChevronDown, SkipForward as NextIcon, Users,
   RefreshCw, ChevronUp
 } from "lucide-react";
-import type { Movie } from "@/data/movies";
-import { getSeriesData, type Episode, type Season } from "@/data/series";
+import type { Movie } from "@/services/movieService";
 
 interface VideoPlayerProps {
   movie: Movie;
@@ -57,13 +56,11 @@ export default function VideoPlayer({
   const [videoEnded, setVideoEnded] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
 
-  // Episode state
-  const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
+  // Episode state (series handled by SeriesVideoPlayer, kept for backward compat)
+  const seriesInfo = undefined as any;
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
-  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(
-    seriesInfo ? seriesInfo.seasons[0].episodes[0] : null
-  );
+  const [currentEpisode, setCurrentEpisode] = useState<any>(null);
 
   // Next episode auto-play
   const [showNextEpisode, setShowNextEpisode] = useState(false);
@@ -106,7 +103,7 @@ export default function VideoPlayer({
     return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
   }, [watchPartyActive, isHost, onSyncPlayback]);
 
-  const getNextEpisode = useCallback((): Episode | null => {
+  const getNextEpisode = useCallback((): any | null => {
     if (!seriesInfo || !currentEpisode) return null;
     const currentSeasonData = seriesInfo.seasons.find(s => s.number === selectedSeason);
     if (!currentSeasonData) return null;
@@ -327,7 +324,7 @@ export default function VideoPlayer({
     lastTapRef.current = { time: now, x: clientX };
   };
 
-  const playEpisode = (episode: Episode) => {
+  const playEpisode = (episode: any) => {
     if (controlsDisabled) return;
     setCurrentEpisode(episode);
     setShowEpisodes(false);

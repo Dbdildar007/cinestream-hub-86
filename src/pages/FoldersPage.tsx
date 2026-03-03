@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Folder, Film } from "lucide-react";
-import { genres, languages, getMoviesByGenre, getMoviesByLanguage, type Movie } from "@/data/movies";
+import { useMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/services/movieService";
 import MovieRow from "@/components/MovieRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 
+const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Sci-Fi", "Thriller", "Crime", "Historical", "Musical"];
+const languages = ["English", "Hindi", "Tamil", "Telugu"];
+
 type FolderType = "genre" | "language";
 
 export default function FoldersPage() {
+  const { allMovies } = useMovies();
   const [activeTab, setActiveTab] = useState<FolderType>("genre");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -19,7 +24,10 @@ export default function FoldersPage() {
   const { getRating, setRating } = useRatings();
 
   const folders = activeTab === "genre" ? genres : languages;
-  const getMovies = activeTab === "genre" ? getMoviesByGenre : getMoviesByLanguage;
+  const getMovies = (folder: string) =>
+    activeTab === "genre"
+      ? allMovies.filter(m => m.genre.includes(folder))
+      : allMovies.filter(m => m.language === folder);
 
   return (
     <motion.div
@@ -59,7 +67,7 @@ export default function FoldersPage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedFolder(folder)}
-                className="flex flex-col items-center gap-3 p-6 rounded-xl bg-secondary hover:bg-cine-surface-hover transition-colors"
+                className="flex flex-col items-center gap-3 p-6 rounded-xl bg-secondary hover:bg-accent transition-colors"
               >
                 <Folder className="w-10 h-10 text-primary" />
                 <span className="text-sm font-medium text-foreground">{folder}</span>
