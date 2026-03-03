@@ -140,36 +140,40 @@ export default function MovieModal({
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => onWatch?.(movie)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
-                >
-                  <Play className="w-4 h-4 fill-current" />
-                  {movie.isSeries ? "Play S1 E1" : "Watch Now"}
-                </button>
-                <button
-                  onClick={() => onToggleWatchlist?.(movie.id)}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md font-semibold text-sm transition-colors ${
-                    isInWatchlist
-                      ? "bg-primary/20 text-primary border border-primary/30"
-                      : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                  }`}
-                >
-                  {isInWatchlist ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  {isInWatchlist ? "Listed" : "My List"}
-                </button>
-                <button
-                  onClick={() => onDownload(movie.id)}
-                  className="flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-3 rounded-md font-semibold text-sm transition-colors"
-                >
-                  {downloadState?.status === "complete" ? (
-                    <Check className="w-4 h-4 text-primary" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
+{/* --- Replace lines 138 to 160 with this block --- */}
+<div className="flex flex-wrap gap-2 mb-4">
+  <button 
+    onClick={() => onWatch?.(movie)} 
+    className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+  >
+    <Play className="w-4 h-4 fill-current" />
+    {movie.isSeries ? "Play S1 E1" : "Watch Now"}
+  </button>
+  
+  <button 
+    onClick={() => onToggleWatchlist?.(movie.id)} 
+    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors ${
+      isInWatchlist 
+        ? "bg-primary/20 text-primary border border-primary/30" 
+        : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+    }`}
+  >
+    {isInWatchlist ? <CheckCircle className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+    {isInWatchlist ? "Listed" : "My List"}
+  </button>
+
+
+  <button 
+    onClick={() => onDownload(movie.id)} 
+    className="flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-3 rounded-md font-semibold text-sm transition-colors"
+  >
+    {downloadState?.status === "complete" ? (
+      <Check className="w-4 h-4 text-primary" />
+    ) : (
+      <Download className="w-4 h-4" />
+    )}
+  </button>
+</div>
 
               {/* Download progress */}
               {downloadState?.status === "downloading" && (

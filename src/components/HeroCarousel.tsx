@@ -34,7 +34,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
 
   if (loading || featuredMovies.length === 0) {
     return (
-      <div className="relative w-full h-[70vh] md:h-[85vh] bg-background flex items-center justify-center">
+      <div className="relative w-full h-[70vh] md:h-[85vh] bg-slate-50 flex items-center justify-center">
         <LoadingSpinner text="Loading..." />
       </div>
     );
@@ -57,7 +57,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
           <img
             src={movie.heroImage || movie.poster}
             alt={movie.title}
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover brightness-95" 
             style={{ aspectRatio: "2752 / 1536" }}
             loading="eager" 
           />

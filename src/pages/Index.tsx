@@ -6,6 +6,9 @@ import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import WatchPartyHistory from "@/components/WatchPartyHistory";
+import SeriesRow from "@/components/SeriesRow";
+import SeriesModal from "@/components/SeriesModal";
+import SeriesVideoPlayer from "@/components/SeriesVideoPlayer";
 import { type Movie } from "@/data/movies";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
@@ -19,6 +22,8 @@ import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { useMovies } from '@/hooks/useMovies';
+import { useAllSeries } from '@/hooks/useSeries';
+import type { Series, SeriesEpisode } from '@/services/seriesService';
 
 export default function Index() {
   const { user } = useAuth();
@@ -33,6 +38,11 @@ export default function Index() {
   const { sendNotification } = useNotifications();
 
   const { allMovies, categories, featuredMovies, loading } = useMovies();
+  const { allSeries, loading: seriesLoading } = useAllSeries();
+
+  // Series state
+  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
+  const [playingSeries, setPlayingSeries] = useState<{ series: Series; episode: SeriesEpisode; season: number } | null>(null);
 
   // Simulate initial data load
   useEffect(() => {
@@ -88,6 +98,23 @@ export default function Index() {
     setPlayingMovie(movie);
   };
 
+  const handlePlaySeriesEpisode = (series: Series, episode: SeriesEpisode, season: number) => {
+    setSelectedSeries(null);
+    setPlayingSeries({ series, episode, season });
+  };
+
+  // Group series by genre
+  const seriesByGenre = useMemo(() => {
+    const genreMap: Record<string, Series[]> = {};
+    allSeries.forEach(s => {
+      s.genre.forEach(g => {
+        if (!genreMap[g]) genreMap[g] = [];
+        genreMap[g].push(s);
+      });
+    });
+    return genreMap;
+  }, [allSeries]);
+
   if (initialLoad || loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -132,6 +159,35 @@ export default function Index() {
           />
         )}
 
+        {/* Series Section */}
+        {allSeries.length > 0 && (
+          <SeriesRow
+            title="TV Series"
+            seriesList={allSeries}
+            onSeriesSelect={setSelectedSeries}
+            onRate={(id, val) => setRating(id, val)}
+            getRating={getRating}
+            onToggleWatchlist={toggleWatchlist}
+            isInWatchlist={isInWatchlist}
+          />
+        )}
+
+        {/* Series by genre */}
+        {Object.entries(seriesByGenre).map(([genre, list]) => (
+          list.length > 0 && (
+            <SeriesRow
+              key={`series-${genre}`}
+              title={`${genre} Series`}
+              seriesList={list}
+              onSeriesSelect={setSelectedSeries}
+              onRate={(id, val) => setRating(id, val)}
+              getRating={getRating}
+              onToggleWatchlist={toggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+          )
+        ))}
+
         {categories.map((category) => (
           <MovieRow
             key={category}
@@ -160,6 +216,16 @@ export default function Index() {
         onToggleWatchlist={toggleWatchlist}
       />
 
+      <SeriesModal
+        series={selectedSeries}
+        onClose={() => setSelectedSeries(null)}
+        onPlayEpisode={handlePlaySeriesEpisode}
+        userRating={selectedSeries ? getRating(selectedSeries.id) : 0}
+        onRate={setRating}
+        isInWatchlist={selectedSeries ? isInWatchlist(selectedSeries.id) : false}
+        onToggleWatchlist={toggleWatchlist}
+      />
+
       <AnimatePresence>
         {playingMovie && (
           <VideoPlayer
@@ -178,6 +244,18 @@ export default function Index() {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {playingSeries && (
+          <SeriesVideoPlayer
+            series={playingSeries.series}
+            initialEpisode={playingSeries.episode}
+            initialSeason={playingSeries.season}
+            onClose={() => setPlayingSeries(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <Footer />
     </motion.div>
   );

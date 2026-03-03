@@ -26,11 +26,11 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
       onHoverEnd={() => setHovered(false)}
       onClick={() => onSelect(movie)}
     >
-      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-secondary">
+      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-slate-50 border border-slate-200 dark:border-slate-700">
         <img
           src={movie.poster}
           alt={movie.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:brightness-95 transition" 
           loading="lazy"
         />
 

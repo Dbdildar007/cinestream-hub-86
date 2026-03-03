@@ -33,23 +33,29 @@ const heroMap: Record<string, string> = {
 function mapDbMovie(row: any): Movie {
   const isUrl = (path: string) => path?.startsWith('http') || path?.startsWith('https');
 
+  // Support both local data format and DB format
+  const poster = row.poster_url || row.poster || '';
+  const heroImage = row.banner_url || row.hero_image || row.heroImage || '';
+  const genreField = row.genre || '';
+  const genres = Array.isArray(genreField) ? genreField : (typeof genreField === 'string' && genreField ? genreField.split(',').map((g: string) => g.trim()) : []);
+
   return {
     id: row.id,
     title: row.title || 'Untitled',
-    year: row.year || new Date().getFullYear(),
+    year: row.release_year || row.year || new Date().getFullYear(),
     rating: Number(row.rating) || 0,
-    genre: Array.isArray(row.genre) ? row.genre : [],
-    category: Array.isArray(row.category) ? row.category : [],
+    genre: genres,
+    category: Array.isArray(row.category) ? row.category : genres,
     language: row.language || 'English',
     description: row.description || '',
-    poster: isUrl(row.poster) ? row.poster : (posterMap[row.poster] || row.poster),
-    heroImage: isUrl(row.hero_image) ? row.hero_image : (heroMap[row.hero_image] || row.hero_image),
-    url: row.url || undefined,
+    poster: isUrl(poster) ? poster : (posterMap[poster] || poster || ''),
+    heroImage: isUrl(heroImage) ? heroImage : (heroMap[heroImage] || heroImage || undefined),
+    url: row.video_url || row.url || undefined,
     newly_added: row.newly_added || undefined,
     duration: row.duration || '',
-    isTrending: !!row.is_trending,
-    isEditorChoice: !!row.is_editor_choice,
-    isSeries: !!row.is_series,
+    isTrending: !!row.is_trending || !!row.isTrending,
+    isEditorChoice: !!row.is_editor_choice || !!row.isEditorChoice,
+    isSeries: !!row.is_series || !!row.isSeries,
   };
 }
 
@@ -112,7 +118,7 @@ export const movieService = {
     const { data, error } = await supabase
       .from('movies')
       .select('*')
-      .contains('category', [category]);
+      .ilike('genre', `%${category}%`);
 
     if (error) throw error;
     return (data || []).map(mapDbMovie);
@@ -122,7 +128,7 @@ export const movieService = {
     const { data, error } = await supabase
       .from('movies')
       .select('*')
-      .contains('genre', [genre]);
+      .ilike('genre', `%${genre}%`);
 
     if (error) throw error;
     return (data || []).map(mapDbMovie);
@@ -133,11 +139,11 @@ export const movieService = {
     year?: number;
     minRating?: number;
   }): Promise<Movie[]> {
-    let qb = supabase.from('movies').select('*');
+    let qb = supabase.from('movies').select('*') as any;
 
     if (query) qb = qb.ilike('title', `%${query}%`);
-    if (filters?.genre) qb = qb.contains('genre', [filters.genre]);
-    if (filters?.year) qb = qb.eq('year', filters.year);
+    if (filters?.genre) qb = qb.ilike('genre', `%${filters.genre}%`);
+    if (filters?.year) qb = qb.eq('release_year', filters.year);
     if (filters?.minRating) qb = qb.gte('rating', filters.minRating);
 
     const { data, error } = await qb.range(0, 50);
