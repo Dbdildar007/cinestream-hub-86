@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { movieService } from '@/services/movieService';
-import type { Movie } from '@/data/movies';
+import type { Movie } from '@/services/movieService';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
+
+export type { Movie } from '@/services/movieService';
 
 export function useMovies() {
   const { data: allMovies = [], isLoading: loading, error, refetch } = useQuery({
@@ -11,7 +13,6 @@ export function useMovies() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Listen for realtime changes to movies table
   useEffect(() => {
     const channel = supabase
       .channel('movies-realtime')

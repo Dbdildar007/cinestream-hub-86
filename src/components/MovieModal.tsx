@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Download, Star, Clock, Calendar, Globe, Check, Plus, CheckCircle, Tv } from "lucide-react";
-import type { Movie } from "@/data/movies";
-import { getSeriesData } from "@/data/series";
+import type { Movie } from "@/services/movieService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
@@ -26,8 +25,8 @@ export default function MovieModal({
 
   if (!movie) return null;
 
-  const seriesInfo = movie.isSeries ? getSeriesData(movie.id) : undefined;
-  const currentSeasonData = seriesInfo?.seasons.find(s => s.number === selectedSeason);
+  const seriesInfo = undefined as any;
+  const currentSeasonData = undefined as any;
 
   const mobileVariants = {
     hidden: { y: "100%" },

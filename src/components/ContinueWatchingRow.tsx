@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
-import type { Movie } from "@/data/movies";
+import type { Movie } from "@/services/movieService";
 import type { WatchProgress } from "@/hooks/useWatchProgress";
 
 interface ContinueWatchingRowProps {

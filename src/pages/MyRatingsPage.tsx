@@ -1,13 +1,17 @@
-import { motion } from "framer-motion";
-import { ChevronLeft, Star } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, Star, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useRatings } from "@/hooks/useRatings";
 import { useMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/services/movieService";
+import VideoPlayer from "@/components/VideoPlayer";
 
 export default function MyRatingsPage() {
   const navigate = useNavigate();
   const { ratings, setRating } = useRatings();
   const { allMovies } = useMovies();
+  const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
 
   const ratedMovies = Object.entries(ratings)
     .map(([movieId, rating]) => {
@@ -15,14 +19,10 @@ export default function MyRatingsPage() {
       if (!movie) return null;
       return { movie, userRating: rating };
     })
-    .filter(Boolean) as { movie: typeof allMovies[0]; userRating: number }[];
+    .filter(Boolean) as { movie: Movie; userRating: number }[];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate("/profile")} className="p-2 rounded-full hover:bg-secondary transition-colors">
           <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -39,39 +39,35 @@ export default function MyRatingsPage() {
       ) : (
         <div className="space-y-3">
           {ratedMovies.map(({ movie, userRating }) => (
-            <motion.div
-              key={movie.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex gap-3 p-3 rounded-lg bg-secondary"
-            >
+            <motion.div key={movie.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3 p-3 rounded-lg bg-secondary">
               <img src={movie.poster} alt={movie.title} className="w-16 h-24 rounded object-cover flex-shrink-0" />
               <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>
                   <p className="text-foreground text-sm font-semibold truncate">{movie.title}</p>
                   <p className="text-muted-foreground text-xs">{movie.year} • {movie.genre.slice(0, 2).join(", ")}</p>
                 </div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setRating(movie.id, s)}
-                      className="p-0.5"
-                    >
-                      <Star
-                        className={`w-5 h-5 transition-colors ${
-                          s <= userRating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  <span className="text-xs text-muted-foreground ml-2">{userRating}/5</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <button key={s} onClick={() => setRating(movie.id, s)} className="p-0.5">
+                        <Star className={`w-5 h-5 transition-colors ${s <= userRating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`} />
+                      </button>
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-2">{userRating}/5</span>
+                  </div>
+                  <button onClick={() => setPlayingMovie(movie)} className="flex items-center gap-1 text-primary text-xs font-medium">
+                    <Play className="w-3 h-3 fill-current" /> Play
+                  </button>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {playingMovie && <VideoPlayer movie={playingMovie} onClose={() => setPlayingMovie(null)} allMovies={allMovies} onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }} />}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -1,6 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Movie } from '@/data/movies';
-import { allMovies as localMovies } from '@/data/movies';
 import poster1 from "@/assets/poster-1.jpg";
 import poster2 from "@/assets/poster-2.jpg";
 import poster3 from "@/assets/poster-3.jpg";
@@ -13,7 +11,27 @@ import hero1 from "@/assets/hero-1.jpg";
 import hero2 from "@/assets/hero-2.jpg";
 import hero3 from "@/assets/hero-3.jpg";
 
-const posterMap: Record<string, string> = {
+export interface Movie {
+  id: string;
+  title: string;
+  year: number;
+  rating: number;
+  userRating?: number;
+  genre: string[];
+  category: string[];
+  language: string;
+  description: string;
+  poster: string;
+  heroImage?: string;
+  url?: string;
+  newly_added?: string;
+  duration: string;
+  isTrending?: boolean;
+  isEditorChoice?: boolean;
+  isSeries?: boolean;
+}
+
+export const posterMap: Record<string, string> = {
   '/assets/poster-1.jpg': poster1,
   '/assets/poster-2.jpg': poster2,
   '/assets/poster-3.jpg': poster3,
@@ -24,18 +42,19 @@ const posterMap: Record<string, string> = {
   '/assets/poster-8.jpg': poster8,
 };
 
-const heroMap: Record<string, string> = {
+export const heroMap: Record<string, string> = {
   '/assets/hero-1.jpg': hero1,
   '/assets/hero-2.jpg': hero2,
   '/assets/hero-3.jpg': hero3,
 };
 
-function mapDbMovie(row: any): Movie {
-  const isUrl = (path: string) => path?.startsWith('http') || path?.startsWith('https');
+export function resolveImageUrl(path: string | null | undefined, map: Record<string, string>): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith('http')) return path;
+  return map[path] || undefined;
+}
 
-  // Support both local data format and DB format
-  const poster = row.poster_url || row.poster || '';
-  const heroImage = row.banner_url || row.hero_image || row.heroImage || '';
+function mapDbMovie(row: any): Movie {
   const genreField = row.genre || '';
   const genres = Array.isArray(genreField) ? genreField : (typeof genreField === 'string' && genreField ? genreField.split(',').map((g: string) => g.trim()) : []);
 
@@ -48,8 +67,8 @@ function mapDbMovie(row: any): Movie {
     category: Array.isArray(row.category) ? row.category : genres,
     language: row.language || 'English',
     description: row.description || '',
-    poster: isUrl(poster) ? poster : (posterMap[poster] || poster || ''),
-    heroImage: isUrl(heroImage) ? heroImage : (heroMap[heroImage] || heroImage || undefined),
+    poster: resolveImageUrl(row.poster || row.poster_url, posterMap) || poster1,
+    heroImage: resolveImageUrl(row.hero_image || row.banner_url || row.heroImage, heroMap),
     url: row.video_url || row.url || undefined,
     newly_added: row.newly_added || undefined,
     duration: row.duration || '',
@@ -85,8 +104,7 @@ export const movieService = {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        console.log("No data in DB, falling back to local data");
-        return localMovies;
+        return [];
       }
 
       localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -96,8 +114,8 @@ export const movieService = {
 
       return data.map(mapDbMovie);
     } catch (error) {
-      console.error("DB fetch failed, using local fallback:", error);
-      return localMovies;
+      console.error("DB fetch failed:", error);
+      return [];
     }
   },
 
@@ -108,9 +126,7 @@ export const movieService = {
       .eq('is_featured', true)
       .limit(10);
 
-    if (error || !data || data.length === 0) {
-      return localMovies.filter(m => m.heroImage);
-    }
+    if (error || !data || data.length === 0) return [];
     return data.map(mapDbMovie);
   },
 
@@ -120,7 +136,7 @@ export const movieService = {
       .select('*')
       .ilike('genre', `%${category}%`);
 
-    if (error) throw error;
+    if (error) return [];
     return (data || []).map(mapDbMovie);
   },
 
@@ -130,7 +146,7 @@ export const movieService = {
       .select('*')
       .ilike('genre', `%${genre}%`);
 
-    if (error) throw error;
+    if (error) return [];
     return (data || []).map(mapDbMovie);
   },
 
@@ -147,7 +163,7 @@ export const movieService = {
     if (filters?.minRating) qb = qb.gte('rating', filters.minRating);
 
     const { data, error } = await qb.range(0, 50);
-    if (error) throw error;
+    if (error) return [];
     return (data || []).map(mapDbMovie);
   },
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Info, ChevronLeft, ChevronRight, Plus, CheckCircle } from "lucide-react";
 import { useFeaturedMovies } from "@/hooks/useMovies";
-import type { Movie } from "@/data/movies";
+import type { Movie } from "@/services/movieService";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface HeroCarouselProps {

@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { posterMap, heroMap, resolveImageUrl } from './movieService';
+import poster1 from "@/assets/poster-1.jpg";
 
 export interface SeriesEpisode {
   id: string;
@@ -49,8 +51,8 @@ function mapSeries(row: any): Series {
     title: row.title || 'Untitled',
     description: row.description || '',
     genre: genres,
-    poster_url: row.poster_url || '',
-    banner_url: row.banner_url || undefined,
+    poster_url: resolveImageUrl(row.poster_url, posterMap) || poster1,
+    banner_url: resolveImageUrl(row.banner_url, heroMap),
     rating: Number(row.rating) || 0,
     release_year: row.release_year || new Date().getFullYear(),
     is_featured: !!row.is_featured,

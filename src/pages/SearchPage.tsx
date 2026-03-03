@@ -2,8 +2,10 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useMovies } from "@/hooks/useMovies";
-import type { Movie } from "@/data/movies";
-import { genres, languages } from "@/data/movies";
+import type { Movie } from "@/services/movieService";
+
+const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Sci-Fi", "Thriller", "Crime", "Historical", "Musical"];
+const languages = ["English", "Hindi", "Tamil", "Telugu"];
 import MovieCard from "@/components/MovieCard";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";

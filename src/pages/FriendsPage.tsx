@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useMovies } from "@/hooks/useMovies";
-import type { Movie } from "@/data/movies";
+import type { Movie } from "@/services/movieService";
 
 interface Profile {
   id: string;
