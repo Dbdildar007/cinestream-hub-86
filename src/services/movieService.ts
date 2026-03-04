@@ -118,7 +118,7 @@ console.log("data",data,"error",error)
       return [];
     }
   },
-
+console.log("data out",data,"error",error)
   async getFeaturedMovies(): Promise<Movie[]> {
     const { data, error } = await supabase
       .from('movies')
