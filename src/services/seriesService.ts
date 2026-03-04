@@ -51,10 +51,10 @@ function mapSeries(row: any): Series {
     title: row.title || 'Untitled',
     description: row.description || '',
     genre: genres,
-    poster_url: resolveImageUrl(row.poster_url, posterMap) || poster1,
-    banner_url: resolveImageUrl(row.banner_url, heroMap),
+    poster_url: resolveImageUrl(row.poster || row.poster_url, posterMap) || poster1,
+    banner_url: resolveImageUrl(row.hero_image || row.banner_url, heroMap),
     rating: Number(row.rating) || 0,
-    release_year: row.release_year || new Date().getFullYear(),
+    release_year: row.year || row.release_year || new Date().getFullYear(),
     is_featured: !!row.is_featured,
   };
 }
@@ -87,9 +87,11 @@ export const seriesService = {
       console.error("Cache read error:", e);
     }
 
+    // Query movies table where is_series = true
     const { data, error } = await supabase
-      .from('series')
+      .from('movies')
       .select('*')
+      .eq('is_series', true)
       .order('created_at', { ascending: false });
 
     if (error || !data) return [];
@@ -109,10 +111,12 @@ export const seriesService = {
   },
 
   async getSeriesWithSeasons(seriesId: string): Promise<SeriesWithSeasons | null> {
+    // Fetch from movies table
     const { data: seriesData, error: seriesError } = await supabase
-      .from('series')
+      .from('movies')
       .select('*')
       .eq('id', seriesId)
+      .eq('is_series', true)
       .maybeSingle();
 
     if (seriesError || !seriesData) return null;
@@ -147,8 +151,9 @@ export const seriesService = {
 
   async getFeaturedSeries(): Promise<Series[]> {
     const { data, error } = await supabase
-      .from('series')
+      .from('movies')
       .select('*')
+      .eq('is_series', true)
       .eq('is_featured', true)
       .limit(10);
 

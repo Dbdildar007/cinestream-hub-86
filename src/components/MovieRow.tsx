@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Movie } from "@/services/movieService";
 import MovieCard from "./MovieCard";
 
@@ -14,11 +14,12 @@ interface MovieRowProps {
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: (movieId: string) => boolean;
   onToggleWatchlist?: (movieId: string) => void;
+  showRemoveButton?: boolean;
 }
 
 export default function MovieRow({
   title, movies, onMovieSelect, onDownload, getDownloadState, getRating, onRate,
-  isInWatchlist, onToggleWatchlist,
+  isInWatchlist, onToggleWatchlist, showRemoveButton,
 }: MovieRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -53,17 +54,26 @@ export default function MovieRow({
 
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
           {movies.map((movie) => (
-            <MovieCard
-              key={movie.id}
-              movie={movie}
-              onSelect={onMovieSelect}
-              onDownload={onDownload}
-              downloadState={getDownloadState(movie.id)}
-              userRating={getRating(movie.id)}
-              onRate={onRate}
-              isInWatchlist={isInWatchlist?.(movie.id)}
-              onToggleWatchlist={onToggleWatchlist}
-            />
+            <div key={movie.id} className="relative flex-shrink-0">
+              {showRemoveButton && onToggleWatchlist && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleWatchlist(movie.id); }}
+                  className="absolute -top-1 -right-1 z-20 p-1 rounded-full bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/80 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+              <MovieCard
+                movie={movie}
+                onSelect={onMovieSelect}
+                onDownload={onDownload}
+                downloadState={getDownloadState(movie.id)}
+                userRating={getRating(movie.id)}
+                onRate={onRate}
+                isInWatchlist={isInWatchlist?.(movie.id)}
+                onToggleWatchlist={showRemoveButton ? undefined : onToggleWatchlist}
+              />
+            </div>
           ))}
         </div>
 

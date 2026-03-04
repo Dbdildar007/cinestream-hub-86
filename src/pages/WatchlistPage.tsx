@@ -10,7 +10,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 export default function WatchlistPage() {
   const navigate = useNavigate();
 const { watchlist, toggleWatchlist } = useWatchlist();
-const { allMovies, isLoading } = useMovies(); // 1. Added isLoading here
+const { allMovies, loading: isLoading } = useMovies();
 const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
 
 // 2. Added useMemo and the loading check here

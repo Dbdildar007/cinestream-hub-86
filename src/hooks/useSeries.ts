@@ -13,7 +13,7 @@ export function useAllSeries() {
   useEffect(() => {
     const channel = supabase
       .channel('series-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'series' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movies' }, () => {
         seriesService.clearCache();
         refetch();
       })
