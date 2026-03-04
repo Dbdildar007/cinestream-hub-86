@@ -265,55 +265,13 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "seasons_series_id_fkey"
+            foreignKeyName: "seasons_movie_id_fkey"
             columns: ["series_id"]
             isOneToOne: false
-            referencedRelation: "series"
+            referencedRelation: "movies"
             referencedColumns: ["id"]
           },
         ]
-      }
-      series: {
-        Row: {
-          banner_url: string | null
-          created_at: string
-          description: string
-          genre: string[]
-          id: string
-          is_featured: boolean
-          language: string
-          poster_url: string
-          rating: number
-          release_year: number
-          title: string
-        }
-        Insert: {
-          banner_url?: string | null
-          created_at?: string
-          description?: string
-          genre?: string[]
-          id: string
-          is_featured?: boolean
-          language?: string
-          poster_url?: string
-          rating?: number
-          release_year: number
-          title: string
-        }
-        Update: {
-          banner_url?: string | null
-          created_at?: string
-          description?: string
-          genre?: string[]
-          id?: string
-          is_featured?: boolean
-          language?: string
-          poster_url?: string
-          rating?: number
-          release_year?: number
-          title?: string
-        }
-        Relationships: []
       }
       watch_parties: {
         Row: {
