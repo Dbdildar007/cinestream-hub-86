@@ -7,6 +7,8 @@ export interface WatchProgress {
   currentTime: number;
   duration: number;
   lastWatched: number;
+  mediaType?: 'movie' | 'series'; 
+  episodeId?: string;
 }
 
 const STORAGE_KEY = "cinestream_watch_progress";
@@ -51,7 +53,8 @@ export function useWatchProgress() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progressList));
   }, [progressList]);
 
-  const updateProgress = useCallback((movieId: string, currentTime: number, duration: number) => {
+  const updateProgress = useCallback((movieId: string, currentTime: number, duration: number,mediaType: 'movie' | 'series' = 'movie',
+  episodeId?: string) => {
     if (duration <= 0) return;
     setProgressList((prev) => {
       const filtered = prev.filter((p) => p.movieId !== movieId);
@@ -67,15 +70,21 @@ export function useWatchProgress() {
       debounceRef.current[movieId] = setTimeout(async () => {
         const percent = currentTime / duration;
         if (percent > 0.95 || currentTime < 5) {
-          await supabase.from("watch_progress").delete().eq("user_id", user.id).eq("movie_id", movieId);
-        } else {
-          await supabase.from("watch_progress").upsert({
-            user_id: user.id,
-            movie_id: movieId,
-            current_time_sec: currentTime,
-            duration_sec: duration,
-            last_watched: new Date().toISOString(),
-          }, { onConflict: "user_id,movie_id" });
+  const query = supabase.from("watch_progress").delete().eq("user_id", user.id).eq("movie_id", movieId);
+  if (episodeId) query.eq("episode_id", episodeId); // Only delete specific episode
+  await query;
+} else {
+       await supabase.from("watch_progress").upsert({
+  user_id: user.id,
+  movie_id: movieId,
+  episode_id: episodeId, // Add this field (ensure it exists in your DB)
+  current_time_sec: currentTime,
+  duration_sec: duration,
+  media_type: mediaType,  // Add this field (ensure it exists in your DB)
+  last_watched: new Date().toISOString(),
+}, { 
+  onConflict: "user_id,movie_id,episode_id" // Update conflict constraint
+});
         }
       }, 3000);
     }
