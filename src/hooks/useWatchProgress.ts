@@ -4,11 +4,11 @@ import { useAuth } from "./useAuth";
 
 export interface WatchProgress {
   movieId: string;
+  episodeId?: string;      // Ensure this is here
+  mediaType?: 'movie' | 'series'; 
   currentTime: number;
   duration: number;
   lastWatched: number;
-  mediaType?: 'movie' | 'series'; 
-  episodeId?: string;
 }
 
 const STORAGE_KEY = "cinestream_watch_progress";
@@ -26,17 +26,20 @@ export function useWatchProgress() {
   const [progressList, setProgressList] = useState<WatchProgress[]>(loadLocalProgress);
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Load from DB on login
+ // Load from DB on login
   useEffect(() => {
     if (!user) return;
     const fetchProgress = async () => {
       const { data } = await supabase
         .from("watch_progress")
-        .select("movie_id, current_time_sec, duration_sec, last_watched")
+        .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched")
         .eq("user_id", user.id);
+
       if (data) {
         const dbList: WatchProgress[] = data.map(d => ({
           movieId: d.movie_id,
+          episodeId: d.episode_id,
+          mediaType: d.media_type,
           currentTime: d.current_time_sec,
           duration: d.duration_sec,
           lastWatched: new Date(d.last_watched).getTime(),
@@ -56,13 +59,24 @@ export function useWatchProgress() {
   const updateProgress = useCallback((movieId: string, currentTime: number, duration: number,mediaType: 'movie' | 'series' = 'movie',
   episodeId?: string) => {
     if (duration <= 0) return;
-    setProgressList((prev) => {
-      const filtered = prev.filter((p) => p.movieId !== movieId);
-      const percent = currentTime / duration;
-      if (currentTime < 5) return filtered;
-      if (percent > 0.95) return filtered;
-      return [{ movieId, currentTime, duration, lastWatched: Date.now() }, ...filtered];
-    });
+setProgressList((prev) => {
+  // Filter out ONLY the specific item being updated (match both ID and episode)
+  const filtered = prev.filter((p) => 
+    !(p.movieId === movieId && p.episodeId === episodeId)
+  );
+  
+  const percent = currentTime / duration;
+  if (currentTime < 5 || percent > 0.95) return filtered;
+
+  return [{ 
+    movieId, 
+    episodeId, 
+    mediaType, 
+    currentTime, 
+    duration, 
+    lastWatched: Date.now() 
+  }, ...filtered];
+});
 
     // Debounced DB sync
     if (user) {
