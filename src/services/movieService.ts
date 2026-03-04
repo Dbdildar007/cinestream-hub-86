@@ -100,6 +100,7 @@ export const movieService = {
         .from('movies')
         .select('*')
         .order('created_at', { ascending: true });
+      console.log("data",data,"error:",error)
       if (error) throw error;
 
       if (!data || data.length === 0) {
