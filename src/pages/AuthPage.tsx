@@ -41,9 +41,13 @@ export default function AuthPage() {
         navigate("/");
       }
     } else {
-      const { error } = await signUp(email, password, displayName);
+      const { data, error } = await signUp(email, password, displayName);
       if (error) {
         toast.error(error.message);
+      } else if (data?.user && data.user.identities && data.user.identities.length === 0) {
+        // Supabase returns empty identities when email already exists
+        toast.error("This email is already registered. Please sign in instead.", { duration: 5000 });
+        setIsLogin(true);
       } else {
         setShowVerification(true);
       }
