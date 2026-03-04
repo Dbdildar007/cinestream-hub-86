@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { Series, SeriesEpisode, SeriesSeason } from "@/services/seriesService";
 import { useSeriesDetail } from "@/hooks/useSeries";
+import { useWatchProgress } from '../hooks/useWatchProgress'; // Adjust path if needed
 
 interface SeriesVideoPlayerProps {
   series: Series;
@@ -46,6 +47,32 @@ export default function SeriesVideoPlayer({
   const [isBuffering, setIsBuffering] = useState(true);
   const [videoEnded, setVideoEnded] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
+
+
+  // Inside your component:
+const { updateProgress } = useWatchProgress();
+
+const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+  const video = e.currentTarget;
+  const currentTime = video.currentTime;
+  const duration = video.duration;
+  
+  // 1. Keep your existing local state update
+  setCurrentTime(currentTime);
+
+  // 2. Add the database update (throttled/debounced if possible, or on pause)
+  // Logic: Only update if we have a valid user and media ID
+  if (seriesId && episodeId) {
+    updateProgress({
+      mediaId: `${seriesId}-${episodeId}`, // Unique ID for the episode
+      progress: currentTime,
+      duration: duration,
+      mediaType: 'series'
+    });
+  }
+};
+
+  
 
   // Next episode auto-play
   const [showNextEpisode, setShowNextEpisode] = useState(false);
