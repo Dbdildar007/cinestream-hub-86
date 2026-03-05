@@ -92,8 +92,8 @@ setProgressList((prev) => {
   user_id: user.id,
   movie_id: movieId,
   episode_id: episodeId || null,
-  current_time_sec: currentTime,
-  duration_sec: duration,
+  current_time_sec: Math.round(currentTime),
+  duration_sec: Math.round(duration),
   media_type: mediaType,
   last_watched: new Date().toISOString(),
 }, { 

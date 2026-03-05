@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Users, Copy } from "lucide-react";
+import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Users, Copy, KeyRound } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,6 +20,12 @@ export default function ProfilePage() {
     const saved = localStorage.getItem('user_profile');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetEmailError, setResetEmailError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -56,6 +62,36 @@ export default function ProfilePage() {
     if (profile?.unique_id) {
       navigator.clipboard.writeText(profile.unique_id);
       toast.success("ID copied to clipboard!");
+    }
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.trim());
+  };
+
+  const handleForgotPassword = async () => {
+    setResetEmailError("");
+    const trimmed = resetEmail.trim();
+    if (!trimmed) {
+      setResetEmailError("Please enter your email address.");
+      return;
+    }
+    if (!validateEmail(trimmed)) {
+      setResetEmailError("Please enter a valid email address.");
+      return;
+    }
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: window.location.origin,
+    });
+    setResetLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password reset link sent! Check your email.");
+      setShowForgotPassword(false);
+      setResetEmail("");
     }
   };
 
@@ -104,7 +140,7 @@ export default function ProfilePage() {
       )}
 
       {/* Menu items */}
-      <div className="space-y-2 mb-10">
+      <div className="space-y-2 mb-4">
         {menuItems.map(({ icon: Icon, label, count, action }) => (
           <button
             key={label}
@@ -120,6 +156,61 @@ export default function ProfilePage() {
           </button>
         ))}
       </div>
+
+      {/* Forgot Password */}
+      {user && (
+        <div className="mb-6">
+          {!showForgotPassword ? (
+            <button
+              onClick={() => { setShowForgotPassword(true); setResetEmail(user.email || ""); }}
+              className="w-full flex items-center gap-4 p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+            >
+              <KeyRound className="w-5 h-5 text-primary" />
+              <span className="flex-1 text-left text-sm font-medium text-foreground">Reset Password</span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="bg-secondary rounded-lg p-4 space-y-3"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <KeyRound className="w-5 h-5 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Reset Password</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">We'll send a password reset link to your email.</p>
+              <div>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => { setResetEmail(e.target.value); setResetEmailError(""); }}
+                  placeholder="Enter your email"
+                  className="w-full bg-background text-foreground placeholder:text-muted-foreground rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border"
+                />
+                {resetEmailError && (
+                  <p className="text-xs text-destructive mt-1">{resetEmailError}</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
+                >
+                  {resetLoading ? "Sending..." : "Send Reset Link"}
+                </button>
+                <button
+                  onClick={() => { setShowForgotPassword(false); setResetEmailError(""); }}
+                  className="px-4 py-2.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
 
       {user && (
         <button
