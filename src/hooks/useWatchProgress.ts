@@ -32,14 +32,14 @@ export function useWatchProgress() {
     const fetchProgress = async () => {
       const { data } = await supabase
         .from("watch_progress")
-        .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched")
+        .select("movie_id, current_time_sec, duration_sec, last_watched")
         .eq("user_id", user.id);
 
       if (data) {
-        const dbList: WatchProgress[] = data.map(d => ({
+        const dbList: WatchProgress[] = (data as any[]).map(d => ({
           movieId: d.movie_id,
-          episodeId: d.episode_id,
-          mediaType: d.media_type,
+          episodeId: d.episode_id || undefined,
+          mediaType: (d.media_type as 'movie' | 'series') || 'movie',
           currentTime: d.current_time_sec,
           duration: d.duration_sec,
           lastWatched: new Date(d.last_watched).getTime(),
@@ -85,19 +85,19 @@ setProgressList((prev) => {
         const percent = currentTime / duration;
         if (percent > 0.95 || currentTime < 5) {
   const query = supabase.from("watch_progress").delete().eq("user_id", user.id).eq("movie_id", movieId);
-  if (episodeId) query.eq("episode_id", episodeId); // Only delete specific episode
+  if (episodeId) query.eq("episode_id", episodeId);
   await query;
 } else {
-       await supabase.from("watch_progress").upsert({
+       await (supabase.from("watch_progress") as any).upsert({
   user_id: user.id,
   movie_id: movieId,
-  episode_id: episodeId, // Add this field (ensure it exists in your DB)
+  episode_id: episodeId || null,
   current_time_sec: currentTime,
   duration_sec: duration,
-  media_type: mediaType,  // Add this field (ensure it exists in your DB)
+  media_type: mediaType,
   last_watched: new Date().toISOString(),
 }, { 
-  onConflict: "user_id,movie_id,episode_id" // Update conflict constraint
+  onConflict: "user_id,movie_id,episode_id"
 });
         }
       }, 3000);

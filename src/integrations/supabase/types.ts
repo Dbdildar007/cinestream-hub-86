@@ -351,24 +351,30 @@ export type Database = {
         Row: {
           current_time_sec: number
           duration_sec: number
+          episode_id: string | null
           id: string
           last_watched: string
+          media_type: string | null
           movie_id: string
           user_id: string
         }
         Insert: {
           current_time_sec?: number
           duration_sec?: number
+          episode_id?: string | null
           id?: string
           last_watched?: string
+          media_type?: string | null
           movie_id: string
           user_id: string
         }
         Update: {
           current_time_sec?: number
           duration_sec?: number
+          episode_id?: string | null
           id?: string
           last_watched?: string
+          media_type?: string | null
           movie_id?: string
           user_id?: string
         }
