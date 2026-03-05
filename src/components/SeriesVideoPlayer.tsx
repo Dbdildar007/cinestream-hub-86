@@ -311,11 +311,11 @@ export default function SeriesVideoPlayer({
 
             {/* BOTTOM BAR */}
             <div className="p-4 md:p-8 bg-gradient-to-t from-black/90 to-transparent">
-              {/* Progress Slider */}
+            {/* Progress Slider */}
               <div className="relative h-2 w-full mb-6 group">
                 <div className="absolute inset-0 bg-white/20 rounded-full overflow-hidden">
                   <div className="h-full bg-white/30" style={{ width: `${bufferedPercent}%` }} />
-                  <div className="h-full bg-red-600 absolute top-0 left-0" style={{ width: `${progressPercent}%` }} />
+                  <div className="h-full bg-red-600 absolute top-0 left-0 transition-all" style={{ width: `${progressPercent}%` }} />
                 </div>
                 <input 
                   type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
@@ -325,6 +325,7 @@ export default function SeriesVideoPlayer({
                     if (videoRef.current) videoRef.current.currentTime = time;
                   }}
                   onMouseDown={() => setIsSeeking(true)} onMouseUp={() => setIsSeeking(false)}
+                  onTouchStart={() => setIsSeeking(true)} onTouchEnd={() => setIsSeeking(false)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
               </div>
