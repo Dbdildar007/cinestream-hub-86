@@ -88,13 +88,7 @@ export default function SeriesVideoPlayer({
     if (!v) return;
     setDuration(v.duration);
     
-    // Check if there is existing progress for this episode
-    if (currentEpisode.progress_seconds && currentEpisode.progress_seconds > 0) {
-      // Don't resume if they were in the last 10 seconds (assume finished)
-      if (currentEpisode.progress_seconds < v.duration - 10) {
-        v.currentTime = currentEpisode.progress_seconds;
-      }
-    }
+    // Resume logic is handled by parent passing initialTime or via useWatchProgress
   };
 
   // --- LOGIC: EPISODE NAVIGATION ---
@@ -199,8 +193,24 @@ export default function SeriesVideoPlayer({
       if (isLocked) return;
       switch (e.key.toLowerCase()) {
         case " ": case "k": e.preventDefault(); togglePlay(); break;
-        case "arrowright": skip(10); break;
-        case "arrowleft": skip(-10); break;
+        case "arrowright": e.preventDefault(); skip(10); break;
+        case "arrowleft": e.preventDefault(); skip(-10); break;
+        case "arrowup": 
+          e.preventDefault(); 
+          setVolume(prev => {
+            const newVol = Math.min(1, prev + 0.1);
+            if (videoRef.current) videoRef.current.volume = newVol;
+            return newVol;
+          });
+          break;
+        case "arrowdown": 
+          e.preventDefault(); 
+          setVolume(prev => {
+            const newVol = Math.max(0, prev - 0.1);
+            if (videoRef.current) videoRef.current.volume = newVol;
+            return newVol;
+          });
+          break;
         case "f": toggleFullscreen(); break;
         case "m": setIsMuted(prev => !prev); break;
         case "escape":
@@ -305,7 +315,7 @@ export default function SeriesVideoPlayer({
               <div className="relative h-2 w-full mb-6 group">
                 <div className="absolute inset-0 bg-white/20 rounded-full overflow-hidden">
                   <div className="h-full bg-white/30" style={{ width: `${bufferedPercent}%` }} />
-                  <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }} />
+                  <div className="h-full bg-red-600 absolute top-0 left-0" style={{ width: `${progressPercent}%` }} />
                 </div>
                 <input 
                   type="range" min={0} max={duration || 0} step={0.1} value={currentTime}

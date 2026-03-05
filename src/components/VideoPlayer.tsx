@@ -712,7 +712,7 @@ export default function VideoPlayer({
               <div className="relative group mb-3">
                 <div className="h-1 group-hover:h-2 transition-all bg-muted/40 rounded-full overflow-hidden relative">
                   <div className="absolute top-0 left-0 h-full bg-muted-foreground/30 rounded-full" style={{ width: `${bufferedPercent}%` }} />
-                  <div className="absolute top-0 left-0 h-full bg-primary rounded-full" style={{ width: `${progressPercent}%` }} />
+                  <div className="absolute top-0 left-0 h-full bg-red-600 rounded-full" style={{ width: `${progressPercent}%` }} />
                 </div>
                 <input type="range" min={0} max={duration || 0} step={0.1} value={currentTime}
                   onChange={handleSeek} disabled={controlsDisabled}
