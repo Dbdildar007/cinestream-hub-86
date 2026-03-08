@@ -54,12 +54,6 @@ export default function WatchPartyHistory() {
     fetchHistory();
   }, [user]);
 
-  const formatDuration = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  };
-
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
