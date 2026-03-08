@@ -17,6 +17,7 @@ import { EvictedDialog } from "./components/EvictedDialog";
 import { WatchPartyProvider, useWatchPartyContext } from "./contexts/WatchPartyContext";
 import WatchPartyInviteOverlay from "./components/WatchPartyInviteOverlay";
 import VideoPlayer from "./components/VideoPlayer";
+import SeriesVideoPlayer from "./components/SeriesVideoPlayer";
 import WatchPartyCountdown from "./components/WatchPartyCountdown";
 import WatchPartyComms from "./components/WatchPartyComms";
 import Index from "./pages/Index";
