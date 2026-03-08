@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { UserPlus, Send, UserCheck, ChevronRight } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
