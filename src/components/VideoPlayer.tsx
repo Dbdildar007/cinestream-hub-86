@@ -469,8 +469,8 @@ const skip = useCallback((seconds: number) => {
             className="absolute inset-0 flex items-center justify-center z-[103] pointer-events-none"
           >
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <span className="text-xs text-foreground/70">Loading...</span>
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+              <span className="text-sm font-bold text-white tracking-wide">Loading...</span>
             </div>
           </motion.div>
         )}
