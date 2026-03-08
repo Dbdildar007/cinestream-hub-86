@@ -165,9 +165,30 @@ export default function ChatPage() {
     };
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
-  useEffect(() => {
+  // Scroll to bottom on new messages + handle keyboard resize on mobile
+  const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, remoteIsTyping]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, remoteIsTyping, scrollToBottom]);
+
+  // Handle mobile keyboard: adjust view when virtual keyboard opens
+  useEffect(() => {
+    const handleResize = () => {
+      // When keyboard opens, viewport shrinks — scroll to latest message
+      setTimeout(scrollToBottom, 100);
+    };
+
+    if (typeof visualViewport !== "undefined" && visualViewport) {
+      visualViewport.addEventListener("resize", handleResize);
+      return () => visualViewport.removeEventListener("resize", handleResize);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
     if (!channelRef.current || !user) return;
@@ -217,7 +238,7 @@ export default function ChatPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background flex flex-col pt-16 md:pt-20 pb-20 md:pb-4"
+      className="h-[100dvh] bg-background flex flex-col pt-14 md:pt-20 pb-0"
     >
       <ChatHeader
         remoteProfile={remoteProfile}
@@ -277,7 +298,7 @@ export default function ChatPage() {
       </AnimatePresence>
 
       {/* Input */}
-      <div className="sticky bottom-20 md:bottom-0 bg-card border-t border-border px-4 py-3 flex items-center gap-2">
+      <div className="bg-card border-t border-border px-4 py-2 md:py-3 pb-[env(safe-area-inset-bottom,8px)] md:pb-3 flex items-center gap-2">
         <button
           onClick={() => setShowEmojis(!showEmojis)}
           className="p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors"
