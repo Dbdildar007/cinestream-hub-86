@@ -7,6 +7,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
   const channelRef = useRef<any>(null);
   const evictedRef = useRef(false);
   const onEvictedRef = useRef(onEvicted);
+  const registeredRef = useRef(false);
   onEvictedRef.current = onEvicted;
 
   const getDeviceId = useCallback(() => {
@@ -51,20 +52,32 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
         return { status: "error" };
       }
 
-      return data as { status: string; existing_device?: any };
+      const result = data as { status: string; existing_device?: any };
+      
+      // Only mark as registered if this device is now the active one
+      if (result.status === "ok") {
+        registeredRef.current = true;
+      }
+
+      return result;
     },
     [userId, getDeviceId]
   );
 
   // Realtime + polling eviction listener
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      registeredRef.current = false;
+      return;
+    }
 
     evictedRef.current = false;
     const deviceId = getDeviceId();
 
     const checkSession = async () => {
-      if (evictedRef.current) return;
+      // Only check for eviction if this device was previously registered as active
+      if (evictedRef.current || !registeredRef.current) return;
+      
       const { data } = await supabase
         .from("profiles")
         .select("active_session_id")
@@ -73,6 +86,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
 
       if (data?.active_session_id && data.active_session_id !== deviceId && !evictedRef.current) {
         evictedRef.current = true;
+        registeredRef.current = false;
         onEvictedRef.current();
       }
     };
@@ -84,7 +98,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
         { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` },
         () => { void checkSession(); }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === "SUBSCRIBED") void checkSession();
       });
 
@@ -106,6 +120,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
 
   const clearSession = useCallback(async () => {
     if (!userId) return;
+    registeredRef.current = false;
     await supabase
       .from("profiles")
       .update({ active_session_id: null, is_online: false } as any)
