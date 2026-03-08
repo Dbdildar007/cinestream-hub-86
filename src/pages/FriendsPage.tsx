@@ -168,21 +168,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     loadSuggestions();
   }, [user, friends, sentRequests]);
 
+  // Update search relationship map when friendships change via useFriends realtime
   useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel("friendships-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-        invalidate();
-        if (searchResults.length > 0) buildRelationshipMap(searchResults);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, invalidate, buildRelationshipMap, searchResults]);
+    if (searchResults.length > 0) {
+      buildRelationshipMap(searchResults);
+    }
+  }, [friends, pendingRequests, sentRequests, searchResults, buildRelationshipMap]);
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;

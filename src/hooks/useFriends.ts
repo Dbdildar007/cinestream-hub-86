@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -94,21 +95,21 @@ export function useFriends() {
     queryKey: ["friends", user?.id],
     queryFn: () => fetchFriends(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const pendingQuery = useQuery({
     queryKey: ["pending-requests", user?.id],
     queryFn: () => fetchPendingRequests(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const sentQuery = useQuery({
     queryKey: ["sent-requests", user?.id],
     queryFn: () => fetchSentRequests(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const invalidate = () => {
@@ -116,6 +117,32 @@ export function useFriends() {
     queryClient.invalidateQueries({ queryKey: ["pending-requests"] });
     queryClient.invalidateQueries({ queryKey: ["sent-requests"] });
   };
+
+  // Realtime subscription: instantly react to friendship changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`friendships-realtime-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friendships" },
+        (payload) => {
+          const row = (payload.new || payload.old) as any;
+          if (!row) return;
+          // Only react to changes involving this user
+          if (row.requester_id === user.id || row.addressee_id === user.id) {
+            invalidate();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return {
     friends: friendsQuery.data || [],
