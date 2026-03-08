@@ -23,11 +23,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
   if (movies.length === 0) return null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5 }}
+    <section
       className="relative px-4 md:px-12 pt-6 md:pt-0 mb-8"
     >
       <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4">
@@ -43,7 +39,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
         </button>
 
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence initial={false} mode="popLayout">
           {movies.map(({ progress, ...movie }) => {
             const percent = progress.duration > 0 ? (progress.currentTime / progress.duration) * 100 : 0;
             const remainMin = Math.ceil((progress.duration - progress.currentTime) / 60);
@@ -130,6 +126,6 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
           <ChevronRight className="w-6 h-6 text-foreground" />
         </button>
       </div>
-    </motion.section>
+    </section>
   );
 }
