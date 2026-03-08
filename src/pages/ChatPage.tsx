@@ -349,8 +349,8 @@ export default function ChatPage() {
 
       {/* Input */}
       <div
-        className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2"
-        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 8px) + ${keyboardInset}px)` }}
+        className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2 mb-2 md:mb-0"
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 12px) + ${keyboardInset}px)` }}
       >
         <button
           onClick={() => setShowEmojis(!showEmojis)}
