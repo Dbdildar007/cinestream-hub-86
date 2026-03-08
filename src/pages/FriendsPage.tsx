@@ -120,7 +120,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         .then();
       supabase.removeChannel(channel);
     };
-  }, [user, loadFriends, loadPendingRequests]);
+  }, [user, invalidate, buildRelationshipMap, searchResults]);
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
