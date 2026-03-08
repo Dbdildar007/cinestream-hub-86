@@ -269,9 +269,9 @@ export default function ChatMessageBubble({
           )}
         </div>
 
-        {/* Desktop action buttons - right side for own messages */}
-        {!isMobile && isMine && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity order-0">
+        {/* Desktop action buttons - right side for all messages */}
+        {!isMobile && (
+          <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? "order-0" : ""}`}>
             {onContextAction && (
               <button
                 onClick={handleDesktopMenuClick}
