@@ -35,7 +35,13 @@ function AppContent() {
   const navigate = useNavigate();
   const [showEvicted, setShowEvicted] = useState(false);
 
-  const handleEvicted = useCallback(() => {
+  const handleEvicted = useCallback(async () => {
+    // Auto sign out immediately when evicted - don't clear session (device 2 owns it now)
+    localStorage.removeItem('user_profile');
+    localStorage.removeItem('cinestream_watchlist');
+    localStorage.removeItem('cinestream-ratings');
+    localStorage.removeItem('cinestream_watch_progress');
+    await supabase.auth.signOut({ scope: 'local' });
     setShowEvicted(true);
   }, []);
 
