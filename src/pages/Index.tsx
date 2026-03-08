@@ -190,8 +190,6 @@ export default function Index() {
             title={category}
             movies={allMovies.filter(m => m.category.includes(category))}
             onMovieSelect={handleCardClick}
-            onDownload={startDownload}
-            getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
             isInWatchlist={isInWatchlist}
