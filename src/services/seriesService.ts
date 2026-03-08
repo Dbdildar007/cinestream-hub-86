@@ -58,6 +58,7 @@ function mapSeries(row: any): Series {
     rating: Number(row.rating) || 0,
     release_year: row.year || row.release_year || new Date().getFullYear(),
     is_featured: !!row.is_featured,
+    language: row.language || '',
   };
 }
 
