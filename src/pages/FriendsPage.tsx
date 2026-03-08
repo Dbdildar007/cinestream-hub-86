@@ -78,6 +78,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const modalContentRef = useRef<HTMLDivElement>(null);
   const [inviteCooldowns, setInviteCooldowns] = useState<Record<string, number>>({});
 
+  // Episode picker state for series watch parties
+  const [pickingSeries, setPickingSeries] = useState<Series | null>(null);
+  const [pickerSeasonNumber, setPickerSeasonNumber] = useState(1);
+  const { series: pickerSeriesDetail, loading: pickerLoading } = useSeriesDetail(pickingSeries?.id || null);
+
   // Collect all genres from movies & series
   const allGenres = [...new Set([
     ...allMovies.flatMap(m => m.genre),
