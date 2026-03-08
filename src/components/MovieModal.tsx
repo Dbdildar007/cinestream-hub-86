@@ -43,6 +43,7 @@ export default function MovieModal({
   const variants = isMobile ? mobileVariants : desktopVariants;
 
   return (
+    <>
     <AnimatePresence>
       {movie && (
         <>
