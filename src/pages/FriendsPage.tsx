@@ -772,13 +772,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               animate={{ y: 0, scale: 1 }}
               exit={{ y: "100%", scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="bg-card rounded-t-3xl md:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-border/50 shadow-2xl"
+              className="bg-card rounded-none md:rounded-3xl w-full md:max-w-2xl h-full md:h-auto md:max-h-[90vh] overflow-hidden border-0 md:border border-border/50 shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with avatar & gradient */}
               <div className="relative px-5 pt-5 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
-                {/* Drag handle on mobile */}
-                <div className="md:hidden w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+                {/* Drag handle on mobile - hidden in fullscreen */}
 
                 <div className="flex items-center gap-3 mb-4">
                   <div className="relative">
@@ -888,7 +887,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1" style={{ maxHeight: 'calc(90vh - 280px)' }}>
+              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1">
                 {/* GRID VIEW */}
                 {modalView === "grid" && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -900,7 +899,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                           <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{movie.year}</span>
@@ -929,7 +928,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                           <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
                           <div className="flex items-center gap-1 mt-0.5">
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{series.release_year}</span>
