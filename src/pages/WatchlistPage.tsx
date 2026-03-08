@@ -41,7 +41,7 @@ const movies = useMemo(() => {
           {movies.map((movie) => (
             <motion.div key={movie.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative group rounded-lg overflow-hidden bg-secondary">
               <img src={movie.poster} alt={movie.title} className="w-full aspect-[2/3] object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                 <p className="text-foreground text-sm font-semibold truncate">{movie.title}</p>
                 <p className="text-muted-foreground text-xs">{movie.year} • {movie.rating}/10</p>
                 <div className="flex gap-2 mt-2">
@@ -53,10 +53,7 @@ const movies = useMemo(() => {
                   </button>
                 </div>
               </div>
-              <div className="md:hidden p-2">
-                <p className="text-foreground text-xs font-medium truncate">{movie.title}</p>
-                <p className="text-muted-foreground text-[10px]">{movie.year}</p>
-              </div>
+
             </motion.div>
           ))}
         </div>

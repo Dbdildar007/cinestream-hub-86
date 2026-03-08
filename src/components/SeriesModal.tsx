@@ -124,21 +124,25 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
 
               <p className="text-foreground/80 text-sm leading-relaxed mb-6">{series.description}</p>
 
-              {/* Star rating - matches MovieModal */}
-              <div className="mb-6">
-                <p className="text-xs text-muted-foreground mb-2">Your Rating</p>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onClick={() => onRate?.(series.id, star)}>
-                      <Star
-                        className={`w-6 h-6 transition-colors ${
-                          star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Star rating - Fixed to a single row */}
+<div className="mb-6 flex items-center gap-4">
+  <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
+  <div className="flex gap-1">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button 
+        key={star} 
+        onClick={() => onRate?.(series.id, star)}
+        className="p-1 -m-1 transition-transform hover:scale-110"
+      >
+        <Star 
+          className={`w-6 h-6 transition-colors ${
+            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+          }`} 
+        />
+      </button>
+    ))}
+  </div>
+</div>
 
               {/* Action buttons - matches MovieModal layout */}
               <div className="flex flex-wrap gap-2 mb-4">

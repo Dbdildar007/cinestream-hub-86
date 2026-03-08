@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Loader2, Play, Pause, Volume2, VolumeX, Maximize, 
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, ChevronLeft, 
   Lock, Unlock, List, SkipForward as NextIcon, 
-  RefreshCw, AlertCircle 
+  RefreshCw, AlertCircle, Subtitles
 } from "lucide-react";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
 import { useSeriesDetail } from "@/hooks/useSeries";
@@ -20,18 +20,15 @@ interface SeriesVideoPlayerProps {
 export default function SeriesVideoPlayer({
   series, initialEpisode, initialSeason, onClose,
 }: SeriesVideoPlayerProps) {
-  // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const countdownRef = useRef<ReturnType<typeof setInterval>>();
-  const lastSavedTimeRef = useRef<number>(0); // Prevents DB spam
+  const lastSavedTimeRef = useRef<number>(0);
 
-  // Data Hooks
   const { series: seriesDetail } = useSeriesDetail(series.id);
-  const { updateProgress } = useWatchProgress();
+  const { updateProgress, getProgress } = useWatchProgress();
 
-  // State
   const [currentEpisode, setCurrentEpisode] = useState<SeriesEpisode>(initialEpisode);
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -45,7 +42,6 @@ export default function SeriesVideoPlayer({
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [buffered, setBuffered] = useState(0);
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
   const [videoEnded, setVideoEnded] = useState(false);
@@ -55,50 +51,50 @@ export default function SeriesVideoPlayer({
 
   const hasValidUrl = !!(currentEpisode.video_url && currentEpisode.video_url.trim() !== '');
 
-  // --- LOGIC: PROGRESS TRACKING & SYNC ---
-
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v || isSeeking) return;
-
-    const currentSecs = v.currentTime;
-    const totalSecs = v.duration;
-
-    // Update UI
-    setCurrentTime(currentSecs);
+    
+    setCurrentTime(v.currentTime);
+    
     if (v.buffered.length > 0) {
       setBuffered(v.buffered.end(v.buffered.length - 1));
     }
 
-    // Database Throttle: Save every 5 seconds or if video ends
-    if (
-      series?.id &&
-      currentEpisode?.id &&
-      totalSecs > 0 &&
-      (Math.abs(currentSecs - lastSavedTimeRef.current) > 5 || v.ended)
-    ) {
-      lastSavedTimeRef.current = currentSecs;
-      updateProgress(series.id, currentSecs, totalSecs, 'series', currentEpisode.id);
+    // Check if we have the IDs needed
+    if (series?.id && currentEpisode?.id && v.duration > 0) {
+      // 1. We still use lastSavedTimeRef to avoid spamming the DATABASE...
+      if (v.currentTime > 5 && (Math.abs(v.currentTime - lastSavedTimeRef.current) > 5 || v.ended)) {
+  lastSavedTimeRef.current = v.currentTime;
+  
+  updateProgress(
+    series.id,
+    v.currentTime,
+    v.duration,
+    'series',
+    currentEpisode.id,
+    selectedSeason
+  );
+}
     }
   }, [series?.id, currentEpisode?.id, isSeeking, updateProgress]);
 
-  // Initial Resume Logic: Start where the user left off
   const onLoadedMetadata = () => {
     const v = videoRef.current;
     if (!v) return;
     setDuration(v.duration);
-    
-    // Resume logic is handled by parent passing initialTime or via useWatchProgress
+    // Resume from saved progress
+    const saved = getProgress(series.id, currentEpisode.id);
+    if (saved && saved.currentTime > 5 && saved.currentTime / v.duration < 0.95) {
+      v.currentTime = saved.currentTime;
+    }
   };
-
-  // --- LOGIC: EPISODE NAVIGATION ---
 
   const getNextEpisode = useCallback((): SeriesEpisode | null => {
     if (!seriesDetail) return null;
     const currentSeasonData = seriesDetail.seasons.find(s => s.number === selectedSeason);
     if (!currentSeasonData) return null;
     const currentIdx = currentSeasonData.episodes.findIndex(e => e.id === currentEpisode.id);
-    
     if (currentIdx < currentSeasonData.episodes.length - 1) {
       return currentSeasonData.episodes[currentIdx + 1];
     }
@@ -116,9 +112,8 @@ export default function SeriesVideoPlayer({
     setShowEpisodes(false);
     setShowNextEpisode(false);
     setVideoEnded(false);
-    lastSavedTimeRef.current = 0; // Reset throttle for new episode
+    lastSavedTimeRef.current = 0;
     if (countdownRef.current) clearInterval(countdownRef.current);
-    
     if (seriesDetail) {
       const season = seriesDetail.seasons.find(s => s.episodes.some(e => e.id === episode.id));
       if (season) setSelectedSeason(season.number);
@@ -145,8 +140,6 @@ export default function SeriesVideoPlayer({
     }
   }, [getNextEpisode, playEpisode]);
 
-  // --- LOGIC: UI CONTROLS ---
-
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
@@ -155,7 +148,7 @@ export default function SeriesVideoPlayer({
     }
   }, [isPlaying, isLocked]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     if (videoEnded) {
@@ -167,15 +160,15 @@ export default function SeriesVideoPlayer({
       if (v.paused) { v.play(); setIsPlaying(true); }
       else { v.pause(); setIsPlaying(false); }
     }
-  };
+  }, [videoEnded]);
 
-  const skip = (seconds: number) => {
+  const skip = useCallback((seconds: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
     }
-  };
+  }, [duration]);
 
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = useCallback(async () => {
     const el = containerRef.current;
     if (!el) return;
     if (!document.fullscreenElement) {
@@ -185,26 +178,33 @@ export default function SeriesVideoPlayer({
       await document.exitFullscreen?.().catch(() => {});
       setIsFullscreen(false);
     }
+  }, []);
+
+  const changeSpeed = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) videoRef.current.playbackRate = speed;
+    setShowSpeedMenu(false);
   };
 
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts - use e.key directly (case-sensitive)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (isLocked) return;
-      switch (e.key.toLowerCase()) {
+      switch (e.key) {
         case " ": case "k": e.preventDefault(); togglePlay(); break;
-        case "arrowright": e.preventDefault(); skip(10); break;
-        case "arrowleft": e.preventDefault(); skip(-10); break;
-        case "arrowup": 
-          e.preventDefault(); 
+        case "ArrowRight": e.preventDefault(); skip(10); break;
+        case "ArrowLeft": e.preventDefault(); skip(-10); break;
+        case "ArrowUp":
+          e.preventDefault();
           setVolume(prev => {
             const newVol = Math.min(1, prev + 0.1);
             if (videoRef.current) videoRef.current.volume = newVol;
+            setIsMuted(false);
             return newVol;
           });
           break;
-        case "arrowdown": 
-          e.preventDefault(); 
+        case "ArrowDown":
+          e.preventDefault();
           setVolume(prev => {
             const newVol = Math.max(0, prev - 0.1);
             if (videoRef.current) videoRef.current.volume = newVol;
@@ -213,19 +213,48 @@ export default function SeriesVideoPlayer({
           break;
         case "f": toggleFullscreen(); break;
         case "m": setIsMuted(prev => !prev); break;
-        case "escape":
+        case "n":
+          { const next = getNextEpisode(); if (next) playEpisode(next); }
+          break;
+        case "Escape":
           if (showEpisodes) setShowEpisodes(false);
           else if (showNextEpisode) setShowNextEpisode(false);
           else onClose();
           break;
       }
+      resetControlsTimer();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isLocked, isFullscreen, isPlaying, showEpisodes, showNextEpisode]);
+  }, [isLocked, togglePlay, skip, toggleFullscreen, getNextEpisode, playEpisode, showEpisodes, showNextEpisode, onClose, resetControlsTimer]);
+
+  useEffect(() => {
+    resetControlsTimer();
+    return () => { if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current); };
+  }, [isPlaying, resetControlsTimer]);
+
+  useEffect(() => {
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, []);
+
+  // Apply volume/mute to video element
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+      videoRef.current.muted = isMuted;
+    }
+  }, [volume, isMuted]);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
+
+  const currentSeasonData = seriesDetail?.seasons.find(s => s.number === selectedSeason);
 
   if (!hasValidUrl) {
     return (
@@ -244,6 +273,7 @@ export default function SeriesVideoPlayer({
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden"
       onMouseMove={resetControlsTimer}
+      onClick={resetControlsTimer}
     >
       <video
         ref={videoRef}
@@ -256,63 +286,80 @@ export default function SeriesVideoPlayer({
         onLoadedMetadata={onLoadedMetadata}
         onEnded={handleVideoEnded}
         onWaiting={() => setIsBuffering(true)}
-        onPlaying={() => setIsBuffering(false)}
+        onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
+        onCanPlay={() => setIsBuffering(false)}
         muted={isMuted}
       />
 
-      {/* Buffering Overlay */}
+      {/* Stylish Buffering Overlay */}
       <AnimatePresence>
         {isBuffering && !videoEnded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-[103] bg-black/20">
-            <Loader2 className="w-12 h-12 text-primary animate-spin" />
-            <span className="text-white/70 mt-4 text-sm font-medium">Buffering...</span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex flex-col items-center justify-center z-[103] pointer-events-none"
+          >
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
+              <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-primary/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+            </div>
+            <span className="text-white/60 mt-4 text-xs font-medium tracking-wider uppercase">Loading</span>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Custom Controls Layer */}
+      {/* Controls Layer */}
       <AnimatePresence>
         {showControls && !isLocked && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 z-[105] flex flex-col justify-between"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* TOP BAR */}
-            <div className="p-4 md:p-6 bg-gradient-to-b from-black/90 to-transparent flex items-center gap-4">
+            <div className="p-3 md:p-6 bg-gradient-to-b from-black/90 to-transparent flex items-center gap-3">
               <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <ChevronLeft className="w-7 h-7 text-white" />
+                <ChevronLeft className="w-6 h-6 text-white" />
               </button>
-              <div className="flex-1">
-                <h2 className="text-white font-bold md:text-xl truncate">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-white font-bold text-sm md:text-xl truncate">
                   {series.title} <span className="text-white/60 font-medium">— S{selectedSeason} E{currentEpisode.number}</span>
                 </h2>
-                <p className="text-white/60 text-sm truncate">{currentEpisode.title}</p>
+                <p className="text-white/60 text-xs truncate">{currentEpisode.title}</p>
               </div>
               <button onClick={() => setShowEpisodes(true)} className="p-2 hover:bg-white/10 rounded-full">
-                <List className="w-6 h-6 text-white" />
+                <List className="w-5 h-5 text-white" />
               </button>
+              {nextEpisode && (
+                <button onClick={() => playEpisode(nextEpisode)}
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors">
+                  <NextIcon className="w-4 h-4" /> Next
+                </button>
+              )}
               <button onClick={() => setIsLocked(true)} className="p-2 hover:bg-white/10 rounded-full">
-                <Unlock className="w-6 h-6 text-white" />
+                <Unlock className="w-5 h-5 text-white" />
               </button>
             </div>
 
             {/* CENTER CONTROLS */}
-            <div className="flex items-center justify-center gap-12">
-              <button onClick={() => skip(-10)} className="p-4 bg-white/5 hover:bg-white/10 rounded-full text-white backdrop-blur-sm transition-all">
-                <SkipBack className="w-8 h-8" />
+            <div className="flex items-center justify-center gap-8 md:gap-12">
+              <button onClick={() => skip(-10)} className="p-3 md:p-4 bg-white/5 hover:bg-white/10 rounded-full text-white backdrop-blur-sm transition-all">
+                <SkipBack className="w-6 h-6 md:w-8 md:h-8" />
               </button>
-              <button onClick={togglePlay} className="p-6 bg-primary rounded-full text-white shadow-xl hover:scale-110 transition-transform">
-                {videoEnded ? <RefreshCw className="w-10 h-10" /> : isPlaying ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 fill-current" />}
+              <button onClick={togglePlay} className="p-5 md:p-6 bg-primary rounded-full text-white shadow-xl hover:scale-110 transition-transform">
+                {videoEnded ? <RefreshCw className="w-8 h-8 md:w-10 md:h-10" /> : isPlaying ? <Pause className="w-8 h-8 md:w-10 md:h-10" /> : <Play className="w-8 h-8 md:w-10 md:h-10 fill-current" />}
               </button>
-              <button onClick={() => skip(10)} className="p-4 bg-white/5 hover:bg-white/10 rounded-full text-white backdrop-blur-sm transition-all">
-                <SkipForward className="w-8 h-8" />
+              <button onClick={() => skip(10)} className="p-3 md:p-4 bg-white/5 hover:bg-white/10 rounded-full text-white backdrop-blur-sm transition-all">
+                <SkipForward className="w-6 h-6 md:w-8 md:h-8" />
               </button>
             </div>
 
             {/* BOTTOM BAR */}
-            <div className="p-4 md:p-8 bg-gradient-to-t from-black/90 to-transparent">
-            {/* Progress Slider */}
-              <div className="relative h-2 w-full mb-6 group">
+            <div className="p-3 md:p-8 bg-gradient-to-t from-black/90 to-transparent">
+              {/* Progress Slider */}
+              <div className="relative h-2 w-full mb-4 md:mb-6 group">
                 <div className="absolute inset-0 bg-white/20 rounded-full overflow-hidden">
                   <div className="h-full bg-white/30" style={{ width: `${bufferedPercent}%` }} />
                   <div className="h-full bg-red-600 absolute top-0 left-0 transition-all" style={{ width: `${progressPercent}%` }} />
@@ -331,23 +378,115 @@ export default function SeriesVideoPlayer({
               </div>
 
               <div className="flex items-center justify-between text-white">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2 group">
-                    <button onClick={() => setIsMuted(!isMuted)}>
-                      {isMuted ? <VolumeX /> : <Volume2 />}
+                <div className="flex items-center gap-2 md:gap-4">
+                  {/* Mobile play/next */}
+                  <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded transition-colors md:hidden">
+                    {videoEnded ? <RefreshCw className="w-5 h-5" /> : isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
+                  </button>
+                  {nextEpisode && (
+                    <button onClick={() => playEpisode(nextEpisode)} className="p-1.5 hover:bg-white/10 rounded transition-colors md:hidden">
+                      <NextIcon className="w-5 h-5" />
+                    </button>
+                  )}
+                  <div className="hidden md:flex items-center gap-1">
+                    <button onClick={() => setIsMuted(!isMuted)} className="p-1.5 hover:bg-white/10 rounded">
+                      {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </button>
                     <input 
-                      type="range" min={0} max={1} step={0.05} value={volume}
-                      onChange={(e) => setVolume(parseFloat(e.target.value))}
+                      type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume}
+                      onChange={(e) => { const v = parseFloat(e.target.value); setVolume(v); if (v > 0) setIsMuted(false); }}
                       className="w-20 accent-primary"
                     />
                   </div>
-                  <span className="text-sm font-mono">{Math.floor(currentTime/60)}:{Math.floor(currentTime%60).toString().padStart(2,'0')} / {Math.floor(duration/60)}:{Math.floor(duration%60).toString().padStart(2,'0')}</span>
+                  <span className="text-xs font-mono text-white/80">{formatTime(currentTime)} / {formatTime(duration)}</span>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} className="text-sm font-bold bg-white/10 px-3 py-1 rounded">{playbackSpeed}x</button>
-                  <button onClick={toggleFullscreen}><Maximize /></button>
+                <div className="flex items-center gap-1 md:gap-2">
+                  {/* Speed / Settings */}
+                  <div className="relative">
+                    <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} className="p-1.5 hover:bg-white/10 rounded transition-colors">
+                      <Settings className="w-5 h-5" />
+                    </button>
+                    {showSpeedMenu && (
+                      <div className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-white/10 rounded-lg p-2 min-w-[120px] shadow-lg">
+                        <p className="text-xs text-white/50 px-2 mb-1">Speed</p>
+                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                          <button key={speed} onClick={() => changeSpeed(speed)}
+                            className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
+                              playbackSpeed === speed ? "text-primary bg-primary/10" : "text-white hover:bg-white/10"
+                            }`}>{speed}x</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Mobile volume */}
+                  <button onClick={() => setIsMuted(!isMuted)} className="p-1.5 hover:bg-white/10 rounded transition-colors md:hidden">
+                    {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                  {/* Episodes button mobile */}
+                  <button onClick={() => setShowEpisodes(true)} className="p-1.5 hover:bg-white/10 rounded transition-colors md:hidden">
+                    <List className="w-5 h-5" />
+                  </button>
+                  <button onClick={toggleFullscreen} className="p-1.5 hover:bg-white/10 rounded transition-colors">
+                    {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lock overlay */}
+      {isLocked && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[110]">
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsLocked(false); resetControlsTimer(); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm"
+          >
+            <Lock className="w-4 h-4" /> Tap to unlock
+          </button>
+        </div>
+      )}
+
+      {/* Next Episode Auto-play Overlay */}
+      <AnimatePresence>
+        {showNextEpisode && nextEpisode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-24 right-4 md:right-8 z-[115] w-[260px] md:w-[340px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-zinc-900/95 backdrop-blur-md rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-white/50">Next Episode</p>
+                <p className="text-sm font-semibold text-white truncate">
+                  S{selectedSeason} E{nextEpisode.number}: {nextEpisode.title}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-8 h-8">
+                    <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+                      <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"
+                        strokeDasharray={`${(nextEpisodeCountdown / 5) * 88} 88`} strokeLinecap="round"
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{nextEpisodeCountdown}</span>
+                  </div>
+                  <span className="text-xs text-white/50">Playing in {nextEpisodeCountdown}s</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => playEpisode(nextEpisode)}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-lg font-semibold text-xs transition-colors">
+                    <Play className="w-3.5 h-3.5 fill-current" /> Play Now
+                  </button>
+                  <button onClick={() => { setShowNextEpisode(false); if (countdownRef.current) clearInterval(countdownRef.current); }}
+                    className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors">
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
@@ -360,22 +499,59 @@ export default function SeriesVideoPlayer({
         {showEpisodes && (
           <motion.div 
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            className="absolute top-0 right-0 bottom-0 w-80 bg-zinc-900 border-l border-white/10 z-[120] p-6 overflow-y-auto"
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="absolute top-0 right-0 bottom-0 w-full md:w-80 bg-zinc-900/95 backdrop-blur-md border-l border-white/10 z-[120] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-white font-bold text-xl">Episodes</h3>
-              <X className="text-white cursor-pointer" onClick={() => setShowEpisodes(false)} />
+            <div className="sticky top-0 bg-zinc-900/90 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">Episodes</h3>
+              <button onClick={() => setShowEpisodes(false)} className="p-1.5 rounded-full hover:bg-white/10">
+                <X className="w-5 h-5 text-white" />
+              </button>
             </div>
-            {seriesDetail?.seasons.find(s => s.number === selectedSeason)?.episodes.map(ep => (
-              <div 
-                key={ep.id} 
-                onClick={() => playEpisode(ep)}
-                className={`p-4 rounded-lg mb-2 cursor-pointer transition-colors ${ep.id === currentEpisode.id ? 'bg-primary' : 'bg-white/5 hover:bg-white/10'}`}
-              >
-                <p className="text-white font-medium text-sm">E{ep.number}: {ep.title}</p>
-                <p className="text-white/50 text-xs mt-1">{ep.duration}</p>
+
+            {seriesDetail && seriesDetail.seasons.length > 1 && (
+              <div className="px-4 py-3 border-b border-white/10">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {seriesDetail.seasons.map((s) => (
+                    <button key={s.number} onClick={() => setSelectedSeason(s.number)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                        selectedSeason === s.number ? "bg-primary text-primary-foreground" : "bg-white/10 text-white hover:bg-white/20"
+                      }`}>
+                      Season {s.number}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            <div className="p-4 space-y-2">
+              {currentSeasonData?.episodes.map(ep => (
+                <button
+                  key={ep.id} 
+                  onClick={() => playEpisode(ep)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${ep.id === currentEpisode.id ? 'bg-primary/20 border border-primary/30' : 'bg-white/5 hover:bg-white/10 border border-transparent'}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      ep.id === currentEpisode.id ? 'bg-primary text-primary-foreground' : 'bg-white/10 text-white/60'
+                    }`}>{ep.number}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${ep.id === currentEpisode.id ? 'text-primary' : 'text-white'}`}>
+                        {ep.title}
+                      </p>
+                      <p className="text-white/40 text-xs mt-0.5">{ep.duration}</p>
+                      {ep.id === currentEpisode.id && (
+                        <div className="flex items-center gap-1 mt-1 text-primary">
+                          <Play className="w-3 h-3 fill-current" />
+                          <span className="text-xs font-medium">Now Playing</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

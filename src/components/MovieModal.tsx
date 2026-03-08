@@ -46,6 +46,7 @@ export default function MovieModal({
     <AnimatePresence>
       {movie && (
         <>
+          {/* 1. Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -53,6 +54,8 @@ export default function MovieModal({
             className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
             onClick={onClose}
           />
+
+          {/* 2. Modal Content */}
           <motion.div
             variants={variants}
             initial="hidden"
@@ -65,9 +68,13 @@ export default function MovieModal({
                 : "top-0 right-0 bottom-0 w-[480px] border-l border-border"
             }`}
           >
-            {/* Header image */}
-            <div className="relative h-64 md:h-72">
-              <img src={movie.heroImage || movie.poster} alt={movie.title} className="w-full h-full object-cover" />
+            {/* Header image section - FIXED: Added opening <div> */}
+            <div className="relative aspect-[4/3] md:aspect-video">
+              <img 
+                src={movie.heroImage || movie.poster} 
+                alt={movie.title} 
+                className="w-full h-full object-cover object-center" 
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
               <button
                 onClick={onClose}
@@ -83,6 +90,7 @@ export default function MovieModal({
               )}
             </div>
 
+            {/* Content section - Now safely inside motion.div */}
             <div className="px-6 pb-8 -mt-16 relative">
               <h2 className="text-3xl font-display tracking-wider text-foreground mb-2">
                 {movie.title.toUpperCase()}
@@ -105,11 +113,6 @@ export default function MovieModal({
                   <Globe className="w-3.5 h-3.5" />
                   {movie.language}
                 </span>
-                {movie.isSeries && seriesInfo && (
-                  <span className="text-primary font-medium">
-                    {seriesInfo.seasons.length} Season{seriesInfo.seasons.length > 1 ? "s" : ""}
-                  </span>
-                )}
               </div>
 
               <div className="flex gap-2 mb-4 flex-wrap">
@@ -120,125 +123,67 @@ export default function MovieModal({
                 ))}
               </div>
 
-              <p className="text-foreground/80 text-sm leading-relaxed mb-6">{movie.description}</p>
+                <p className="text-foreground/80 text-sm leading-relaxed mb-6">{movie.description}</p>
 
-              {/* Star rating */}
-              <div className="mb-6">
-                <p className="text-xs text-muted-foreground mb-2">Your Rating</p>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onClick={() => onRate(movie.id, star)}>
-                      <Star
-                        className={`w-6 h-6 transition-colors ${
-                          star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-{/* --- Replace lines 138 to 160 with this block --- */}
-<div className="flex flex-wrap gap-2 mb-4">
-  <button 
-    onClick={() => onWatch?.(movie)} 
-    className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
-  >
-    <Play className="w-4 h-4 fill-current" />
-    {movie.isSeries ? "Play S1 E1" : "Watch Now"}
-  </button>
-  
-  <button 
-    onClick={() => onToggleWatchlist?.(movie.id)} 
-    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors ${
-      isInWatchlist 
-        ? "bg-primary/20 text-primary border border-primary/30" 
-        : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-    }`}
-  >
-    {isInWatchlist ? <CheckCircle className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-    {isInWatchlist ? "Listed" : "My List"}
-  </button>
-
-
-  <button 
-    onClick={() => onDownload(movie.id)} 
-    className="flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-3 rounded-md font-semibold text-sm transition-colors"
-  >
-    {downloadState?.status === "complete" ? (
-      <Check className="w-4 h-4 text-primary" />
-    ) : (
-      <Download className="w-4 h-4" />
-    )}
-  </button>
+             {/* Star rating - Row layout fix */}
+<div className="mb-6 flex items-center gap-4">
+  <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
+  <div className="flex gap-1">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button 
+        key={star} 
+        onClick={() => onRate?.(movie.id, star)}
+        className="p-1 -m-1 transition-transform hover:scale-110"
+      >
+        <Star 
+          className={`w-6 h-6 transition-colors ${
+            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+          }`} 
+        />
+      </button>
+    ))}
+  </div>
 </div>
 
-              {/* Download progress */}
-              {downloadState?.status === "downloading" && (
-                <div className="mb-6 h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300"
-                    style={{ width: `${downloadState.progress}%` }}
-                  />
-                </div>
-              )}
+              
 
-              {/* Hotstar-style Season/Episode selector for series */}
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => onWatch?.(movie)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  {movie.isSeries ? "Play S1 E1" : "Watch Now"}
+                </button>
+
+                <button
+                  onClick={() => onToggleWatchlist?.(movie.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors ${
+                    isInWatchlist
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                  }`}
+                >
+                  {isInWatchlist ? <CheckCircle className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                  {isInWatchlist ? "Listed" : "My List"}
+                </button>
+              </div>
+
+              {/* Series logic */}
               {seriesInfo && (
-                <div className="mt-2">
+                <div className="mt-6">
                   <h3 className="text-lg font-display tracking-wide text-foreground mb-3">EPISODES</h3>
-                  
-                  {/* Season tabs */}
-                  {seriesInfo.seasons.length > 1 && (
-                    <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
-                      {seriesInfo.seasons.map((season) => (
-                        <button
-                          key={season.number}
-                          onClick={() => setSelectedSeason(season.number)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                            selectedSeason === season.number
-                              ? "bg-primary text-primary-foreground shadow-lg"
-                              : "bg-secondary text-secondary-foreground hover:bg-cine-surface-hover"
-                          }`}
-                        >
-                          Season {season.number}
-                          <span className="ml-1.5 text-xs opacity-70">
-                            ({season.episodes.length} ep)
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Episode list - Hotstar style */}
                   <div className="space-y-2">
-                    {currentSeasonData?.episodes.map((episode) => (
+                    {currentSeasonData?.episodes.map((episode: any) => (
                       <button
                         key={episode.id}
                         onClick={() => onWatch?.(movie)}
-                        className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
+                        className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                       >
-                        <div className="flex items-start gap-3">
-                          {/* Thumbnail placeholder */}
-                          <div className="relative flex-shrink-0 w-28 h-16 rounded-md overflow-hidden bg-muted">
-                            <img
-                              src={movie.poster}
-                              alt={episode.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                              <Play className="w-6 h-6 text-primary-foreground fill-current" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-xs font-bold text-primary">E{episode.number}</span>
-                              <h4 className="text-sm font-medium text-foreground truncate">{episode.title}</h4>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-1">{episode.duration}</p>
-                            <p className="text-xs text-muted-foreground/80 line-clamp-2">{episode.description}</p>
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-primary">E{episode.number}</span>
+                          <h4 className="text-sm font-medium text-foreground">{episode.title}</h4>
                         </div>
                       </button>
                     ))}

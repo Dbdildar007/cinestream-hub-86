@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, Tv, Plus, CheckCircle } from "lucide-react"; 
 import type { Series } from "@/services/seriesService";
+
 
 interface SeriesCardProps {
   series: any;
@@ -22,6 +23,14 @@ export default function SeriesCard({
   isWatchlisted = false // Default to false
 }: SeriesCardProps) {
   const [hovered, setHovered] = useState(false);
+
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <motion.div
@@ -53,35 +62,37 @@ export default function SeriesCard({
 
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: hovered ? 1 : 0 }}
-          className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent flex flex-col justify-end p-3 space-y-1"
+          animate={{ opacity: isMobile ? 1 : (hovered ? 1 : 0) }}
+          className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3"
         >
           <p className="text-[10px] md:text-xs text-muted-foreground">
             {series.release_year} • {series.genre?.join(", ")}
           </p>
           
           {onRate && (
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={(e) => {
-                    e.stopPropagation(); 
-                    onRate(series.id, star);
-                  }}
-                  className="focus:outline-none transition-transform active:scale-125 p-0"
-                >
-                  <Star
-                    className={`w-3 h-3 transition-colors ${
-                      star <= userRating
-                        ? "text-cine-gold fill-cine-gold"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        onClick={(e) => {
+          e.stopPropagation();
+          // FIX 1: Use onRate instead of onToggleWatchlist
+          // FIX 2: Use series.id instead of movie.id
+          if (onRate) onRate(series.id, star);
+        }}
+        // FIX 3: Add p-1 -m-1 for touch hitbox, remove watchlist-specific styles
+        className="p-1 -m-1 mt-1 transition-colors"
+      >
+        <Star
+          className={`w-3 h-3 transition-colors ${
+            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+          }`}
+        />
+      </button>
+    ))}
+  </div>
+)}
+              
 
           {onToggleWatchlist && (
             <button

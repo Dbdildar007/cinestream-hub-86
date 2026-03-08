@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Download, Star, Check, Plus, CheckCircle, Tv } from "lucide-react";
 import type { Movie } from "@/services/movieService";
@@ -15,7 +15,15 @@ interface MovieCardProps {
 }
 
 export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
-  const [hovered, setHovered] = useState(false);
+ const [hovered, setHovered] = useState(false);
+  // NEW: Add isMobile state and listener
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <motion.div
@@ -45,19 +53,19 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
         {/* Hover overlay */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: hovered ? 1 : 0 }}
-          className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent flex flex-col justify-end p-3"
+          animate={{ opacity: isMobile ? 1 : (hovered ? 1 : 0) }}
+          className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent md:from-background md:via-background/50 flex flex-col justify-end p-3 transition-opacity"
         >
           <div className="flex items-center gap-1 mb-1">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRate(movie.id, star);
-                }}
-                className="p-0"
-              >
+              <button 
+  key={star}
+  onClick={(e) => { 
+    e.stopPropagation(); 
+    if (onRate) onRate(movie.id, star); 
+  }}
+  className="p-1 -m-1" // Increases hit-box for mobile thumbs
+>
                 <Star
                   className={`w-3 h-3 transition-colors ${
                     star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"

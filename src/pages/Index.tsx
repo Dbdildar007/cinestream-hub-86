@@ -11,7 +11,7 @@ import SeriesVideoPlayer from "@/components/SeriesVideoPlayer";
 import { type Movie } from "@/services/movieService";
 import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
-import { useWatchProgress } from "@/hooks/useWatchProgress";
+import { useWatchProgress, type WatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useWatchParty } from "@/hooks/useWatchParty";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,12 +22,12 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { useMovies } from '@/hooks/useMovies';
 import type { Series, SeriesEpisode } from '@/services/seriesService';
-
+import { seriesService } from '@/services/seriesService';
 export default function Index() {
   const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(false);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
@@ -41,10 +41,10 @@ export default function Index() {
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
   const [playingSeries, setPlayingSeries] = useState<{ series: Series; episode: SeriesEpisode; season: number } | null>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setInitialLoad(false), 800);
-    return () => clearTimeout(t);
-  }, []);
+  //useEffect(() => {
+    //const t = setTimeout(() => setInitialLoad(false), 800);
+    //return () => clearTimeout(t);
+  //}, []);
 
   // Listen for watch party invites
   useEffect(() => {
@@ -120,7 +120,27 @@ export default function Index() {
     setPlayingSeries({ series, episode, season });
   };
 
-  if (initialLoad || loading) {
+  const handleContinueWatchSeries = useCallback(async (movie: Movie, progress: WatchProgress) => {
+    if (!progress.episodeId) {
+      // No episode ID, open series modal
+      setSelectedSeries(movieToSeries(movie));
+      return;
+    }
+    // Fetch series details to find the episode
+    const detail = await seriesService.getSeriesWithSeasons(movie.id);
+    if (!detail) return;
+    for (const season of detail.seasons) {
+      const episode = season.episodes.find(e => e.id === progress.episodeId);
+      if (episode) {
+        setPlayingSeries({ series: movieToSeries(movie), episode, season: season.number });
+        return;
+      }
+    }
+    // Fallback: open modal
+    setSelectedSeries(movieToSeries(movie));
+  }, [movieToSeries]);
+
+ if (loading && allMovies.length === 0 && !user){
     return (
       <div className="min-h-screen bg-background">
         <LoadingSpinner fullScreen text="Loading CineStream..." />
@@ -145,6 +165,7 @@ export default function Index() {
         <ContinueWatchingRow
           movies={continueWatchingMovies}
           onWatch={handleWatch}
+          onWatchSeries={handleContinueWatchSeries}
           onRemove={clearProgress}
         />
 
@@ -161,7 +182,7 @@ export default function Index() {
             onRate={setRating}
             isInWatchlist={isInWatchlist}
             onToggleWatchlist={toggleWatchlist}
-            showRemoveButton
+            showRemoveButton={true}
           />
         )}
 

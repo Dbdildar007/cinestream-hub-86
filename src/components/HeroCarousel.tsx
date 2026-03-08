@@ -58,7 +58,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             src={movie.heroImage || movie.poster}
             alt={movie.title}
             className="w-full h-full object-cover brightness-95" 
-            style={{ aspectRatio: "2752 / 1536" }}
+            style={{ aspectRatio: "16 / 9" }}
             loading="eager" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />

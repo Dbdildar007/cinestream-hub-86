@@ -64,7 +64,7 @@ function mapDbMovie(row: any): Movie {
     year: row.release_year || row.year || new Date().getFullYear(),
     rating: Number(row.rating) || 0,
     genre: genres,
-    category: Array.isArray(row.category) ? row.category : genres,
+    category: Array.isArray(row.category) ? row.category : (typeof row.category === 'string' && row.category ? row.category.split(',').map((c: string) => c.trim()) : genres),
     language: row.language || 'English',
     description: row.description || '',
     poster: resolveImageUrl(row.poster || row.poster_url, posterMap) || poster1,
