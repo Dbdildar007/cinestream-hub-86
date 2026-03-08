@@ -4,17 +4,28 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, ChevronLeft, 
   Lock, Unlock, List, SkipForward as NextIcon, 
-  RefreshCw, AlertCircle, Subtitles
+  RefreshCw, AlertCircle, Subtitles, Users, Loader2
 } from "lucide-react";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
 import { useSeriesDetail } from "@/hooks/useSeries";
 import { useWatchProgress } from '@/hooks/useWatchProgress'; 
+import type { PartyPhase } from "@/hooks/useWatchParty";
 
 interface SeriesVideoPlayerProps {
   series: Series;
   initialEpisode: SeriesEpisode;
   initialSeason: number;
   onClose: () => void;
+  watchPartyActive?: boolean;
+  isHost?: boolean;
+  onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
+  onEndParty?: () => void;
+  guestName?: string;
+  partyPhase?: PartyPhase;
+  onEpisodeChangeReceived?: (cb: (data: { episode: SeriesEpisode; seasonNumber: number }) => void) => void;
+  broadcastEpisodeChange?: (episode: SeriesEpisode, seasonNumber: number) => void;
 }
 
 export default function SeriesVideoPlayer({
