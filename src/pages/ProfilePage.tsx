@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Download, Copy, KeyRound, Eye, EyeOff } from "lucide-react";
+import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Popcorn, Copy, KeyRound, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ export default function ProfilePage() {
     { icon: Heart, label: "My Watchlist", count: String(watchlist.length), action: () => navigate("/watchlist") },
     { icon: Clock, label: "Watch History", count: String(historyCount), action: () => navigate("/watch-history") },
     { icon: Star, label: "My Ratings", count: String(ratingsCount), action: () => navigate("/my-ratings") },
-    { icon: Download, label: "Downloads", count: null, action: () => navigate("/downloads") },
+    { icon: Popcorn, label: "Watch Party", count: null, action: () => navigate("/watch-history") },
     { icon: Settings, label: "Settings", count: null, action: () => navigate("/settings") },
   ];
 
