@@ -365,6 +365,25 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
+          <div className="w-1 h-8 rounded-full bg-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold text-primary">
+              {replyTo.isMine ? "You" : remoteProfile?.display_name || "Them"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.text}</p>
+          </div>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="p-1 rounded-full hover:bg-secondary text-muted-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Input */}
       <div
         className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2 mb-2 md:mb-0"
