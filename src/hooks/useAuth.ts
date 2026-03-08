@@ -50,7 +50,7 @@ export function useAuth() {
     localStorage.removeItem('cinestream-ratings');
     localStorage.removeItem('cinestream_watch_progress');
     queryClient.clear();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return { user, session, loading, signUp, signIn, signOut };

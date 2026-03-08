@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import TopNav from "./components/TopNav";
 import BottomNav from "./components/BottomNav";
 import FloatingVideoCall from "./components/FloatingVideoCall";
@@ -31,19 +32,23 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const { callState, startCall, acceptCall, declineCall, endCall, toggleMute, toggleCamera, toggleMinimize } = useVideoCall();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showEvicted, setShowEvicted] = useState(false);
 
-  const handleEvicted = useCallback(() => {
+  const handleEvicted = useCallback(async () => {
+    // Auto sign out immediately when evicted - don't clear session (device 2 owns it now)
+    localStorage.removeItem('user_profile');
+    localStorage.removeItem('cinestream_watchlist');
+    localStorage.removeItem('cinestream-ratings');
+    localStorage.removeItem('cinestream_watch_progress');
+    await supabase.auth.signOut({ scope: 'local' });
     setShowEvicted(true);
   }, []);
 
-  const { clearSession } = useDeviceSession(user?.id, handleEvicted);
+  useDeviceSession(user?.id, handleEvicted);
 
   const handleEvictedAcknowledge = async () => {
-    await clearSession();
-    await signOut();
     setShowEvicted(false);
     navigate("/auth", { replace: true });
   };
