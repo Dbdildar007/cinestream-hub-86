@@ -1,4 +1,5 @@
 import { User, MapPin, Copy, Edit2, Check } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import type { User as AuthUser } from "@supabase/supabase-js";
 
 interface ProfileHeaderProps {
@@ -29,13 +30,7 @@ export default function ProfileHeader({
         {/* Avatar */}
         <div className="relative mb-4">
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-secondary border-4 border-primary/30 flex items-center justify-center overflow-hidden shadow-lg">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-4xl md:text-5xl font-display text-primary">
-                {profile?.display_name?.charAt(0)?.toUpperCase() || "U"}
-              </span>
-            )}
+            <img src={getAvatarUrl(profile?.avatar_url, profile?.display_name)} alt="Avatar" className="w-full h-full object-cover" />
           </div>
           <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md">
             <div className="w-3 h-3 rounded-full bg-primary-foreground" />

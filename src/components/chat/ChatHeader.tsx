@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 
 interface RemoteProfile {
   display_name: string;
@@ -15,8 +16,6 @@ interface ChatHeaderProps {
   onBack: () => void;
 }
 
-const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&crop=face";
-
 function formatLastSeen(lastSeen: string | null): string {
   if (!lastSeen) return "Offline";
   const diff = Date.now() - new Date(lastSeen).getTime();
@@ -30,7 +29,7 @@ function formatLastSeen(lastSeen: string | null): string {
 
 export default function ChatHeader({ remoteProfile, remoteIsTyping, onBack }: ChatHeaderProps) {
   const name = remoteProfile?.display_name || "Chat";
-  const avatarUrl = remoteProfile?.avatar_url || DEFAULT_AVATAR;
+  const avatarUrl = getAvatarUrl(remoteProfile?.avatar_url, name);
   const isOnline = remoteProfile?.is_online ?? false;
 
   return (

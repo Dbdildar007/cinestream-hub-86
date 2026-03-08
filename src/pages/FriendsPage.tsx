@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -447,11 +448,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             {searching && <LoadingSpinner size="sm" text="Searching..." />}
             {!searching && searchResults.map((profile) => (
               <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">
-                    {profile.display_name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <img
+                  src={getAvatarUrl(profile.avatar_url, profile.display_name)}
+                  alt={profile.display_name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
                   <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
@@ -478,15 +479,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 hover:bg-secondary hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-default"
                   >
                     <div className="relative">
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt={profile.display_name} className="w-11 h-11 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {profile.display_name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+                      <img src={getAvatarUrl(profile.avatar_url, profile.display_name)} alt={profile.display_name} className="w-11 h-11 rounded-full object-cover" />
                       <span
                         className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${
                           profile.is_online ? "bg-green-500" : "bg-muted-foreground/40"
@@ -539,7 +532,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               }`}>
                 <div className="relative">
                   <img
-                    src={f.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.profile?.display_name || f.id}`}
+                    src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
                     alt={f.profile?.display_name || "User"}
                     className="w-10 h-10 rounded-full object-cover bg-primary/10"
                   />
@@ -606,15 +599,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15 hover:bg-primary/10 transition-all duration-200"
                 >
                   <div className="relative flex-shrink-0">
-                    {req.profile?.avatar_url ? (
-                      <img src={req.profile.avatar_url} alt={req.profile.display_name} className="w-11 h-11 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">
-                          {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                        </span>
-                      </div>
-                    )}
+                    <img src={getAvatarUrl(req.profile?.avatar_url, req.profile?.display_name)} alt={req.profile?.display_name || "User"} className="w-11 h-11 rounded-full object-cover" />
                     <span
                       className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-card ${
                         req.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
@@ -664,15 +649,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative flex-shrink-0">
-                        {req.profile?.avatar_url ? (
-                          <img src={req.profile.avatar_url} alt={req.profile.display_name} className="w-12 h-12 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-base font-bold text-primary">
-                              {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                            </span>
-                          </div>
-                        )}
+                        <img src={getAvatarUrl(req.profile?.avatar_url, req.profile?.display_name)} alt={req.profile?.display_name || "User"} className="w-12 h-12 rounded-full object-cover" />
                         <span
                           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
                             req.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
@@ -716,15 +693,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative flex-shrink-0">
-                        {profile.avatar_url ? (
-                          <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-base font-bold text-primary">
-                              {profile.display_name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
+                        <img src={getAvatarUrl(profile.avatar_url, profile.display_name)} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
                         <span
                           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
                             profile.is_online ? "bg-green-500" : "bg-muted-foreground/40"

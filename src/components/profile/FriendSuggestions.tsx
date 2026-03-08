@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { UserPlus, Send, UserCheck, ChevronRight } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -103,13 +104,7 @@ export default function FriendSuggestions() {
               className="flex-shrink-0 w-[130px] flex flex-col items-center p-4 rounded-2xl bg-secondary border border-border/50"
             >
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-2.5 overflow-hidden">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xl font-display text-primary">
-                    {profile.display_name?.charAt(0)?.toUpperCase() || "?"}
-                  </span>
-                )}
+                <img src={getAvatarUrl(profile.avatar_url, profile.display_name)} alt="" className="w-full h-full object-cover" />
               </div>
               <p className="text-xs font-medium text-foreground truncate w-full text-center">
                 {profile.display_name}

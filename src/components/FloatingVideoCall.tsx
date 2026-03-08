@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff,
   Minus, Maximize2, MessageCircle, Send, Smile
@@ -174,11 +175,11 @@ export default function FloatingVideoCall({
         />
         {!callState.remoteStream && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-lg font-bold text-primary">
-                {callState.remoteDisplayName?.charAt(0)?.toUpperCase() || "?"}
-              </span>
-            </div>
+            <img
+              src={getAvatarUrl(null, callState.remoteDisplayName || undefined)}
+              alt={callState.remoteDisplayName || "User"}
+              className="w-12 h-12 rounded-full object-cover"
+            />
           </div>
         )}
 
