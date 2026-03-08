@@ -897,6 +897,57 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 </div>
               </div>
 
+              {/* Confirmation View */}
+              {confirmMovie ? (
+                <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20 md:pb-8 pt-4">
+                  <div className="relative w-40 md:w-48 aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl mb-5 ring-2 ring-primary/30">
+                    <img src={confirmMovie.poster} alt={confirmMovie.title} className="w-full h-full object-cover" />
+                    {confirmMovie.isSeries && (
+                      <div className="absolute top-2 left-2 bg-primary/90 px-2 py-0.5 rounded text-[10px] font-semibold text-primary-foreground">
+                        Series
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-lg md:text-xl font-display tracking-wider text-foreground text-center">{confirmMovie.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 text-center">
+                    {confirmMovie.year} • {confirmMovie.genre?.slice(0, 2).join(", ")} • {confirmMovie.duration}
+                    {confirmMovie.language ? ` • ${confirmMovie.language}` : ""}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <Star className="w-3.5 h-3.5 text-cine-gold fill-cine-gold" />
+                    <span className="text-sm text-muted-foreground">{confirmMovie.rating}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3 text-center max-w-xs line-clamp-3">{confirmMovie.description}</p>
+
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <span>Watch with</span>
+                    <img
+                      src={getAvatarUrl(invitingFriend?.profile?.avatar_url ?? null, invitingFriend?.profile?.display_name ?? "User")}
+                      alt=""
+                      className="w-5 h-5 rounded-full object-cover"
+                    />
+                    <span className="font-medium text-foreground">{invitingFriend?.profile?.display_name}</span>
+                  </div>
+
+                  <div className="flex gap-3 mt-6 w-full max-w-xs">
+                    <button
+                      onClick={() => setConfirmMovie(null)}
+                      className="flex-1 py-3 rounded-xl bg-secondary text-foreground text-sm font-medium hover:bg-secondary/80 transition-colors"
+                    >
+                      Go Back
+                    </button>
+                    <button
+                      onClick={handleConfirmWatchParty}
+                      disabled={isStarting}
+                      className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
+                      {isStarting ? "Starting..." : "Start Watching"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+              <>
               {/* Content */}
               <div ref={modalContentRef} className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1 scrollbar-hide">
                 {/* GRID VIEW */}
