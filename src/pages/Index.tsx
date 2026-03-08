@@ -153,9 +153,7 @@ export default function Index() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <div
       className="min-h-screen bg-background pb-20 md:pb-0 scrollbar-hide overflow-x-hidden"
     >
       <HeroCarousel
@@ -260,6 +258,6 @@ export default function Index() {
       </AnimatePresence>
 
       <Footer />
-    </motion.div>
+    </div>
   );
 }
