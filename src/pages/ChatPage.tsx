@@ -109,26 +109,15 @@ export default function ChatPage() {
             (m.sender_id === user.id && m.receiver_id === remoteUserId) ||
             (m.sender_id === remoteUserId && m.receiver_id === user.id)
           ) {
+            // Ignore our own realtime insert to avoid temp+persisted double-render.
+            // Own messages are reconciled by insert response + polling.
+            if (m.sender_id === user.id) return;
+
             setMessages((prev) => {
-              // Skip if already exists with real id
               if (prev.some((p) => p.id === m.id)) return prev;
-              // If this is our own message, replace the temp version instead of adding
-              if (m.sender_id === user.id) {
-                const hasTemp = prev.some((p) => p.id.startsWith("temp-") && p.text === m.message);
-                if (hasTemp) {
-                  return prev.map((p) =>
-                    p.id.startsWith("temp-") && p.text === m.message
-                      ? mapMessage(m, user.id)
-                      : p
-                  );
-                }
-                return prev; // already replaced by sendMessage response
-              }
               return [...prev, mapMessage(m, user.id)];
             });
-            if (m.sender_id === remoteUserId) {
-              markAsRead();
-            }
+            markAsRead();
           }
         }
       )
@@ -275,7 +264,12 @@ export default function ChatPage() {
         ) : (
           <AnimatePresence initial={true}>
             {messages.map((msg, index) => (
-              <ChatMessageBubble key={msg.id} message={msg} index={index} />
+              <ChatMessageBubble
+                key={msg.id}
+                message={msg}
+                index={index}
+                receiverOnline={remoteProfile?.is_online ?? false}
+              />
             ))}
           </AnimatePresence>
         )}
