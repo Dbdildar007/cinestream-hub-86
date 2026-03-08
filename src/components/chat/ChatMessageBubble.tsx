@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Check, CheckCheck, Undo2, Heart, MoreVertical } from "lucide-react";
+import { Check, CheckCheck, Undo2, Heart, MoreVertical, Quote } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChatMessage } from "@/pages/ChatPage";
@@ -269,26 +269,26 @@ export default function ChatMessageBubble({
           )}
         </div>
 
-        {/* Desktop action buttons - right side for all messages */}
-        {!isMobile && (
-          <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? "order-0" : ""}`}>
-            {onContextAction && (
-              <button
-                onClick={handleDesktopMenuClick}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <MoreVertical className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {onReply && (
-              <button
-                onClick={() => onReply(msg)}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <Undo2 className={`w-3.5 h-3.5 ${!isMine ? "scale-x-[-1]" : ""}`} />
-              </button>
-            )}
+        {/* Desktop: three-dot menu on hover */}
+        {!isMobile && onContextAction && (
+          <div className={`opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? "order-0" : ""}`}>
+            <button
+              onClick={handleDesktopMenuClick}
+              className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+            >
+              <MoreVertical className="w-3.5 h-3.5" />
+            </button>
           </div>
+        )}
+
+        {/* Desktop: reply quote icon at top-right of bubble on hover */}
+        {!isMobile && onReply && (
+          <button
+            onClick={() => onReply(msg)}
+            className={`absolute -top-2 ${isMine ? "right-0" : "right-0"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
+          >
+            <Quote className="w-3 h-3" />
+          </button>
         )}
       </div>
     </div>
