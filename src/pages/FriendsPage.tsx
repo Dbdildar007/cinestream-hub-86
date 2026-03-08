@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useFriends } from "@/hooks/useFriends";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -50,12 +51,10 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
+  const { friends, pendingRequests, loading, invalidate } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
-  const [friends, setFriends] = useState<Friendship[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
-  const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   // Track relationship status per user_id in search
   const [relationshipMap, setRelationshipMap] = useState<Record<string, RelationshipStatus>>({});
@@ -68,59 +67,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const filteredMovies = movieSearch
     ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
     : allMovies.slice(0, 8);
-
-  const loadFriends = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("friendships")
-      .select("*")
-      .eq("status", "accepted")
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
-
-    if (data && data.length > 0) {
-      const friendUserIds = data.map(f => f.requester_id === user.id ? f.addressee_id : f.requester_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("user_id", friendUserIds);
-
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
-      const friendsWithProfiles = data.map(f => {
-        const friendUserId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
-        return { ...f, profile: profileMap.get(friendUserId) || undefined };
-      });
-      setFriends(friendsWithProfiles);
-    } else {
-      setFriends([]);
-    }
-    setLoading(false);
-  }, [user]);
-
-  const loadPendingRequests = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("friendships")
-      .select("*")
-      .eq("addressee_id", user.id)
-      .eq("status", "pending");
-
-    if (data && data.length > 0) {
-      const requesterIds = data.map(f => f.requester_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("user_id", requesterIds);
-
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
-      const requestsWithProfiles = data.map(f => ({
-        ...f,
-        profile: profileMap.get(f.requester_id) || undefined,
-      }));
-      setPendingRequests(requestsWithProfiles);
-    } else {
-      setPendingRequests([]);
-    }
-  }, [user]);
 
   // Build relationship map for search results
   const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
@@ -150,9 +96,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   }, [user]);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    loadFriends();
-    loadPendingRequests();
+    if (!user) return;
 
     supabase
       .from("profiles")
@@ -163,9 +107,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     const channel = supabase
       .channel("friendships-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-        loadFriends();
-        loadPendingRequests();
-        // Refresh search results relationship status
+        invalidate();
         if (searchResults.length > 0) buildRelationshipMap(searchResults);
       })
       .subscribe();
@@ -178,7 +120,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         .then();
       supabase.removeChannel(channel);
     };
-  }, [user, loadFriends, loadPendingRequests]);
+  }, [user, invalidate, buildRelationshipMap, searchResults]);
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
@@ -234,8 +176,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         );
       }
       toast.success("Friend request accepted!");
-      loadFriends();
-      loadPendingRequests();
+      invalidate();
     }
   };
 
@@ -252,7 +193,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           `${myProfile?.display_name || "Someone"} declined your friend request`
         );
       }
-      loadPendingRequests();
+      invalidate();
     }
   };
 
