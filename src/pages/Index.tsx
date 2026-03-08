@@ -44,30 +44,6 @@ export default function Index() {
   //}, []);
 
   // Listen for watch party invites
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel("watch-party-invite-listener")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "watch_parties",
-        filter: `friend_id=eq.${user.id}`,
-      }, async (payload) => {
-        const party = payload.new as any;
-        if (party.status === "active") {
-          const movie = allMovies.find(m => m.id === party.movie_id);
-          const joined = await joinParty(party.id);
-          if (joined && movie) {
-            setPlayingMovie(movie);
-            toast.info("You've joined a watch party!");
-          }
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, joinParty, allMovies]);
 
   const continueWatchingMovies = useMemo(() => {
     const progressList = getContinueWatching();
