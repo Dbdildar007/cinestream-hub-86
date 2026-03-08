@@ -338,9 +338,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     );
   }
 
+  const totalRequests = pendingRequests.length + sentRequests.length;
+
   const tabs = [
     { id: "friends" as const, label: "Friends", count: null },
-    { id: "requests" as const, label: "Requests", count: pendingRequests.length },
+    { id: "requests" as const, label: "Requests", count: totalRequests },
     { id: "search" as const, label: "Find Friends", count: null },
   ];
 
