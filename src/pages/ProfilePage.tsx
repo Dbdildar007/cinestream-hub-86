@@ -16,10 +16,7 @@ export default function ProfilePage() {
   const { ratings } = useRatings();
   const { getContinueWatching } = useWatchProgress();
 
-  const [profile, setProfile] = useState<{ display_name: string; unique_id: string } | null>(() => {
-    const saved = localStorage.getItem('user_profile');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [profile, setProfile] = useState<{ display_name: string; unique_id: string } | null>(null);
 
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
