@@ -263,6 +263,8 @@ export default function ChatPage() {
       if (data) {
         setMessages((prev) => {
           const mapped = mapMessage(data as any, user.id);
+          // Keep the tempId as stableKey so React doesn't re-animate
+          mapped.stableKey = tempId;
           const alreadyExists = prev.some((m) => m.id === mapped.id);
           const replaced = prev.map((m) => (m.id === tempId ? mapped : m));
           return alreadyExists ? replaced.filter((m) => m.id !== tempId) : replaced;
