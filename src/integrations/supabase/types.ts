@@ -210,8 +210,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_id: string | null
           avatar_url: string | null
           created_at: string
+          device_info: Json | null
           display_name: string
           id: string
           is_online: boolean
@@ -221,8 +223,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          device_info?: Json | null
           display_name?: string
           id?: string
           is_online?: boolean
@@ -232,8 +236,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          device_info?: Json | null
           display_name?: string
           id?: string
           is_online?: boolean
@@ -406,7 +412,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      handle_single_device_login: {
+        Args: {
+          p_device_id: string
+          p_device_info: Json
+          p_force_login?: boolean
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
