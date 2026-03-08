@@ -96,10 +96,27 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     setRelationshipMap(map);
   }, [user]);
 
+  // Static fallback suggestions when no real profiles available
+  const STATIC_SUGGESTIONS: Profile[] = [
+    { id: "static-1", user_id: "static-1", display_name: "Alex Morgan", unique_id: "CS-alex2024", is_online: true, avatar_url: null },
+    { id: "static-2", user_id: "static-2", display_name: "Priya Sharma", unique_id: "CS-priya007", is_online: false, avatar_url: null },
+    { id: "static-3", user_id: "static-3", display_name: "James Wilson", unique_id: "CS-james99", is_online: true, avatar_url: null },
+    { id: "static-4", user_id: "static-4", display_name: "Sara Khan", unique_id: "CS-sara456", is_online: false, avatar_url: null },
+    { id: "static-5", user_id: "static-5", display_name: "Mike Chen", unique_id: "CS-mike321", is_online: true, avatar_url: null },
+    { id: "static-6", user_id: "static-6", display_name: "Emma Davis", unique_id: "CS-emma88", is_online: false, avatar_url: null },
+  ];
+
   // Load default suggestions for Find Friends
   useEffect(() => {
     if (!user) return;
     const loadSuggestions = async () => {
+      // Get current user's location
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("location")
+        .eq("user_id", user.id)
+        .single();
+
       // Get all friendship user IDs (connected or pending)
       const { data: friendships } = await supabase
         .from("friendships")
@@ -111,14 +128,40 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         connectedIds.add(f.requester_id === user.id ? f.addressee_id : f.requester_id);
       });
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .neq("user_id", user.id)
-        .limit(30);
+      // Try location-based suggestions first
+      let profiles: Profile[] = [];
+      const myLocation = myProfile?.location?.trim();
 
-      const filtered = (profiles || []).filter(p => !connectedIds.has(p.user_id));
-      setDefaultSuggestions(filtered);
+      if (myLocation) {
+        const { data: locationProfiles } = await supabase
+          .from("profiles")
+          .select("*")
+          .neq("user_id", user.id)
+          .ilike("location", `%${myLocation}%`)
+          .limit(30);
+        profiles = (locationProfiles || []).filter(p => !connectedIds.has(p.user_id));
+      }
+
+      // If not enough location matches, fetch all profiles
+      if (profiles.length < 6) {
+        const { data: allProfiles } = await supabase
+          .from("profiles")
+          .select("*")
+          .neq("user_id", user.id)
+          .limit(30);
+        const existingIds = new Set(profiles.map(p => p.user_id));
+        const additional = (allProfiles || []).filter(
+          p => !connectedIds.has(p.user_id) && !existingIds.has(p.user_id)
+        );
+        profiles = [...profiles, ...additional];
+      }
+
+      // If still no real profiles, use static data
+      if (profiles.length === 0) {
+        setDefaultSuggestions(STATIC_SUGGESTIONS);
+      } else {
+        setDefaultSuggestions(profiles);
+      }
     };
     loadSuggestions();
   }, [user, friends]);
@@ -156,6 +199,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
   const sendFriendRequest = async (profile: Profile) => {
     if (!user) return;
+    // Handle static suggestions (demo profiles)
+    if (profile.user_id.startsWith("static-")) {
+      toast.success("Friend request sent!");
+      setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
+      return;
+    }
     const { error } = await supabase.from("friendships").insert({
       requester_id: user.id,
       addressee_id: profile.user_id,
@@ -441,7 +490,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           )}
 
           {!searchQuery && defaultSuggestions.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No suggestions available</p>
+            <div className="text-center py-8">
+              <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No suggestions available right now</p>
+              <p className="text-xs text-muted-foreground mt-1">Add your location in profile settings to get better suggestions</p>
+            </div>
           )}
         </div>
       )}
