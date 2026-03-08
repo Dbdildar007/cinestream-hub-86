@@ -144,7 +144,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
       </div>
 
       {/* Dots indicator */}
-      <div className="absolute bottom-28 sm:bottom-14 md:bottom-5 left-1/2 -translate-x-1/2 flex gap-[3px] sm:gap-1 md:gap-1.5">
+      <div className="absolute hidden sm:flex bottom-14 md:bottom-5 left-1/2 -translate-x-1/2 gap-1 md:gap-1.5">
         {featuredMovies.map((_, i) => (
           <button
             key={i}
