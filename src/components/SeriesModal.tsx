@@ -89,6 +89,12 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
                 <Tv className="w-3.5 h-3.5 text-primary-foreground" />
                 <span className="text-xs font-semibold text-primary-foreground">Series</span>
               </div>
+              {series.isPremium && (
+                <div className="absolute top-4 left-28 flex items-center gap-1 bg-yellow-500/90 px-2.5 py-1 rounded-full">
+                  <Crown className="w-3.5 h-3.5 text-black" />
+                  <span className="text-xs font-bold text-black">PREMIUM</span>
+                </div>
+              )}
             </div>
 
             <div className="px-6 pb-8 -mt-16 relative">
