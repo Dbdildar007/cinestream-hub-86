@@ -214,5 +214,12 @@ export default function MovieModal({
         </>
       )}
     </AnimatePresence>
+
+    <PremiumPaywall
+      open={showPaywall}
+      onClose={() => setShowPaywall(false)}
+      title={movie?.title || ""}
+    />
+    </>
   );
 }
