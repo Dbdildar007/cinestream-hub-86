@@ -21,6 +21,7 @@ export default function MovieModal({
 }: MovieModalProps) {
   const isMobile = useIsMobile();
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   if (!movie) return null;
 
