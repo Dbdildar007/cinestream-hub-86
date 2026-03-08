@@ -96,6 +96,16 @@ export default function AuthPage() {
         }
       }
     } else {
+      if (usernameStatus === "taken") {
+        toast.error("This username is already taken. Please choose another.");
+        setLoading(false);
+        return;
+      }
+      if (usernameStatus !== "available") {
+        toast.error("Please wait for username availability check.");
+        setLoading(false);
+        return;
+      }
       const { data, error } = await signUp(email, password, displayName);
       if (error) {
         toast.error(error.message);
