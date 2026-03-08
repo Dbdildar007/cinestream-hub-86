@@ -106,8 +106,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const desktopVariants = { hidden: { x: "100%" }, visible: { x: 0 }, exit: { x: "100%" } };
   const variants = isMobile ? mobileVariants : desktopVariants;
 
-  const [showTrailer, setShowTrailer] = useState(false);
-  const hasTrailer = !!(movie.url && movie.url.trim() !== "");
+  const hasTrailer = !!(movie?.url && movie.url.trim() !== "");
 
   return (
     <AnimatePresence>
