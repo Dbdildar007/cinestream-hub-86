@@ -231,7 +231,13 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
                       return (
                         <button
                           key={episode.id}
-                          onClick={() => onPlayEpisode(series, episode, selectedSeason)}
+                          onClick={() => {
+                            if (series.isPremium) {
+                              setShowPaywall(true);
+                            } else {
+                              onPlayEpisode(series, episode, selectedSeason);
+                            }
+                          }}
                           className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
                         >
                           <div className="flex items-start gap-3">
