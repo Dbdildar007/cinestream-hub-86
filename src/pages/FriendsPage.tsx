@@ -579,31 +579,31 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
                   isOnline
                     ? "bg-green-500/5 border border-green-500/20 hover:bg-green-500/10"
-                    : "bg-secondary/50 border border-border/30 opacity-70"
+                    : "bg-background/80 border border-destructive/10 shadow-[inset_0_1px_0_0_hsl(var(--destructive)/0.05)] hover:border-destructive/20"
                 }`}>
                   <div className="relative">
                     <img
                       src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
                       alt={f.profile?.display_name || "User"}
-                      className={`w-10 h-10 rounded-full object-cover bg-primary/10 ${!isOnline ? "grayscale-[30%]" : ""}`}
+                      className={`w-10 h-10 rounded-full object-cover bg-primary/10 ${!isOnline ? "grayscale-[50%] brightness-75" : ""}`}
                     />
                     <span
                       className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                        isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"
+                        isOnline ? "bg-green-500 animate-pulse" : "bg-destructive/40"
                       }`}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{f.profile?.display_name}</p>
-                    <p className={`text-xs ${isOnline ? "text-green-500 font-medium" : "text-muted-foreground"}`}>
-                      {isOnline ? "● Online" : "Offline"}
+                    <p className={`text-sm font-medium truncate ${isOnline ? "text-foreground" : "text-muted-foreground"}`}>{f.profile?.display_name}</p>
+                    <p className={`text-xs ${isOnline ? "text-green-500 font-medium" : "text-destructive/50"}`}>
+                      {isOnline ? "● Online" : "● Offline"}
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       if (f.profile) navigate(`/chat/${f.profile.user_id}`);
                     }}
-                    className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                    className={`p-2 rounded-full transition-colors ${isOnline ? "hover:bg-primary/20 text-primary" : "hover:bg-muted text-muted-foreground/60"}`}
                     title="Message"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -615,7 +615,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       className={`p-2 rounded-full transition-colors ${
                         isOnline
                           ? "hover:bg-primary/20 text-primary cursor-pointer"
-                          : "text-muted-foreground/40 cursor-not-allowed"
+                          : "text-muted-foreground/25 cursor-not-allowed"
                       }`}
                       title={isOnline ? "Video Call" : "User is offline"}
                     >
@@ -628,7 +628,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     className={`p-2 rounded-full transition-colors ${
                       isOnline
                         ? "hover:bg-primary/20 text-primary cursor-pointer"
-                        : "text-muted-foreground/40 cursor-not-allowed"
+                        : "text-muted-foreground/25 cursor-not-allowed"
                     }`}
                     title={isOnline ? "Watch Together" : "User is offline"}
                   >
