@@ -163,7 +163,7 @@ export default function Index() {
       <div className="-mt-10 md:-mt-35 relative z-10">
         <UpcomingRow
           movies={allMovies.filter(m => m.upcomingDate && new Date(m.upcomingDate) > new Date())}
-          onMovieSelect={handleCardClick}
+          onMovieSelect={setSelectedUpcoming}
         />
 
         <ContinueWatchingRow
