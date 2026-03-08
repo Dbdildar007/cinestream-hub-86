@@ -74,6 +74,13 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     evictedRef.current = false;
     const deviceId = getDeviceId();
 
+    // Set online status on mount
+    supabase
+      .from("profiles")
+      .update({ is_online: true, last_seen: new Date().toISOString() } as any)
+      .eq("user_id", userId)
+      .then();
+
     // On mount, check if this device is already the active session
     const initCheck = async () => {
       const { data } = await supabase
@@ -86,6 +93,17 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
       }
     };
     void initCheck();
+
+    // Set offline on visibility hidden, online on visible
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        supabase
+          .from("profiles")
+          .update({ last_seen: new Date().toISOString() } as any)
+          .eq("user_id", userId)
+          .then();
+      }
+    };
 
     const checkSession = async () => {
       if (evictedRef.current) return;
@@ -136,17 +154,32 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     }, 10 * 60 * 1000);
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") void checkSession();
+      if (document.visibilityState === "visible") {
+        void checkSession();
+        supabase
+          .from("profiles")
+          .update({ is_online: true, last_seen: new Date().toISOString() } as any)
+          .eq("user_id", userId)
+          .then();
+      }
     };
     window.addEventListener("focus", onVisible);
     document.addEventListener("visibilitychange", onVisible);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.clearInterval(pollId);
       window.clearInterval(heartbeatId);
       window.removeEventListener("focus", onVisible);
       document.removeEventListener("visibilitychange", onVisible);
+      document.removeEventListener("visibilitychange", handleVisibility);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
+      // Set offline on unmount
+      supabase
+        .from("profiles")
+        .update({ is_online: false, last_seen: new Date().toISOString() } as any)
+        .eq("user_id", userId)
+        .then();
     };
   }, [userId, getDeviceId]);
 
