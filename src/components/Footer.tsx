@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col items-center md:items-start">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent mb-2">
-              CINESTREAM
+              Flicker
             </h2>
             <p className="text-muted-foreground text-sm text-center md:text-left max-w-xs">
               Your ultimate destination for the best movies and TV shows streaming online.
