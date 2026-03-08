@@ -191,7 +191,7 @@ export function useWatchParty() {
     } as any).eq("id", activeParty.id).then();
   }, [isHost, activeParty]);
 
-  const endParty = useCallback(async () => {
+  const endParty = useCallback(async (currentTimeSec?: number, durationSec?: number) => {
     channelRef.current?.send({
       type: "broadcast",
       event: "party-phase",
@@ -204,10 +204,14 @@ export function useWatchParty() {
     }
     if (activeParty) {
       if (user) {
-        await supabase.from("watch_party_history").insert({
+        await (supabase.from("watch_party_history") as any).insert({
           host_id: activeParty.hostId,
           friend_id: activeParty.friendId,
           movie_id: activeParty.movieId,
+          episode_id: activeParty.episodeId || null,
+          media_type: activeParty.episodeId ? 'series' : 'movie',
+          current_time_sec: currentTimeSec ?? activeParty.currentTimeSec ?? 0,
+          duration_sec: durationSec ?? 0,
           ended_at: new Date().toISOString(),
         });
       }

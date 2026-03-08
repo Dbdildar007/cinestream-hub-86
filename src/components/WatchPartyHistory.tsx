@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Film, Users } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovies } from "@/hooks/useMovies";
-import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface PartyHistoryItem {
   id: string;
   host_id: string;
   friend_id: string;
   movie_id: string;
+  episode_id: string | null;
+  media_type: string;
+  current_time_sec: number;
+  duration_sec: number;
   started_at: string;
   ended_at: string | null;
   friend_name?: string;
@@ -21,20 +24,20 @@ export default function WatchPartyHistory() {
   const { allMovies } = useMovies();
   const [history, setHistory] = useState<PartyHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
     const fetchHistory = async () => {
-      const { data } = await supabase
-        .from("watch_party_history")
+      const { data } = await (supabase
+        .from("watch_party_history") as any)
         .select("*")
         .or(`host_id.eq.${user.id},friend_id.eq.${user.id}`)
         .order("started_at", { ascending: false })
         .range(0, 20);
 
       if (data) {
-        // Fetch friend names
         const withNames = await Promise.all(
           data.map(async (item: any) => {
             const friendUserId = item.host_id === user.id ? item.friend_id : item.host_id;
@@ -54,6 +57,12 @@ export default function WatchPartyHistory() {
     fetchHistory();
   }, [user]);
 
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: direction === "left" ? -400 : 400, behavior: "smooth" });
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -65,48 +74,107 @@ export default function WatchPartyHistory() {
     return d.toLocaleDateString();
   };
 
-  if (!user || loading) {
-    return loading ? <LoadingSpinner size="sm" text="Loading history..." /> : null;
-  }
-
+  if (!user || loading) return null;
   if (history.length === 0) return null;
 
   return (
-    <div className="px-4 md:px-12 mb-8">
-      <h2 className="text-lg md:text-xl font-display tracking-wider text-foreground mb-4 flex items-center gap-2">
+    <section className="relative px-4 md:px-12 mb-8">
+      <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4 flex items-center gap-2">
         <Users className="w-5 h-5 text-primary" />
-        Watch Party History
+        YOU ENJOYED TOGETHER
       </h2>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-        {history.map((item) => {
-          const movie = allMovies.find((m) => m.id === item.movie_id);
-          if (!movie) return null;
 
-          return (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex-shrink-0 w-[200px] md:w-[240px] bg-card rounded-xl overflow-hidden border border-border"
-            >
-              <div className="relative aspect-[16/9]">
-                <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-xs font-semibold text-foreground truncate">{movie.title}</p>
-                </div>
-              </div>
-              <div className="p-3 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Users className="w-3 h-3" />
-                  <span className="truncate">with {item.friend_name}</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground/60">{formatDate(item.started_at)}</p>
-              </div>
-            </motion.div>
-          );
-        })}
+      <div className="relative group">
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-r from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <ChevronLeft className="w-6 h-6 text-foreground" />
+        </button>
+
+        <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
+          <AnimatePresence initial={false} mode="popLayout">
+            {history.map((item) => {
+              const movie = allMovies.find((m) => m.id === item.movie_id);
+              if (!movie) return null;
+
+              const percent = item.duration_sec > 0 ? (item.current_time_sec / item.duration_sec) * 100 : 0;
+              const remainMin = item.duration_sec > 0 ? Math.ceil((item.duration_sec - item.current_time_sec) / 60) : 0;
+              const watchedMin = Math.floor(item.current_time_sec / 60);
+
+              return (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="relative flex-shrink-0 w-[200px] md:w-[260px] cursor-pointer group/card"
+                >
+                  <div className="relative rounded-md overflow-hidden aspect-video bg-secondary">
+                    <img
+                      src={movie.heroImage || movie.poster}
+                      alt={movie.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+                    {/* Series/Movie badge */}
+                    <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/90 text-primary-foreground uppercase tracking-wider">
+                      {item.media_type === 'series' ? 'Series' : 'Movie'}
+                    </span>
+
+                    {/* Friend badge */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-background/70 backdrop-blur-sm">
+                      <Users className="w-3 h-3 text-primary" />
+                      <span className="text-[9px] font-medium text-foreground truncate max-w-[80px]">
+                        {item.friend_name}
+                      </span>
+                    </div>
+
+                    {/* Play icon center */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <div className="p-3 rounded-full bg-primary/90">
+                        <Play className="w-6 h-6 text-primary-foreground fill-current" />
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    {item.duration_sec > 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/50">
+                        <div className="h-full bg-primary rounded-r-full" style={{ width: `${Math.min(percent, 100)}%` }} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-xs md:text-sm font-medium text-foreground truncate">{movie.title}</h3>
+                      <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                        {movie.genre?.slice(0, 2).join(" · ")} · {formatDate(item.started_at)}
+                      </p>
+                    </div>
+                    {item.duration_sec > 0 && (
+                      <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
+                        {remainMin > 0 ? `${remainMin}m left` : `${watchedMin}m`}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-l from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <ChevronRight className="w-6 h-6 text-foreground" />
+        </button>
       </div>
-    </div>
+    </section>
   );
 }
