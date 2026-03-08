@@ -715,7 +715,7 @@ const skip = useCallback((seconds: number) => {
             </div>
 
             {/* Center play/pause/replay */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8 md:gap-12">
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8 md:gap-12 transition-opacity ${isBuffering ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <button onClick={() => skip(-10)} disabled={controlsDisabled} className="p-3 rounded-full bg-background/30 hover:bg-background/50 transition-colors disabled:opacity-40">
                 <SkipBack className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
               </button>
