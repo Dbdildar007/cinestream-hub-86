@@ -4,6 +4,7 @@ import { Users, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovies } from "@/hooks/useMovies";
+import type { Movie } from "@/services/movieService";
 
 interface PartyHistoryItem {
   id: string;
@@ -19,7 +20,12 @@ interface PartyHistoryItem {
   friend_name?: string;
 }
 
-export default function WatchPartyHistory() {
+interface WatchPartyHistoryProps {
+  onResumeMovie?: (movie: Movie, currentTime: number) => void;
+  onResumeSeries?: (movie: Movie, episodeId: string, currentTime: number) => void;
+}
+
+export default function WatchPartyHistory({ onResumeMovie, onResumeSeries }: WatchPartyHistoryProps) {
   const { user } = useAuth();
   const { allMovies } = useMovies();
   const [history, setHistory] = useState<PartyHistoryItem[]>([]);
@@ -74,6 +80,14 @@ export default function WatchPartyHistory() {
     return d.toLocaleDateString();
   };
 
+  const handleCardClick = (item: PartyHistoryItem, movie: Movie) => {
+    if (item.media_type === 'series' && item.episode_id && onResumeSeries) {
+      onResumeSeries(movie, item.episode_id, item.current_time_sec);
+    } else if (onResumeMovie) {
+      onResumeMovie(movie, item.current_time_sec);
+    }
+  };
+
   if (!user || loading) return null;
   if (history.length === 0) return null;
 
@@ -111,6 +125,7 @@ export default function WatchPartyHistory() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="relative flex-shrink-0 w-[200px] md:w-[260px] cursor-pointer group/card"
+                  onClick={() => handleCardClick(item, movie)}
                 >
                   <div className="relative rounded-md overflow-hidden aspect-video bg-secondary">
                     <img
