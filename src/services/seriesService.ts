@@ -97,7 +97,22 @@ export const seriesService = {
 
     if (error || !data) return [];
 
-    const mapped = data.map(mapSeries);
+    // Fetch season counts for all series
+    const seriesIds = data.map(d => d.id);
+    const { data: seasonsData } = await supabase
+      .from('seasons')
+      .select('series_id')
+      .in('series_id', seriesIds);
+
+    const seasonCountMap: Record<string, number> = {};
+    (seasonsData || []).forEach((s: any) => {
+      seasonCountMap[s.series_id] = (seasonCountMap[s.series_id] || 0) + 1;
+    });
+
+    const mapped = data.map(row => ({
+      ...mapSeries(row),
+      season_count: seasonCountMap[row.id] || 0,
+    }));
 
     try {
       localStorage.setItem(SERIES_CACHE_KEY, JSON.stringify({
