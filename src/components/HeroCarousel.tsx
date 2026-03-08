@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Info, ChevronLeft, ChevronRight, Plus, CheckCircle } from "lucide-react";
 import { useFeaturedMovies } from "@/hooks/useMovies";
 import type { Movie } from "@/services/movieService";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { HeroSkeleton } from "@/components/LoadingSpinner";
 
 interface HeroCarouselProps {
   onMovieSelect: (movie: Movie) => void;
@@ -33,11 +33,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
   }, [next, featuredMovies.length]);
 
   if (loading || featuredMovies.length === 0) {
-    return (
-      <div className="relative w-full h-[70vh] md:h-[85vh] bg-slate-50 flex items-center justify-center">
-        <LoadingSpinner text="Loading..." />
-      </div>
-    );
+    return <HeroSkeleton />;
   }
 
   const movie = featuredMovies[current];
