@@ -150,11 +150,30 @@ export default function MovieModal({
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
-                  onClick={() => onWatch?.(movie)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+                  onClick={() => {
+                    if (movie.isPremium) {
+                      setShowPaywall(true);
+                    } else {
+                      onWatch?.(movie);
+                    }
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
+                    movie.isPremium
+                      ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-black hover:from-yellow-400 hover:to-yellow-500"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                  }`}
                 >
-                  <Play className="w-4 h-4 fill-current" />
-                  {movie.isSeries ? "Play S1 E1" : "Watch Now"}
+                  {movie.isPremium ? (
+                    <>
+                      <Crown className="w-4 h-4" />
+                      Unlock Premium
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      {movie.isSeries ? "Play S1 E1" : "Watch Now"}
+                    </>
+                  )}
                 </button>
 
                 <button
