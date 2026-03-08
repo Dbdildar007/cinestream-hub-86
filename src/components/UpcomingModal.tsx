@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Star, Clock, Calendar, Globe, Bell, BellOff, Tv, Film, Timer } from "lucide-react";
 import type { Movie } from "@/services/movieService";
