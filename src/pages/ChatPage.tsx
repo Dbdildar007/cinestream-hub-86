@@ -11,6 +11,7 @@ import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 
 export interface ChatMessage {
   id: string;
+  stableKey: string; // stays constant across temp→real swap
   text: string;
   isMine: boolean;
   timestamp: string;
