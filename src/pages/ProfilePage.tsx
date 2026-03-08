@@ -52,7 +52,7 @@ export default function ProfilePage() {
     { icon: Heart, label: "My Watchlist", count: String(watchlist.length), action: () => navigate("/watchlist") },
     { icon: Clock, label: "Watch History", count: String(historyCount), action: () => navigate("/watch-history") },
     { icon: Star, label: "My Ratings", count: String(ratingsCount), action: () => navigate("/my-ratings") },
-    { icon: Users, label: "Friends", count: null, action: () => navigate("/friends") },
+    { icon: Download, label: "Downloads", count: null, action: () => navigate("/downloads") },
     { icon: Settings, label: "Settings", count: null, action: () => navigate("/settings") },
   ];
 
