@@ -64,6 +64,7 @@ export default function ChatPage() {
     };
     loadMessages();
 
+    // Realtime subscription
     const channel = supabase
       .channel(`chat-page-${[user.id, remoteUserId].sort().join("-")}`)
       .on(
@@ -76,6 +77,7 @@ export default function ChatPage() {
             (m.sender_id === remoteUserId && m.receiver_id === user.id)
           ) {
             setMessages((prev) => {
+              // Skip if already exists (including temp messages with same text)
               if (prev.some((p) => p.id === m.id)) return prev;
               return [
                 ...prev,
@@ -92,8 +94,32 @@ export default function ChatPage() {
       )
       .subscribe();
 
+    // Fallback polling every 3s to catch missed realtime events
+    const pollInterval = setInterval(async () => {
+      const { data } = await supabase
+        .from("call_messages")
+        .select("*")
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
+        )
+        .order("created_at", { ascending: true })
+        .limit(200);
+
+      if (data) {
+        setMessages(
+          data.map((m: any) => ({
+            id: m.id,
+            text: m.message,
+            isMine: m.sender_id === user.id,
+            timestamp: m.created_at,
+          }))
+        );
+      }
+    }, 3000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [user, remoteUserId]);
 
