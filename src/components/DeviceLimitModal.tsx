@@ -35,7 +35,7 @@ export const DeviceLimitModal = ({ deviceInfo, onConfirm, onCancel }: DeviceLimi
         </div>
 
         <p className="text-muted-foreground mb-6 text-sm">
-          Your account is currently active on another device. CineStream allows only 1 active session at a time.
+          Your account is currently active on another device. Flicker allows only 1 active session at a time.
         </p>
 
         <div className="bg-secondary/50 rounded-xl p-4 mb-8 border border-border flex items-center gap-4">

@@ -79,13 +79,13 @@ export default function SettingsPage() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 p-4 rounded-lg bg-secondary">
           <h3 className="text-sm font-semibold text-foreground mb-2">Privacy Policy</h3>
           <div className="text-xs text-muted-foreground space-y-2">
-            <p>CineStream respects your privacy and is committed to protecting your personal data. This policy explains how we collect, use, and share your information.</p>
+            <p>Flicker respects your privacy and is committed to protecting your personal data. This policy explains how we collect, use, and share your information.</p>
             <p><strong>Data We Collect:</strong> Account info (email, name), watch history, ratings, preferences, and device information.</p>
             <p><strong>How We Use It:</strong> To provide personalized recommendations, improve our service, and communicate with you about your account.</p>
             <p><strong>Data Sharing:</strong> We do not sell your personal data. We may share anonymized analytics with partners.</p>
             <p><strong>Your Rights:</strong> You can request data deletion, export your data, or update your preferences at any time from your profile settings.</p>
             <p><strong>Security:</strong> We use industry-standard encryption and secure storage to protect your data.</p>
-            <p>Last updated: March 2026. Contact us at privacy@cinestream.app for questions.</p>
+            <p>Last updated: March 2026. Contact us at privacy@flicker.app for questions.</p>
           </div>
         </motion.div>
       )}
@@ -100,7 +100,7 @@ export default function SettingsPage() {
             <p><strong>Downloads:</strong> Downloads are available for offline viewing. Check the Downloads page to manage your saved content.</p>
             <p><strong>Watchlist:</strong> Add movies and series to your watchlist by clicking the "My List" button on any card or modal.</p>
             <p><strong>Ratings:</strong> Rate content by clicking the stars on any movie or series card. Your ratings help improve recommendations.</p>
-            <p><strong>Contact Us:</strong> Email support@cinestream.app or reach out via the in-app feedback option.</p>
+            <p><strong>Contact Us:</strong> Email support@flicker.app or reach out via the in-app feedback option.</p>
           </div>
         </motion.div>
       )}
