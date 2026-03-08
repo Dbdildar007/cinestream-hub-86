@@ -175,8 +175,6 @@ export default function Index() {
             title="My List"
             movies={myListMovies}
             onMovieSelect={handleCardClick}
-            onDownload={startDownload}
-            getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
             isInWatchlist={isInWatchlist}
