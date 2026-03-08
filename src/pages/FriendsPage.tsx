@@ -821,7 +821,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setModalTab("movies")}
+                      onClick={() => { setModalTab("movies"); setSelectedGenre(null); modalContentRef.current?.scrollTo(0, 0); }}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                         modalTab === "movies"
                           ? "bg-primary text-primary-foreground"
