@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [deviceConflict, setDeviceConflict] = useState<any>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const { signIn, signUp, user, signOut } = useAuth();
@@ -315,6 +316,34 @@ export default function AuthPage() {
               )}
             </button>
           </div>
+
+          {isLogin && (
+            <div className="text-right -mt-2">
+              <button
+                type="button"
+                disabled={forgotLoading}
+                onClick={async () => {
+                  if (!email) {
+                    toast.error("Please enter your email address first.");
+                    return;
+                  }
+                  setForgotLoading(true);
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  setForgotLoading(false);
+                  if (error) {
+                    toast.error(error.message);
+                  } else {
+                    toast.success("Password reset link sent! Check your email.");
+                  }
+                }}
+                className="text-xs text-primary hover:underline font-medium disabled:opacity-50"
+              >
+                {forgotLoading ? "Sending..." : "Forgot Password?"}
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"

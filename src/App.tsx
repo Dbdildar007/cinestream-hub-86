@@ -26,6 +26,7 @@ import WatchHistoryPage from "./pages/WatchHistoryPage";
 import MyRatingsPage from "./pages/MyRatingsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/watch-history" element={<WatchHistoryPage />} />
         <Route path="/my-ratings" element={<MyRatingsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
