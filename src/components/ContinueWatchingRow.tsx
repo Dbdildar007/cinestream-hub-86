@@ -39,7 +39,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
         </button>
 
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence initial={false} mode="popLayout">
           {movies.map(({ progress, ...movie }) => {
             const percent = progress.duration > 0 ? (progress.currentTime / progress.duration) * 100 : 0;
             const remainMin = Math.ceil((progress.duration - progress.currentTime) / 60);
