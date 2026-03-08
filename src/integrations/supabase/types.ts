@@ -210,8 +210,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_id: string | null
           avatar_url: string | null
           created_at: string
+          device_info: Json | null
           display_name: string
           id: string
           is_online: boolean
@@ -221,8 +223,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          device_info?: Json | null
           display_name?: string
           id?: string
           is_online?: boolean
@@ -232,8 +236,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          device_info?: Json | null
           display_name?: string
           id?: string
           is_online?: boolean
