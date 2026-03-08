@@ -23,7 +23,7 @@ function formatLastSeen(lastSeen: string | null): string {
 
 export default function ChatHeader({ remoteProfile, remoteIsTyping, onBack }: ChatHeaderProps) {
   const name = remoteProfile?.display_name || "Chat";
-  const avatarUrl = remoteProfile?.avatar_url || DEFAULT_AVATAR;
+  const avatarUrl = getAvatarUrl(remoteProfile?.avatar_url, name);
   const isOnline = remoteProfile?.is_online ?? false;
 
   return (
