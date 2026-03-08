@@ -76,8 +76,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
   const [inviteCooldowns, setInviteCooldowns] = useState<Record<string, number>>({});
-  // Cooldown: track last invite time per friend
-  const [inviteCooldowns, setInviteCooldowns] = useState<Record<string, number>>({});
 
   // Collect all genres from movies & series
   const allGenres = [...new Set([
