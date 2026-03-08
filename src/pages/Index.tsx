@@ -4,6 +4,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import UpcomingRow from "@/components/UpcomingRow";
+import UpcomingModal from "@/components/UpcomingModal";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import WatchPartyHistory from "@/components/WatchPartyHistory";
@@ -25,13 +26,13 @@ export default function Index() {
   const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
+  const [selectedUpcoming, setSelectedUpcoming] = useState<Movie | null>(null);
   const [initialLoad, setInitialLoad] = useState(false);
   const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
-  
 
   const { allMovies, categories, featuredMovies, loading } = useMovies();
 
@@ -161,7 +162,7 @@ export default function Index() {
       <div className="-mt-10 md:-mt-35 relative z-10">
         <UpcomingRow
           movies={allMovies.filter(m => m.upcomingDate && new Date(m.upcomingDate) > new Date())}
-          onMovieSelect={handleCardClick}
+          onMovieSelect={setSelectedUpcoming}
         />
 
         <ContinueWatchingRow
@@ -222,6 +223,11 @@ export default function Index() {
         onRate={setRating}
         isInWatchlist={selectedSeries ? isInWatchlist(selectedSeries.id) : false}
         onToggleWatchlist={toggleWatchlist}
+      />
+
+      <UpcomingModal
+        movie={selectedUpcoming}
+        onClose={() => setSelectedUpcoming(null)}
       />
 
       <AnimatePresence>
