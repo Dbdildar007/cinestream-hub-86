@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "./components/TopNav";
 import BottomNav from "./components/BottomNav";
@@ -48,7 +48,19 @@ function AppContent() {
     setShowEvicted(true);
   }, []);
 
-  useDeviceSession(user?.id, handleEvicted);
+  const { registerDevice } = useDeviceSession(user?.id, handleEvicted);
+
+  // Re-register device on page refresh when user session is restored
+  const hasReregistered = useRef(false);
+  useEffect(() => {
+    if (user?.id && !hasReregistered.current) {
+      hasReregistered.current = true;
+      registerDevice(false, user.id);
+    }
+    if (!user) {
+      hasReregistered.current = false;
+    }
+  }, [user?.id, registerDevice]);
 
   const handleEvictedAcknowledge = async () => {
     setShowEvicted(false);
