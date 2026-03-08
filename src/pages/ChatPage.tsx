@@ -310,12 +310,11 @@ export default function ChatPage() {
           </motion.div>
         ) : (
           <>
-            {messages.map((msg, index) => (
+            {messages.map((msg) => (
               <ChatMessageBubble
                 key={msg.stableKey}
                 message={msg}
-                index={index}
-                skipAnimation={!initialLoadDone}
+                isRemoteOnline={remoteProfile?.is_online ?? false}
               />
             ))}
           </>
