@@ -104,18 +104,21 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       .eq("addressee_id", user.id)
       .eq("status", "pending");
 
-    if (data) {
-      const requestsWithProfiles = await Promise.all(
-        data.map(async (f) => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", f.requester_id)
-            .single();
-          return { ...f, profile: profile || undefined };
-        })
-      );
+    if (data && data.length > 0) {
+      const requesterIds = data.map(f => f.requester_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", requesterIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      const requestsWithProfiles = data.map(f => ({
+        ...f,
+        profile: profileMap.get(f.requester_id) || undefined,
+      }));
       setPendingRequests(requestsWithProfiles);
+    } else {
+      setPendingRequests([]);
     }
   }, [user]);
 
