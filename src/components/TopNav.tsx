@@ -14,7 +14,7 @@ const navItems = [
 
 export default function TopNav() {
   const location = useLocation();
-  const { notifications, unreadCount, markAsRead, markAllRead, clearNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
   return (
     <motion.header
