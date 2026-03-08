@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle } from "lucide-react";
+import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle, Crown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSeriesDetail } from "@/hooks/useSeries";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
 import LoadingSpinner from "./LoadingSpinner";
+import PremiumPaywall from "./PremiumPaywall";
 
 interface SeriesModalProps {
   series: Series | null;
