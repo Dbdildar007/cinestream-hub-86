@@ -5,11 +5,9 @@ import { useMovies } from "@/hooks/useMovies";
 import type { Movie } from "@/services/movieService";
 
 const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Sci-Fi", "Thriller", "Crime", "Historical", "Musical"];
-const languages = ["English", "Hindi", "Tamil", "Telugu"];
 import MovieCard from "@/components/MovieCard";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
-import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -22,7 +20,6 @@ export default function SearchPage() {
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
-  const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
 
   const years = ["2025", "2024", "2023"];
@@ -55,7 +52,6 @@ export default function SearchPage() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24 overflow-x-hidden"
     >
-      {/* Search input */}
       <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input
@@ -72,7 +68,6 @@ export default function SearchPage() {
         )}
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-6 pb-1">
         {genres.map((g) => (
           <button
@@ -118,7 +113,6 @@ export default function SearchPage() {
         ))}
       </div>
 
-      {/* Results */}
       <p className="text-sm text-muted-foreground mb-4">{filtered.length} results</p>
      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 sm:gap-6">
         {filtered.map((movie) => (
@@ -126,8 +120,6 @@ export default function SearchPage() {
             key={movie.id}
             movie={movie}
             onSelect={setSelectedMovie}
-            onDownload={startDownload}
-            downloadState={getDownloadState(movie.id)}
             userRating={getRating(movie.id)}
             onRate={setRating}
           />
@@ -144,8 +136,6 @@ export default function SearchPage() {
       <MovieModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
-        onDownload={startDownload}
-        downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
         onWatch={(movie) => { setSelectedMovie(null); setPlayingMovie(movie); }}

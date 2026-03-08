@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Folder, Film } from "lucide-react";
+import { Folder } from "lucide-react";
 import { useMovies } from "@/hooks/useMovies";
 import type { Movie } from "@/services/movieService";
 import MovieRow from "@/components/MovieRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
-import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 
 const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Sci-Fi", "Thriller", "Crime", "Historical", "Musical"];
@@ -20,7 +19,6 @@ export default function FoldersPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
-  const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
 
   const folders = activeTab === "genre" ? genres : languages;
@@ -88,8 +86,6 @@ export default function FoldersPage() {
             title={selectedFolder}
             movies={getMovies(selectedFolder)}
             onMovieSelect={setSelectedMovie}
-            onDownload={startDownload}
-            getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
           />
@@ -99,8 +95,6 @@ export default function FoldersPage() {
       <MovieModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
-        onDownload={startDownload}
-        downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
         onWatch={(movie) => { setSelectedMovie(null); setPlayingMovie(movie); }}
