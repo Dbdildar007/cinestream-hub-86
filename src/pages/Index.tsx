@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { MovieRowSkeleton } from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { useMovies } from '@/hooks/useMovies';
 import type { Series, SeriesEpisode } from '@/services/seriesService';
