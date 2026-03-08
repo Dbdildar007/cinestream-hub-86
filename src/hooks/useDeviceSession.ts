@@ -126,6 +126,15 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
 
     const pollId = window.setInterval(checkSession, 3000);
 
+    // Heartbeat: update updated_at every 10 min to keep session "alive"
+    const heartbeatId = window.setInterval(async () => {
+      if (evictedRef.current || !registeredRef.current) return;
+      await supabase
+        .from("profiles")
+        .update({ updated_at: new Date().toISOString() } as any)
+        .eq("user_id", userId);
+    }, 10 * 60 * 1000);
+
     const onVisible = () => {
       if (document.visibilityState === "visible") void checkSession();
     };
@@ -134,6 +143,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
 
     return () => {
       window.clearInterval(pollId);
+      window.clearInterval(heartbeatId);
       window.removeEventListener("focus", onVisible);
       document.removeEventListener("visibilitychange", onVisible);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
