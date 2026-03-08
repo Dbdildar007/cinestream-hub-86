@@ -12,6 +12,7 @@ interface MovieCardProps {
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: boolean;
   onToggleWatchlist?: (movieId: string) => void;
+  index?: number;
 }
 
 export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
