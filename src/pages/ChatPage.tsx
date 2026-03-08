@@ -270,7 +270,6 @@ export default function ChatPage() {
                 key={msg.id}
                 message={msg}
                 index={index}
-                receiverOnline={remoteProfile?.is_online ?? false}
               />
             ))}
           </AnimatePresence>
