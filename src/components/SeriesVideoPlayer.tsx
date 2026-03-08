@@ -548,7 +548,65 @@ export default function SeriesVideoPlayer({
         )}
       </AnimatePresence>
 
-      {/* Lock overlay */}
+      {/* Recommendations Bottom Sheet */}
+      <AnimatePresence>
+        {showRecommendations && recommendedSeries.length > 0 && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="absolute bottom-0 left-0 right-0 z-[120] max-h-[70vh] bg-gradient-to-t from-black via-black/95 to-black/80 backdrop-blur-xl rounded-t-3xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <h3 className="text-white font-bold text-base">More like this</h3>
+              <button
+                onClick={() => setShowRecommendations(false)}
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                {recommendedSeries.map((rec) => (
+                  <div key={rec.id} className="group text-left rounded-xl overflow-hidden bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.03]">
+                    <div className="relative aspect-[2/3]">
+                      <img src={rec.poster} alt={rec.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white fill-white" />
+                      </div>
+                      {rec.rating > 0 && (
+                        <div className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] text-primary font-bold">
+                          {rec.rating}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-white text-xs font-medium truncate">{rec.title}</p>
+                      <p className="text-white/40 text-[10px]">{rec.year} • {rec.genre[0]}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Recommendations peek button */}
+      {!videoEnded && !showRecommendations && recommendedSeries.length > 0 && showControls && !isLocked && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowRecommendations(true); }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[106] flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-500/50 backdrop-blur-sm text-white/90 text-xs font-light hover:bg-gray-400/60 transition-colors"
+        >
+          <ChevronUp className="w-3.5 h-3.5" />
+          More like this
+        </button>
+      )}
+
+
       {isLocked && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[110]">
           <button
