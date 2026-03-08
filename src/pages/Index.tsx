@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
+import UpcomingRow from "@/components/UpcomingRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import WatchPartyHistory from "@/components/WatchPartyHistory";
