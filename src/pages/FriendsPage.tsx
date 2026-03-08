@@ -1095,6 +1095,99 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         )}
       </AnimatePresence>
 
+      {/* Series Episode Picker Modal */}
+      <AnimatePresence>
+        {pickingSeries && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6"
+            onClick={() => setPickingSeries(null)}
+          >
+            <motion.div
+              initial={{ y: "100%", scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: "100%", scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="bg-card rounded-t-3xl md:rounded-3xl w-full md:max-w-lg max-h-[85vh] overflow-hidden border-0 md:border border-border/50 shadow-2xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
+                <div className="flex items-center gap-3 mb-3">
+                  <button onClick={() => setPickingSeries(null)} className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors">
+                    <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <img src={pickingSeries.poster_url} alt={pickingSeries.title} className="w-10 h-14 rounded-lg object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-foreground truncate">{pickingSeries.title}</h3>
+                      <p className="text-xs text-muted-foreground">Pick an episode to watch together</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Season tabs */}
+                {pickerSeriesDetail && pickerSeriesDetail.seasons.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    {pickerSeriesDetail.seasons.map((s) => (
+                      <button
+                        key={s.number}
+                        onClick={() => setPickerSeasonNumber(s.number)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                          pickerSeasonNumber === s.number
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Season {s.number}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Episodes list */}
+              <div className="overflow-y-auto flex-1 px-4 pb-6 pt-2 scrollbar-hide">
+                {pickerLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  </div>
+                )}
+                {pickerSeriesDetail && (
+                  <div className="space-y-2">
+                    {pickerSeriesDetail.seasons
+                      .find(s => s.number === pickerSeasonNumber)
+                      ?.episodes.map(ep => (
+                        <motion.button
+                          key={ep.id}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => handleEpisodePick(ep, pickerSeasonNumber)}
+                          className="w-full text-left p-3 rounded-xl bg-secondary/50 hover:bg-primary/10 border border-border/30 hover:border-primary/30 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-sm font-bold text-primary transition-colors">
+                              {ep.number}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                {ep.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{ep.duration}</p>
+                            </div>
+                            <Play className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                        </motion.button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Decline confirmation dialog */}
       <AlertDialog open={!!declineTarget} onOpenChange={(open) => { if (!open) setDeclineTarget(null); }}>
         <AlertDialogContent>
