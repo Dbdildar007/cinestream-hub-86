@@ -386,7 +386,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0">
+    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0 overflow-x-hidden">
       <ChatHeader
         remoteProfile={remoteProfile}
         remoteIsTyping={remoteIsTyping}
