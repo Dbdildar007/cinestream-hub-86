@@ -230,6 +230,7 @@ export type Database = {
           poster: string
           rating: number
           title: string
+          upcoming_date: string | null
           url: string | null
           year: number
         }
@@ -250,6 +251,7 @@ export type Database = {
           poster?: string
           rating?: number
           title: string
+          upcoming_date?: string | null
           url?: string | null
           year: number
         }
@@ -270,6 +272,7 @@ export type Database = {
           poster?: string
           rating?: number
           title?: string
+          upcoming_date?: string | null
           url?: string | null
           year?: number
         }
