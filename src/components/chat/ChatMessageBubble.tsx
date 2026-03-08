@@ -5,6 +5,7 @@ import type { ChatMessage } from "@/pages/ChatPage";
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   index: number;
+  receiverOnline?: boolean;
 }
 
 function formatTime(ts: string) {
@@ -12,7 +13,11 @@ function formatTime(ts: string) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function ChatMessageBubble({ message: msg, index }: ChatMessageBubbleProps) {
+export default function ChatMessageBubble({
+  message: msg,
+  index,
+  receiverOnline = false,
+}: ChatMessageBubbleProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12, scale: 0.95 }}
@@ -40,11 +45,13 @@ export default function ChatMessageBubble({ message: msg, index }: ChatMessageBu
           >
             {formatTime(msg.timestamp)}
           </span>
-        {msg.isMine &&
+          {msg.isMine &&
             (msg.readAt ? (
               <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
             ) : msg.id.startsWith("temp-") ? (
               <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
+            ) : receiverOnline ? (
+              <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/60" />
             ) : (
               <Check className="w-3.5 h-3.5 text-primary-foreground/60" />
             ))}

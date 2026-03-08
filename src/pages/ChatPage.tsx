@@ -264,7 +264,12 @@ export default function ChatPage() {
         ) : (
           <AnimatePresence initial={true}>
             {messages.map((msg, index) => (
-              <ChatMessageBubble key={msg.id} message={msg} index={index} />
+              <ChatMessageBubble
+                key={msg.id}
+                message={msg}
+                index={index}
+                receiverOnline={remoteProfile?.is_online ?? false}
+              />
             ))}
           </AnimatePresence>
         )}
