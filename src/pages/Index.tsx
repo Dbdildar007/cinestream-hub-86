@@ -33,7 +33,12 @@ export default function Index() {
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
-  
+
+      <UpcomingModal
+        movie={selectedUpcoming}
+        onClose={() => setSelectedUpcoming(null)}
+      />
+
 
   const { allMovies, categories, featuredMovies, loading } = useMovies();
 
