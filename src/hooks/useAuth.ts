@@ -45,6 +45,13 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    // Clear active session from database before signing out
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ active_session_id: null, is_online: false } as any)
+        .eq("user_id", user.id);
+    }
     localStorage.removeItem('user_profile');
     localStorage.removeItem('cinestream_watchlist');
     localStorage.removeItem('cinestream-ratings');
