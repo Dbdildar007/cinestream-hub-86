@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle } from "lucide-react";
+import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -392,6 +392,17 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
+                <button
+                  onClick={() => {
+                    if (f.profile) {
+                      navigate(`/chat/${f.profile.user_id}`);
+                    }
+                  }}
+                  className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                  title="Message"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
                 {f.profile?.is_online && onStartCall && (
                   <button
                     onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}

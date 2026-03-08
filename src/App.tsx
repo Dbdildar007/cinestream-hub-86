@@ -27,6 +27,7 @@ import MyRatingsPage from "./pages/MyRatingsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ChatPage from "./pages/ChatPage";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ function AppContent() {
         <Route path="/my-ratings" element={<MyRatingsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/chat/:userId" element={<ChatPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
