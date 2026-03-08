@@ -6,6 +6,7 @@ import { useDeviceSession } from "@/hooks/useDeviceSession";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DeviceLimitModal } from "@/components/DeviceLimitModal";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
