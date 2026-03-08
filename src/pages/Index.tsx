@@ -230,7 +230,7 @@ export default function Index() {
             movie={playingMovie}
             onClose={() => setPlayingMovie(null)}
             onProgressUpdate={updateProgress}
-            initialTime={getProgress(playingMovie.id)?.currentTime || 0}
+            initialTime={overrideInitialTime ?? getProgress(playingMovie.id)?.currentTime ?? 0}
             allMovies={allMovies}
             onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }}
           />
