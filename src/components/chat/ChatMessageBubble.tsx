@@ -177,7 +177,7 @@ export default function ChatMessageBubble({
           style={{ opacity: swipeProgress }}
         >
           <div className={`p-1.5 rounded-full bg-secondary ${swipeProgress >= 1 ? "scale-110" : ""} transition-transform`}>
-            <CornerUpLeft className="w-4 h-4 text-muted-foreground" />
+            <Undo2 className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
       )}
