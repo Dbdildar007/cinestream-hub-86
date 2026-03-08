@@ -368,6 +368,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </button>
           </div>
 
+          {/* Search results */}
           <div className="space-y-2">
             {searching && <LoadingSpinner size="sm" text="Searching..." />}
             {!searching && searchResults.map((profile) => (
@@ -388,6 +389,43 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
             )}
           </div>
+
+          {/* Default suggestions - people you may know */}
+          {!searchQuery && defaultSuggestions.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">People you may know</h3>
+              {defaultSuggestions.map((profile) => (
+                <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">
+                        {profile.display_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <Circle
+                      className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${
+                        profile.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
+                    <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
+                  </div>
+                  <button
+                    onClick={() => sendFriendRequest(profile)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!searchQuery && defaultSuggestions.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">No suggestions available</p>
+          )}
         </div>
       )}
 
