@@ -318,13 +318,20 @@ export default function ChatPage() {
           </motion.div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <ChatMessageBubble
-                key={msg.stableKey}
-                message={msg}
-                isRemoteOnline={remoteProfile?.is_online ?? false}
-              />
-            ))}
+            {messages.map((msg) => {
+              const replyMsg = msg.replyToId
+                ? messages.find((m) => m.id === msg.replyToId) || null
+                : null;
+              return (
+                <ChatMessageBubble
+                  key={msg.stableKey}
+                  message={msg}
+                  isRemoteOnline={remoteProfile?.is_online ?? false}
+                  replyToMessage={replyMsg}
+                  onReply={(m) => setReplyTo(m)}
+                />
+              );
+            })}
           </>
         )}
 
