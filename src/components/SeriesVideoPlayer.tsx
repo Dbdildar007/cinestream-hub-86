@@ -368,7 +368,7 @@ export default function SeriesVideoPlayer({
         key={currentEpisode.id}
         src={currentEpisode.video_url}
         className="w-full h-full object-contain"
-        autoPlay
+        autoPlay={shouldAutoPlay}
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
