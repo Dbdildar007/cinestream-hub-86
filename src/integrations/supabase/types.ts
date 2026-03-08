@@ -242,6 +242,7 @@ export type Database = {
           id: string
           is_online: boolean
           last_seen: string | null
+          location: string | null
           unique_id: string
           updated_at: string
           user_id: string
@@ -255,6 +256,7 @@ export type Database = {
           id?: string
           is_online?: boolean
           last_seen?: string | null
+          location?: string | null
           unique_id?: string
           updated_at?: string
           user_id: string
@@ -268,6 +270,7 @@ export type Database = {
           id?: string
           is_online?: boolean
           last_seen?: string | null
+          location?: string | null
           unique_id?: string
           updated_at?: string
           user_id?: string
