@@ -72,7 +72,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h1 className="text-4xl md:text-7xl font-display tracking-wider text-foreground mb-3">
+            <h1 className="text-4xl md:text-7xl font-display tracking-wider text-white dark:text-foreground mb-3 drop-shadow-lg">
               {movie.title.toUpperCase()}
             </h1>
             <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground flex-wrap">
