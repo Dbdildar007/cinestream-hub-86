@@ -156,11 +156,30 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
               <div className="flex flex-wrap gap-2 mb-4">
                 {detail && detail.seasons.length > 0 && detail.seasons[0].episodes.length > 0 && (
                   <button
-                    onClick={() => onPlayEpisode(series, detail.seasons[0].episodes[0], 1)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+                    onClick={() => {
+                      if (series.isPremium) {
+                        setShowPaywall(true);
+                      } else {
+                        onPlayEpisode(series, detail.seasons[0].episodes[0], 1);
+                      }
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
+                      series.isPremium
+                        ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-black hover:from-yellow-400 hover:to-yellow-500"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                    }`}
                   >
-                    <Play className="w-4 h-4 fill-current" />
-                    Play S1 E1
+                    {series.isPremium ? (
+                      <>
+                        <Crown className="w-4 h-4" />
+                        Unlock Premium
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 fill-current" />
+                        Play S1 E1
+                      </>
+                    )}
                   </button>
                 )}
 
