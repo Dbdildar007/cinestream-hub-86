@@ -48,8 +48,6 @@ function AppContent() {
   const { clearSession } = useDeviceSession(user?.id, handleEvicted);
 
   const handleEvictedAcknowledge = async () => {
-    await clearSession();
-    await signOut();
     setShowEvicted(false);
     navigate("/auth", { replace: true });
   };
