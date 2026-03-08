@@ -85,6 +85,12 @@ export default function MovieModal({
                   <span className="text-xs font-semibold text-primary-foreground">Series</span>
                 </div>
               )}
+              {movie.isPremium && (
+                <div className={`absolute top-4 ${movie.isSeries ? 'left-28' : 'left-4'} flex items-center gap-1 bg-yellow-500/90 px-2.5 py-1 rounded-full`}>
+                  <Crown className="w-3.5 h-3.5 text-black" />
+                  <span className="text-xs font-bold text-black">PREMIUM</span>
+                </div>
+              )}
             </div>
 
             <div className="px-6 pb-8 -mt-16 relative">
