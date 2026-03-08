@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useMovies } from "@/hooks/useMovies";
+import { useAllSeries } from "@/hooks/useSeries";
 import type { Movie } from "@/services/movieService";
 
 interface Profile {
