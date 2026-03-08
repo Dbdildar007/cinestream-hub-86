@@ -14,7 +14,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 
 export default function WatchHistoryPage() {
   const navigate = useNavigate();
-  const { getContinueWatching, clearProgress, updateProgress, getProgress } = useWatchProgress();
+  const { getContinueWatching, clearProgress, updateProgress, getProgress, refetchProgress } = useWatchProgress();
   const { allMovies } = useMovies();
   const { getRating, setRating } = useRatings();
   const { isInWatchlist, toggleWatchlist } = useWatchlist();
@@ -125,7 +125,7 @@ export default function WatchHistoryPage() {
         {playingMovie && (
           <VideoPlayer
             movie={playingMovie}
-            onClose={() => setPlayingMovie(null)}
+            onClose={() => { setPlayingMovie(null); refetchProgress(); }}
             onProgressUpdate={updateProgress}
             initialTime={playingMovie ? getProgress(playingMovie.id)?.currentTime || 0 : 0}
             allMovies={allMovies}
@@ -140,7 +140,7 @@ export default function WatchHistoryPage() {
             series={playingSeries.series}
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
-            onClose={() => setPlayingSeries(null)}
+            onClose={() => { setPlayingSeries(null); refetchProgress(); }}
           />
         )}
       </AnimatePresence>

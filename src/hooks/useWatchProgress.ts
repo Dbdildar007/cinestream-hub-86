@@ -146,6 +146,25 @@ export function useWatchProgress() {
     return [...progressList].sort((a, b) => b.lastWatched - a.lastWatched).slice(0, 10);
   }, [progressList]);
 
+  const refetchProgress = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("watch_progress")
+      .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched")
+      .eq("user_id", user.id);
+    if (error || !data) return;
+    const dbList: WatchProgress[] = (data as any[]).map((d: any) => ({
+      movieId: d.movie_id,
+      episodeId: d.episode_id || undefined,
+      mediaType: (d.media_type as 'movie' | 'series') || 'movie',
+      currentTime: Number(d.current_time_sec),
+      duration: Number(d.duration_sec),
+      lastWatched: new Date(d.last_watched).getTime(),
+    }));
+    setProgressList(dbList);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dbList));
+  }, [user]);
+
 const clearProgress = useCallback(async (movieId: string, episodeId?: string) => {
   // Update local state first
   setProgressList((prev) =>
@@ -176,5 +195,5 @@ const clearProgress = useCallback(async (movieId: string, episodeId?: string) =>
   }
 }, [user, supabase]);
 
-  return { updateProgress, getProgress, getContinueWatching, clearProgress };
+  return { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress };
 }

@@ -29,7 +29,7 @@ export default function Index() {
   const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   
   const { getRating, setRating } = useRatings();
-  const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
+  const { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
   
 
@@ -228,7 +228,7 @@ export default function Index() {
         {playingMovie && (
           <VideoPlayer
             movie={playingMovie}
-            onClose={() => { setPlayingMovie(null); setOverrideInitialTime(null); }}
+            onClose={() => { setPlayingMovie(null); setOverrideInitialTime(null); refetchProgress(); }}
             onProgressUpdate={updateProgress}
             initialTime={overrideInitialTime ?? getProgress(playingMovie.id)?.currentTime ?? 0}
             allMovies={allMovies}
@@ -244,7 +244,7 @@ export default function Index() {
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
             initialTime={overrideInitialTime ?? undefined}
-            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); }}
+            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); refetchProgress(); }}
           />
         )}
       </AnimatePresence>
