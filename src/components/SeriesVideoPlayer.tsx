@@ -193,10 +193,14 @@ export default function SeriesVideoPlayer({
   }, [videoEnded, controlsDisabled, watchPartyActive, isHost, onForceSyncPlayback]);
 
   const skip = useCallback((seconds: number) => {
+    if (controlsDisabled) return;
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
+      if (watchPartyActive && isHost && onForceSyncPlayback) {
+        onForceSyncPlayback(!videoRef.current.paused, videoRef.current.currentTime);
+      }
     }
-  }, [duration]);
+  }, [duration, controlsDisabled, watchPartyActive, isHost, onForceSyncPlayback]);
 
   const toggleFullscreen = useCallback(async () => {
     const el = containerRef.current;
