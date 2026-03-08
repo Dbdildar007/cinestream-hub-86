@@ -6,6 +6,7 @@ import { useDeviceSession } from "@/hooks/useDeviceSession";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DeviceLimitModal } from "@/components/DeviceLimitModal";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -66,7 +67,8 @@ export default function AuthPage() {
   const handleCancelConflict = async () => {
     setDeviceConflict(null);
     setPendingUserId(null);
-    await signOut();
+    // Only sign out locally — do NOT clear active_session_id in DB (Device 1 owns it)
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
