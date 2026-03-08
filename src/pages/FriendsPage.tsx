@@ -99,12 +99,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
   // Static fallback suggestions when no real profiles available
   const STATIC_SUGGESTIONS: Profile[] = [
-    { id: "static-1", user_id: "static-1", display_name: "Alex Morgan", unique_id: "CS-alex2024", is_online: true, avatar_url: null },
-    { id: "static-2", user_id: "static-2", display_name: "Priya Sharma", unique_id: "CS-priya007", is_online: false, avatar_url: null },
-    { id: "static-3", user_id: "static-3", display_name: "James Wilson", unique_id: "CS-james99", is_online: true, avatar_url: null },
-    { id: "static-4", user_id: "static-4", display_name: "Sara Khan", unique_id: "CS-sara456", is_online: false, avatar_url: null },
-    { id: "static-5", user_id: "static-5", display_name: "Mike Chen", unique_id: "CS-mike321", is_online: true, avatar_url: null },
-    { id: "static-6", user_id: "static-6", display_name: "Emma Davis", unique_id: "CS-emma88", is_online: false, avatar_url: null },
+    { id: "static-1", user_id: "static-1", display_name: "Alex Morgan", unique_id: "CS-alex2024", is_online: true, avatar_url: null, location: "New York, USA" },
+    { id: "static-2", user_id: "static-2", display_name: "Priya Sharma", unique_id: "CS-priya007", is_online: false, avatar_url: null, location: "Mumbai, India" },
+    { id: "static-3", user_id: "static-3", display_name: "James Wilson", unique_id: "CS-james99", is_online: true, avatar_url: null, location: "London, UK" },
+    { id: "static-4", user_id: "static-4", display_name: "Sara Khan", unique_id: "CS-sara456", is_online: false, avatar_url: null, location: "Dubai, UAE" },
+    { id: "static-5", user_id: "static-5", display_name: "Mike Chen", unique_id: "CS-mike321", is_online: true, avatar_url: null, location: "Tokyo, Japan" },
+    { id: "static-6", user_id: "static-6", display_name: "Emma Davis", unique_id: "CS-emma88", is_online: false, avatar_url: null, location: "Sydney, Australia" },
   ];
 
   // Load default suggestions for Find Friends
