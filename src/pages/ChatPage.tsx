@@ -337,7 +337,12 @@ export default function ChatPage() {
           type="text"
           value={input}
           onChange={handleInputChange}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.repeat) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
           placeholder="Type a message..."
           className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
