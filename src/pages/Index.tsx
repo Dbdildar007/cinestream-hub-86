@@ -85,8 +85,29 @@ export default function Index() {
 
   const handleWatch = (movie: Movie) => {
     setSelectedMovie(null);
+    setOverrideInitialTime(null);
     setPlayingMovie(movie);
   };
+
+  const handleResumeMovieFromParty = useCallback((movie: Movie, currentTime: number) => {
+    setOverrideInitialTime(currentTime);
+    setPlayingMovie(movie);
+  }, []);
+
+  const handleResumeSeriesFromParty = useCallback(async (movie: Movie, episodeId: string, currentTime: number) => {
+    const detail = await seriesService.getSeriesWithSeasons(movie.id);
+    if (!detail) return;
+    for (const season of detail.seasons) {
+      const episode = season.episodes.find(e => e.id === episodeId);
+      if (episode) {
+        setOverrideInitialTime(currentTime);
+        setPlayingSeries({ series: movieToSeries(movie), episode, season: season.number });
+        return;
+      }
+    }
+    // Fallback: open series modal
+    setSelectedSeries(movieToSeries(movie));
+  }, [movieToSeries]);
 
   const handlePlaySeriesEpisode = (series: Series, episode: SeriesEpisode, season: number) => {
     setSelectedSeries(null);
