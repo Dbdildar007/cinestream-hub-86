@@ -212,15 +212,15 @@ export default function ChatMessageBubble({
           )}
 
           <div
-            className={`px-3 py-1.5 inline-block relative ${
+            className={`px-3 py-1.5 inline-flex items-end gap-2 relative ${
               replyToMessage ? "rounded-b-2xl rounded-t-sm" : "rounded-2xl"
             } ${
               isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
             } ${isEditing ? "ring-2 ring-accent" : ""}`}
             onClick={handleClick}
           >
-            <p className="text-sm break-words inline">{msg.text}</p>
-            <span className="inline-flex items-center gap-0.5 flex-shrink-0 ml-2 align-bottom translate-y-[1px]">
+            <p className="text-sm break-words">{msg.text}</p>
+            <span className="flex items-center gap-0.5 flex-shrink-0 pb-0.5">
               {msg.editedAt && (
                 <span className={`text-[9px] leading-none ${isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"}`}>
                   edited
