@@ -532,7 +532,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               }`}>
                 <div className="relative">
                   <img
-                    src={f.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.profile?.display_name || f.id}`}
+                    src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
                     alt={f.profile?.display_name || "User"}
                     className="w-10 h-10 rounded-full object-cover bg-primary/10"
                   />
