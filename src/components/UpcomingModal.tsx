@@ -164,7 +164,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
             </div>
 
             {/* Content */}
-            <div className="px-6 pb-8 -mt-8 relative">
+            <div className="px-6 pb-8 mt-2 relative">
               <h2 className="text-3xl font-display tracking-wider text-foreground mb-2">
                 {movie.title.toUpperCase()}
               </h2>
