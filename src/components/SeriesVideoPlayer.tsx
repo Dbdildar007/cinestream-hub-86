@@ -66,6 +66,12 @@ export default function SeriesVideoPlayer({
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [showNextEpisode, setShowNextEpisode] = useState(false);
   const [nextEpisodeCountdown, setNextEpisodeCountdown] = useState(5);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  const { allSeries } = useAllSeries();
+  const recommendedSeries = allSeries
+    .filter(s => s.id !== series.id && s.genre.some(g => series.genre.includes(g)))
+    .slice(0, 8);
 
   const hasValidUrl = !!(currentEpisode.video_url && currentEpisode.video_url.trim() !== '');
 
