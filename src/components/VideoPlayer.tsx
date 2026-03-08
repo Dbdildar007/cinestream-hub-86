@@ -569,7 +569,7 @@ const skip = useCallback((seconds: number) => {
             </div>
 
             {/* Scrollable grid */}
-            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh]">
+            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                 {recommendedMovies.map((rec) => (
                   <button
