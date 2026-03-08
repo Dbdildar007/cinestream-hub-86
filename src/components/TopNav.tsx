@@ -43,6 +43,9 @@ export default function TopNav() {
         </nav>
       </div>
       <div className="flex items-center gap-4">
+        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-secondary transition-colors">
+          {isDark ? <Sun className="w-5 h-5 text-foreground" strokeWidth={2.5} /> : <Moon className="w-5 h-5 text-foreground" strokeWidth={2.5} />}
+        </button>
         <Link to="/search" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Search className="w-5 h-5 text-foreground" strokeWidth={2.5} />
         </Link>
