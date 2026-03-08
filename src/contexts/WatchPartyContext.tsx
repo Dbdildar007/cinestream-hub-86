@@ -122,6 +122,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
     }
     setPlayingMovie(null);
     setFriendName("");
+    setFriendUserId("");
   }, [watchParty]);
 
   // Listen for party end phase from other user
@@ -130,6 +131,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       if (phase === "ended") {
         setPlayingMovie(null);
         setFriendName("");
+        setFriendUserId("");
       }
     });
   }, [watchParty.onPhaseChange]);
