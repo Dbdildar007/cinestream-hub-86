@@ -95,6 +95,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const acceptInvite = useCallback(async () => {
     if (!pendingInvite) return;
     setFriendName(pendingInvite.hostName);
+    setFriendUserId(pendingInvite.hostId);
     const joined = await watchParty.joinParty(pendingInvite.partyId, false);
     if (joined) {
       const movie = allMovies.find(m => m.id === pendingInvite.movieId);
