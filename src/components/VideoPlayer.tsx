@@ -569,13 +569,13 @@ const skip = useCallback((seconds: number) => {
             </div>
 
             {/* Scrollable grid */}
-            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh]">
+            <div className="px-5 pb-8 overflow-y-auto max-h-[50vh] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                 {recommendedMovies.map((rec) => (
                   <button
                     key={rec.id}
                     onClick={() => handlePlayRecommended(rec)}
-                    className="group text-left rounded-lg overflow-hidden bg-secondary/30 hover:bg-secondary/60 transition-all hover:scale-[1.03]"
+                    className="group text-left rounded-xl overflow-hidden bg-secondary/30 hover:bg-secondary/60 transition-all hover:scale-[1.03]"
                   >
                     <div className="relative aspect-[2/3]">
                       <img src={rec.poster} alt={rec.title} className="w-full h-full object-cover" />
