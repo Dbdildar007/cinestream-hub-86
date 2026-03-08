@@ -79,6 +79,6 @@ export default function MovieRow({
           <ChevronRight className="w-6 h-6 text-foreground" />
         </button>
       </div>
-    </motion.section>
+    </section>
   );
 }
