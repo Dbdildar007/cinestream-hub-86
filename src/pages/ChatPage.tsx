@@ -340,7 +340,10 @@ export default function ChatPage() {
       </AnimatePresence>
 
       {/* Input */}
-      <div className="bg-card border-t border-border px-4 py-2 md:py-3 pb-[env(safe-area-inset-bottom,8px)] md:pb-3 flex items-center gap-2">
+      <div
+        className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2"
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 8px) + ${keyboardInset}px)` }}
+      >
         <button
           onClick={() => setShowEmojis(!showEmojis)}
           className="p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors"
