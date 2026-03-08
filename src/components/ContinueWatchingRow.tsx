@@ -120,6 +120,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
               </motion.div>
             );
           })}
+          </AnimatePresence>
         </div>
 
         <button
