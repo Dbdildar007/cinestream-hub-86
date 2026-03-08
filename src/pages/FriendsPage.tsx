@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -53,6 +63,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
   const [movieSearch, setMovieSearch] = useState("");
+  const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
 
   const filteredMovies = movieSearch
     ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
@@ -495,7 +506,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   <UserCheck className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => declineRequest(req.id, req.profile)}
+                  onClick={() => setDeclineTarget({ id: req.id, profile: req.profile })}
                   className="p-2 rounded-full hover:bg-destructive/20 text-destructive transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -569,6 +580,32 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Decline confirmation dialog */}
+      <AlertDialog open={!!declineTarget} onOpenChange={(open) => { if (!open) setDeclineTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline friend request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the request from {declineTarget?.profile?.display_name || "this user"}. They will be notified. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (declineTarget) {
+                  declineRequest(declineTarget.id, declineTarget.profile);
+                  setDeclineTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
