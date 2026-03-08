@@ -43,12 +43,18 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
         </button>
 
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
+          <AnimatePresence mode="popLayout">
           {movies.map(({ progress, ...movie }) => {
             const percent = progress.duration > 0 ? (progress.currentTime / progress.duration) * 100 : 0;
             const remainMin = Math.ceil((progress.duration - progress.currentTime) / 60);
             return (
               <motion.div
                 key={movie.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className="relative flex-shrink-0 w-[200px] md:w-[260px] cursor-pointer group/card"
                 onClick={() => {
                   // Use 'mediaType' from progress as the source of truth
