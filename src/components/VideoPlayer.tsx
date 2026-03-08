@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { PartyPhase } from "@/hooks/useWatchParty";
 import { Loader2 } from "lucide-react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
