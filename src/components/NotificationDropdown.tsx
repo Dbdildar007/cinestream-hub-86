@@ -291,7 +291,7 @@ export default function NotificationDropdown({
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-full hover:bg-secondary transition-colors relative"
         >
-          <Bell className="w-5 h-5 text-foreground" />
+          <Bell className="w-5 h-5 text-foreground" strokeWidth={2.5} />
           {unreadCount > 0 && (
             <motion.span
               initial={{ scale: 0 }}
