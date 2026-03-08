@@ -58,6 +58,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [searching, setSearching] = useState(false);
   // Track relationship status per user_id in search
   const [relationshipMap, setRelationshipMap] = useState<Record<string, RelationshipStatus>>({});
+  const [defaultSuggestions, setDefaultSuggestions] = useState<Profile[]>([]);
 
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
@@ -94,6 +95,33 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     }
     setRelationshipMap(map);
   }, [user]);
+
+  // Load default suggestions for Find Friends
+  useEffect(() => {
+    if (!user) return;
+    const loadSuggestions = async () => {
+      // Get all friendship user IDs (connected or pending)
+      const { data: friendships } = await supabase
+        .from("friendships")
+        .select("requester_id, addressee_id")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+      const connectedIds = new Set<string>();
+      (friendships || []).forEach(f => {
+        connectedIds.add(f.requester_id === user.id ? f.addressee_id : f.requester_id);
+      });
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .neq("user_id", user.id)
+        .limit(30);
+
+      const filtered = (profiles || []).filter(p => !connectedIds.has(p.user_id));
+      setDefaultSuggestions(filtered);
+    };
+    loadSuggestions();
+  }, [user, friends]);
 
   useEffect(() => {
     if (!user) return;
@@ -137,6 +165,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     } else {
       // Update local relationship map immediately
       setRelationshipMap(prev => ({ ...prev, [profile.user_id]: "pending_sent" }));
+      // Remove from default suggestions
+      setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
       const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
       await sendNotification(
         profile.user_id,
@@ -250,7 +280,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   }
 
   const tabs = [
-    { id: "friends" as const, label: "Friends", count: friends.length },
+    { id: "friends" as const, label: "Friends", count: null },
     { id: "requests" as const, label: "Requests", count: pendingRequests.length },
     { id: "search" as const, label: "Find Friends", count: null },
   ];
@@ -340,6 +370,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </button>
           </div>
 
+          {/* Search results */}
           <div className="space-y-2">
             {searching && <LoadingSpinner size="sm" text="Searching..." />}
             {!searching && searchResults.map((profile) => (
@@ -360,6 +391,43 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
             )}
           </div>
+
+          {/* Default suggestions - people you may know */}
+          {!searchQuery && defaultSuggestions.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">People you may know</h3>
+              {defaultSuggestions.map((profile) => (
+                <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">
+                        {profile.display_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <Circle
+                      className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${
+                        profile.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
+                    <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
+                  </div>
+                  <button
+                    onClick={() => sendFriendRequest(profile)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!searchQuery && defaultSuggestions.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">No suggestions available</p>
+          )}
         </div>
       )}
 
@@ -373,7 +441,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </div>
           ) : (
             friends.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
+              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                f.profile?.is_online 
+                  ? "bg-primary/10 border border-primary/20 hover:bg-primary/15" 
+                  : "bg-secondary hover:bg-secondary/80"
+              }`}>
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-sm font-bold text-primary">
