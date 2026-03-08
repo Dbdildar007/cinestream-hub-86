@@ -412,7 +412,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      handle_single_device_login: {
+        Args: {
+          p_device_id: string
+          p_device_info: Json
+          p_force_login?: boolean
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
