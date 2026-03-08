@@ -212,15 +212,15 @@ export default function ChatMessageBubble({
           )}
 
           <div
-            className={`px-3 py-1.5 inline-flex items-end gap-1.5 max-w-full relative ${
+            className={`px-3 py-1.5 relative ${
               replyToMessage ? "rounded-b-2xl rounded-t-sm" : "rounded-2xl"
             } ${
               isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
             } ${isEditing ? "ring-2 ring-accent" : ""}`}
             onClick={handleClick}
           >
-            <span className="text-sm break-words min-w-0">{msg.text}</span>
-            <span className="inline-flex items-center gap-0.5 flex-shrink-0 pb-0.5 whitespace-nowrap">
+            <span className="text-sm break-words">{msg.text}</span>
+            <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-0.5 flex-shrink-0 whitespace-nowrap translate-y-[2px]">
               {msg.editedAt && (
                 <span className={`text-[9px] leading-none ${isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"}`}>
                   edited
@@ -281,11 +281,11 @@ export default function ChatMessageBubble({
           </div>
         )}
 
-        {/* Desktop: reply quote icon at top-right of bubble on hover */}
+        {/* Reply quote icon at top-right of bubble on hover (desktop) */}
         {!isMobile && onReply && (
           <button
             onClick={() => onReply(msg)}
-            className={`absolute -top-2 ${isMine ? "right-0" : "right-0"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
+            className={`absolute -top-2 ${isMine ? "-left-2" : "-right-2"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
           >
             <Quote className="w-3 h-3" />
           </button>
