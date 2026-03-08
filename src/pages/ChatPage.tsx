@@ -11,6 +11,7 @@ import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 
 export interface ChatMessage {
   id: string;
+  stableKey: string; // stays constant across temp→real swap
   text: string;
   isMine: boolean;
   timestamp: string;
@@ -48,6 +49,7 @@ export default function ChatPage() {
 
   const mapMessage = useCallback((m: any, userId: string): ChatMessage => ({
     id: m.id,
+    stableKey: m.id,
     text: m.message,
     isMine: m.sender_id === userId,
     timestamp: m.created_at,
@@ -242,7 +244,7 @@ export default function ChatPage() {
     setInput("");
     setMessages((prev) => [
       ...prev,
-      { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
+      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
 
     try {
@@ -261,6 +263,8 @@ export default function ChatPage() {
       if (data) {
         setMessages((prev) => {
           const mapped = mapMessage(data as any, user.id);
+          // Keep the tempId as stableKey so React doesn't re-animate
+          mapped.stableKey = tempId;
           const alreadyExists = prev.some((m) => m.id === mapped.id);
           const replaced = prev.map((m) => (m.id === tempId ? mapped : m));
           return alreadyExists ? replaced.filter((m) => m.id !== tempId) : replaced;
@@ -305,16 +309,16 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
           </motion.div>
         ) : (
-          <AnimatePresence initial={false}>
+          <>
             {messages.map((msg, index) => (
               <ChatMessageBubble
-                key={msg.id}
+                key={msg.stableKey}
                 message={msg}
                 index={index}
                 skipAnimation={!initialLoadDone}
               />
             ))}
-          </AnimatePresence>
+          </>
         )}
 
         {remoteIsTyping && <ChatTypingIndicator />}
