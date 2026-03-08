@@ -15,6 +15,7 @@ const navItems = [
 
 export default function TopNav() {
   const location = useLocation();
+  const { isDark, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
   return (
