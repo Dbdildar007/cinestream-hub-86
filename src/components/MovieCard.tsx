@@ -15,7 +15,7 @@ interface MovieCardProps {
   index?: number;
 }
 
-export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
+export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist, index = 0 }: MovieCardProps) {
  const [hovered, setHovered] = useState(false);
   // NEW: Add isMobile state and listener
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
