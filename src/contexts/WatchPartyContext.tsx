@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWatchParty, type PartyPhase } from "@/hooks/useWatchParty";
@@ -11,6 +11,7 @@ interface PendingInvite {
   movieTitle: string;
   hostName: string;
   hostId: string;
+  receivedAt: number; // timestamp for countdown
 }
 
 interface WatchPartyContextType {
@@ -21,9 +22,11 @@ interface WatchPartyContextType {
   friendName: string;
   friendUserId: string;
   pendingInvite: PendingInvite | null;
+  inviteTimeRemaining: number;
   startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => void;
   acceptInvite: () => Promise<void>;
   declineInvite: () => Promise<void>;
+  ignoreInvite: () => void;
   closePlayer: () => void;
   syncPlayback: ReturnType<typeof useWatchParty>["syncPlayback"];
   forceSyncPlayback: ReturnType<typeof useWatchParty>["forceSyncPlayback"];
@@ -32,6 +35,8 @@ interface WatchPartyContextType {
   onPhaseChange: ReturnType<typeof useWatchParty>["onPhaseChange"];
   signalReady: ReturnType<typeof useWatchParty>["signalReady"];
 }
+
+const INVITE_TIMEOUT_SEC = 30;
 
 const WatchPartyContext = createContext<WatchPartyContextType | null>(null);
 
@@ -49,8 +54,34 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
   const [friendName, setFriendName] = useState("");
   const [friendUserId, setFriendUserId] = useState("");
+  const [inviteTimeRemaining, setInviteTimeRemaining] = useState(INVITE_TIMEOUT_SEC);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Host starts a watch party — open player in "waiting" phase
+  // Auto-expiry countdown for pending invites
+  useEffect(() => {
+    if (!pendingInvite) {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setInviteTimeRemaining(INVITE_TIMEOUT_SEC);
+      return;
+    }
+
+    setInviteTimeRemaining(INVITE_TIMEOUT_SEC);
+    countdownRef.current = setInterval(() => {
+      setInviteTimeRemaining(prev => {
+        if (prev <= 1) {
+          // Auto-expire: silently dismiss (like ignore)
+          setPendingInvite(null);
+          return INVITE_TIMEOUT_SEC;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [pendingInvite]);
+
   const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => {
     setFriendName(friendDisplayName);
     setFriendUserId(friendId);
@@ -86,6 +117,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
           movieTitle: movie?.title || "a movie",
           hostName: hostProfile?.display_name || "Someone",
           hostId: party.host_id,
+          receivedAt: Date.now(),
         });
       })
       .subscribe();
@@ -101,7 +133,6 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       const movie = allMovies.find(m => m.id === pendingInvite.movieId);
       if (movie) {
         setPlayingMovie(movie);
-        // Signal ready to host after a brief delay for player to mount
         setTimeout(() => {
           watchParty.signalReady();
         }, 1500);
@@ -116,6 +147,11 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
     setPendingInvite(null);
   }, [pendingInvite]);
 
+  // Ignore = dismiss overlay without deleting the party (host keeps waiting)
+  const ignoreInvite = useCallback(() => {
+    setPendingInvite(null);
+  }, []);
+
   const closePlayer = useCallback(() => {
     if (watchParty.activeParty) {
       watchParty.endParty();
@@ -125,7 +161,6 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
     setFriendUserId("");
   }, [watchParty]);
 
-  // Listen for party end phase from other user
   useEffect(() => {
     watchParty.onPhaseChange((phase) => {
       if (phase === "ended") {
@@ -145,9 +180,11 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       friendName,
       friendUserId,
       pendingInvite,
+      inviteTimeRemaining,
       startWatchParty,
       acceptInvite,
       declineInvite,
+      ignoreInvite,
       closePlayer,
       syncPlayback: watchParty.syncPlayback,
       forceSyncPlayback: watchParty.forceSyncPlayback,
