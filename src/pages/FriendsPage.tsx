@@ -252,7 +252,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const declineRequest = async (friendshipId: string, requesterProfile?: Profile) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
     if (!error) {
-      // Notify the sender about the rejection
       if (requesterProfile && user) {
         const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
         await sendNotification(
@@ -263,6 +262,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         );
       }
       invalidate();
+    }
+  };
+
+  const cancelSentRequest = async (friendshipId: string) => {
+    const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
+    if (!error) {
+      toast.success("Request cancelled");
+      invalidate();
+    } else {
+      toast.error("Failed to cancel request");
     }
   };
 
