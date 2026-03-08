@@ -484,7 +484,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           )}
 
           {!searchQuery && defaultSuggestions.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No suggestions available</p>
+            <div className="text-center py-8">
+              <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No suggestions available right now</p>
+              <p className="text-xs text-muted-foreground mt-1">Add your location in profile settings to get better suggestions</p>
+            </div>
           )}
         </div>
       )}
