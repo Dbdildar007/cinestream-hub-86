@@ -210,13 +210,19 @@ export default function ChatPage() {
     };
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+  }, []);
+
   const scrollToBottom = useCallback((instant = false) => {
     chatEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
-    if (initialLoadDone) scrollToBottom();
-  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
+    if (initialLoadDone && isNearBottom()) scrollToBottom();
+  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone, isNearBottom]);
 
   useEffect(() => {
     const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
