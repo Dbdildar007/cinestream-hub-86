@@ -135,10 +135,6 @@ export default function ProfileHeader({
             {profile?.display_name?.toUpperCase() || "USER"}
           </h1>
 
-          {/* Premium badge */}
-          <span className="mt-1 px-3 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-semibold tracking-wide">
-            PREMIUM MEMBER
-          </span>
 
           {/* Location */}
           <div className="flex items-center gap-1.5 mt-3">

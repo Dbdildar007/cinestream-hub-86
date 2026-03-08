@@ -39,13 +39,6 @@ export default function MovieCard({ movie, onSelect, userRating, onRate, isInWat
           loading="lazy"
         />
 
-        {/* Premium badge */}
-        {movie.isPremium && (
-          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-yellow-500/90 px-1.5 py-0.5 rounded text-[10px] font-bold text-black z-10">
-            <Crown className="w-2.5 h-2.5" />
-            PRO
-          </div>
-        )}
 
         {/* Series badge */}
         {movie.isSeries && (
