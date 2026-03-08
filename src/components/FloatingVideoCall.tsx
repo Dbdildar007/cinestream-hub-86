@@ -90,7 +90,7 @@ export default function FloatingVideoCall({
       .channel(`chat-${[user.id, remoteId].sort().join("-")}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "call_messages" },
+        { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           // Only add if it's between us
