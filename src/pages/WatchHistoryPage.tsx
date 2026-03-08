@@ -125,7 +125,7 @@ export default function WatchHistoryPage() {
         {playingMovie && (
           <VideoPlayer
             movie={playingMovie}
-            onClose={() => setPlayingMovie(null)}
+            onClose={() => { setPlayingMovie(null); refetchProgress(); }}
             onProgressUpdate={updateProgress}
             initialTime={playingMovie ? getProgress(playingMovie.id)?.currentTime || 0 : 0}
             allMovies={allMovies}
