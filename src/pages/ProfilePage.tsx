@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Users, Copy, KeyRound } from "lucide-react";
+import { User, Settings, LogOut, ChevronRight, Heart, Clock, Star, Users, Copy, KeyRound, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
