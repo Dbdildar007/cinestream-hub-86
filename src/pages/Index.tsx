@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
@@ -13,16 +13,13 @@ import { useDownloads } from "@/hooks/useDownloads";
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress, type WatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { useWatchParty } from "@/hooks/useWatchParty";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
-import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { MovieRowSkeleton } from "@/components/LoadingSpinner";
-import { toast } from "sonner";
 import { useMovies } from '@/hooks/useMovies';
 import type { Series, SeriesEpisode } from '@/services/seriesService';
 import { seriesService } from '@/services/seriesService';
+
 export default function Index() {
   const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -32,8 +29,7 @@ export default function Index() {
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
-  const { activeParty, isHost, joinParty, syncPlayback, forceSyncPlayback, endParty, onSyncReceived } = useWatchParty();
-  const { sendNotification } = useNotifications();
+  
 
   const { allMovies, categories, featuredMovies, loading } = useMovies();
 
@@ -47,30 +43,6 @@ export default function Index() {
   //}, []);
 
   // Listen for watch party invites
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel("watch-party-invite-listener")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "watch_parties",
-        filter: `friend_id=eq.${user.id}`,
-      }, async (payload) => {
-        const party = payload.new as any;
-        if (party.status === "active") {
-          const movie = allMovies.find(m => m.id === party.movie_id);
-          const joined = await joinParty(party.id);
-          if (joined && movie) {
-            setPlayingMovie(movie);
-            toast.info("You've joined a watch party!");
-          }
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, joinParty, allMovies]);
 
   const continueWatchingMovies = useMemo(() => {
     const progressList = getContinueWatching();
@@ -234,12 +206,6 @@ export default function Index() {
             onClose={() => setPlayingMovie(null)}
             onProgressUpdate={updateProgress}
             initialTime={getProgress(playingMovie.id)?.currentTime || 0}
-            watchPartyActive={!!activeParty}
-            isHost={isHost}
-            onSyncPlayback={syncPlayback}
-            onForceSyncPlayback={forceSyncPlayback}
-            onSyncReceived={onSyncReceived}
-            onEndParty={endParty}
             allMovies={allMovies}
             onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }}
           />

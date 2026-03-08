@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useWatchPartyContext } from "@/contexts/WatchPartyContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle, Tv, LayoutGrid, List } from "lucide-react";
 import { getAvatarUrl } from "@/utils/avatarUrl";
@@ -52,6 +53,7 @@ interface FriendsPageProps {
 export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsPageProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const wpCtx = useWatchPartyContext();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
   const { allSeries } = useAllSeries();
@@ -331,10 +333,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       { party_id: data.id, movie_id: movie.id }
     );
 
-    toast.success(`Watch party started! ${invitingFriend.profile.display_name} will join automatically.`);
+    toast.success(`Watch party started! Waiting for ${invitingFriend.profile.display_name} to join.`);
     setInvitingFriend(null);
     setMovieSearch("");
-    navigate("/");
+
+    // Open the video player for the host immediately via context
+    wpCtx.startWatchParty(movie, data.id);
   };
 
   if (!user) {
