@@ -453,7 +453,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 hover:bg-secondary hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-default"
                   >
                     <div className="relative">
                       {profile.avatar_url ? (
@@ -474,13 +474,13 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
                       <p className="text-[11px] text-muted-foreground">{profile.unique_id}</p>
-                      <p className={`text-[10px] mt-0.5 ${profile.is_online ? "text-green-500" : "text-muted-foreground"}`}>
-                        {profile.is_online ? "Online" : "Offline"}
-                      </p>
+                      {profile.location?.trim() && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">📍 {profile.location}</p>
+                      )}
                     </div>
                     <button
                       onClick={() => sendFriendRequest(profile)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all"
                     >
                       <UserPlus className="w-3.5 h-3.5" /> Connect
                     </button>
