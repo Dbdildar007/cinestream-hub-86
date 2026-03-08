@@ -23,8 +23,7 @@ export default function ProfileHeader({
 }: ProfileHeaderProps) {
   return (
     <div className="relative px-4 md:px-12">
-      {/* Gradient background accent */}
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/15 to-transparent rounded-b-3xl" />
+      {/* Clean background */}
 
       <div className="relative flex flex-col items-center pt-8 pb-4">
         {/* Avatar */}
