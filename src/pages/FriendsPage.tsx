@@ -915,7 +915,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       <motion.button
                         key={series.id}
                         whileTap={{ scale: 0.95 }}
-                        whileHover={{ scale: 1.03 }}
                         onClick={() => {
                           const sc = series.season_count || 0;
                           handleInviteToWatchParty({
@@ -925,19 +924,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                             language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
                           } as Movie);
                         }}
-                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary"
+                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-primary/90 px-1.5 py-0.5 rounded text-[9px] font-semibold text-primary-foreground z-10">
                           <Tv className="w-2.5 h-2.5" />
                           Series{series.season_count ? ` · ${series.season_count}S` : ""}
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                          <p className="text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
-                          <span className="text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 md:hidden">
-                          <p className="text-[10px] font-medium text-primary-foreground truncate">{series.title}</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                          <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
+                          <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
                         </div>
                       </motion.button>
                     ))}
