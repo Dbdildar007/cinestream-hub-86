@@ -32,7 +32,7 @@ export default function VideoPlayer({
   movie, onClose, onProgressUpdate, initialTime = 0,
   watchPartyActive = false, isHost = true,
   onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
-  allMovies = [], onPlayMovie,
+  allMovies = [], onPlayMovie, partyPhase,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
