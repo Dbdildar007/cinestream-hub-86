@@ -313,7 +313,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     toast.success("Request cancelled");
   };
 
-  const handleInviteToWatchParty = async (movie: Movie) => {
+  const handleInviteToWatchParty = async (movie: Movie, episode?: SeriesEpisode, series?: Series, seasonNumber?: number) => {
     if (!user || !invitingFriend?.profile) return;
     const friendId = invitingFriend.profile.user_id;
 
@@ -340,14 +340,19 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       return;
     }
 
-    const { data, error } = await supabase.from("watch_parties").insert({
+    const insertData: any = {
       host_id: user.id,
       friend_id: friendId,
       movie_id: movie.id,
       status: "active",
       is_playing: true,
       current_time_sec: 0,
-    }).select().single();
+    };
+    if (episode) {
+      insertData.episode_id = episode.id;
+    }
+
+    const { data, error } = await supabase.from("watch_parties").insert(insertData).select().single();
 
     if (error) {
       toast.error("Failed to create watch party");
@@ -356,20 +361,39 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
     setInviteCooldowns(prev => ({ ...prev, [friendId]: Date.now() }));
 
+    const episodeLabel = episode ? ` (S${seasonNumber || 1} E${episode.number})` : "";
     const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
     await sendNotification(
       friendId,
       "watch_party",
       "Watch Party Invite",
-      `${myProfile?.display_name || "Someone"} invited you to watch "${movie.title}"`,
-      { party_id: data.id, movie_id: movie.id }
+      `${myProfile?.display_name || "Someone"} invited you to watch "${movie.title}${episodeLabel}"`,
+      { party_id: data.id, movie_id: movie.id, episode_id: episode?.id }
     );
 
     toast.success(`Watch party started! Waiting for ${invitingFriend.profile.display_name} to join.`);
     setInvitingFriend(null);
     setMovieSearch("");
+    setPickingSeries(null);
 
-    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name, friendId);
+    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name, friendId, episode, series, seasonNumber);
+  };
+
+  const handleSeriesClick = (series: Series) => {
+    setPickingSeries(series);
+    setPickerSeasonNumber(1);
+  };
+
+  const handleEpisodePick = (episode: SeriesEpisode, seasonNum: number) => {
+    if (!pickingSeries) return;
+    const sc = pickingSeries.season_count || 0;
+    const movieProxy: Movie = {
+      id: pickingSeries.id, title: pickingSeries.title, description: pickingSeries.description,
+      poster: pickingSeries.poster_url, year: pickingSeries.release_year, genre: pickingSeries.genre,
+      rating: pickingSeries.rating, duration: `${sc} Season${sc !== 1 ? "s" : ""}`,
+      language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
+    };
+    handleInviteToWatchParty(movieProxy, episode, pickingSeries as any, seasonNum);
   };
 
   if (!user) {
