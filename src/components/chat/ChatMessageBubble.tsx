@@ -5,6 +5,7 @@ import type { ChatMessage } from "@/pages/ChatPage";
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   index: number;
+  skipAnimation?: boolean;
 }
 
 function formatTime(ts: string) {
@@ -15,14 +16,14 @@ function formatTime(ts: string) {
 export default function ChatMessageBubble({
   message: msg,
   index,
+  skipAnimation,
 }: ChatMessageBubbleProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+      initial={skipAnimation ? false : { opacity: 0, y: 12, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
-        duration: 0.3,
-        delay: Math.min(index * 0.03, 0.6),
+        duration: 0.2,
         ease: "easeOut",
       }}
       className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}
@@ -47,11 +48,7 @@ export default function ChatMessageBubble({
             (msg.readAt ? (
               <CheckCheck className="w-3.5 h-3.5 text-primary" />
             ) : (
-              <Check
-                className={`w-3.5 h-3.5 ${
-                  msg.id.startsWith("temp-") ? "text-primary-foreground/40" : "text-primary-foreground/70"
-                }`}
-              />
+              <Check className="w-3.5 h-3.5 text-primary-foreground/70" />
             ))}
         </div>
       </div>

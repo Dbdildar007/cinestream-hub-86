@@ -37,7 +37,9 @@ export default function ChatPage() {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remoteTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -93,8 +95,12 @@ export default function ChatPage() {
       if (data) {
         setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
-      // Small delay for smooth skeleton → messages transition
-      setTimeout(() => setIsLoading(false), 400);
+      setIsLoading(false);
+      // Instant scroll to bottom on initial load (no smooth)
+      requestAnimationFrame(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "instant" });
+        setInitialLoadDone(true);
+      });
       markAsRead();
     };
     loadMessages();
@@ -170,28 +176,33 @@ export default function ChatPage() {
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
   // Scroll to bottom on new messages + handle keyboard resize on mobile
-  const scrollToBottom = useCallback(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = useCallback((instant = false) => {
+    chatEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, remoteIsTyping, scrollToBottom]);
+    if (initialLoadDone) {
+      scrollToBottom();
+    }
+  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
 
-  // Handle mobile keyboard: adjust view when virtual keyboard opens
+  // Handle mobile keyboard: use visualViewport to keep input visible
   useEffect(() => {
+    const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
+    if (!vv) return;
+
     const handleResize = () => {
-      // When keyboard opens, viewport shrinks — scroll to latest message
-      setTimeout(scrollToBottom, 100);
+      // Offset the container so input stays above keyboard
+      const offsetY = window.innerHeight - vv.height;
+      const container = document.getElementById("chat-container");
+      if (container) {
+        container.style.height = `${vv.height}px`;
+      }
+      setTimeout(() => scrollToBottom(true), 50);
     };
 
-    if (typeof visualViewport !== "undefined" && visualViewport) {
-      visualViewport.addEventListener("resize", handleResize);
-      return () => visualViewport.removeEventListener("resize", handleResize);
-    }
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
   }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
@@ -259,9 +270,8 @@ export default function ChatPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <div
+      id="chat-container"
       className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0"
     >
       <ChatHeader
@@ -271,7 +281,7 @@ export default function ChatPage() {
       />
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {isLoading ? (
           <ChatLoadingSkeleton />
         ) : messages.length === 0 ? (
@@ -284,12 +294,13 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
           </motion.div>
         ) : (
-          <AnimatePresence initial={true}>
+          <AnimatePresence initial={false}>
             {messages.map((msg, index) => (
               <ChatMessageBubble
                 key={msg.id}
                 message={msg}
                 index={index}
+                skipAnimation={!initialLoadDone}
               />
             ))}
           </AnimatePresence>
@@ -354,6 +365,6 @@ export default function ChatPage() {
           <Send className="w-4 h-4" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
