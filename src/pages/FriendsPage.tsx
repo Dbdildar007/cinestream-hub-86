@@ -199,6 +199,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
   const sendFriendRequest = async (profile: Profile) => {
     if (!user) return;
+    // Handle static suggestions (demo profiles)
+    if (profile.user_id.startsWith("static-")) {
+      toast.success("Friend request sent!");
+      setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
+      return;
+    }
     const { error } = await supabase.from("friendships").insert({
       requester_id: user.id,
       addressee_id: profile.user_id,
