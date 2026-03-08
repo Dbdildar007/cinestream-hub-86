@@ -275,11 +275,43 @@ export default function AuthPage() {
                     type="text"
                     placeholder="Display Name"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setDisplayName(val);
+                      if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+                      if (val.trim().length < 2) {
+                        setUsernameStatus("idle");
+                        return;
+                      }
+                      setUsernameStatus("checking");
+                      usernameTimerRef.current = setTimeout(async () => {
+                        const { data } = await supabase
+                          .from("profiles")
+                          .select("id")
+                          .ilike("display_name", val.trim())
+                          .limit(1);
+                        setUsernameStatus(data && data.length > 0 ? "taken" : "available");
+                      }, 500);
+                    }}
                     required={!isLogin}
-                    className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className={`w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 ${
+                      usernameStatus === "taken" ? "focus:ring-destructive/50 ring-1 ring-destructive/30" 
+                      : usernameStatus === "available" ? "focus:ring-green-500/50 ring-1 ring-green-500/30" 
+                      : "focus:ring-primary/50"
+                    }`}
                   />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {usernameStatus === "checking" && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
+                    {usernameStatus === "available" && <CheckCircle className="w-4 h-4 text-green-500" />}
+                    {usernameStatus === "taken" && <XCircle className="w-4 h-4 text-destructive" />}
+                  </div>
                 </div>
+                {usernameStatus === "taken" && (
+                  <p className="text-xs text-destructive mt-1 pl-1">This name is already taken. Try another.</p>
+                )}
+                {usernameStatus === "available" && (
+                  <p className="text-xs text-green-500 mt-1 pl-1">Username available ✓</p>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
