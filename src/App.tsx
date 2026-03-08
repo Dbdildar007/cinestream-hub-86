@@ -186,12 +186,20 @@ function AppContent() {
   );
 }
 
+const SPLASH_KEY = "flicker_splash_shown";
+
 const App = () => {
-  const [splashDone, setSplashDone] = useState(false);
+  const alreadySeen = localStorage.getItem(SPLASH_KEY) === "1";
+  const [splashDone, setSplashDone] = useState(alreadySeen);
+
+  const handleSplashComplete = useCallback(() => {
+    localStorage.setItem(SPLASH_KEY, "1");
+    setSplashDone(true);
+  }, []);
 
   return (
     <>
-      {!splashDone && <SplashScreen onComplete={() => setSplashDone(true)} />}
+      {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
