@@ -136,7 +136,7 @@ export default function ProfileHeader({
           </h1>
 
           {/* Premium badge */}
-          <span className="mt-1 px-3 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-semibold tracking-wide">
+          <span className="mt-1 px-3 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-semibold tracking-wide">
             PREMIUM MEMBER
           </span>
 
