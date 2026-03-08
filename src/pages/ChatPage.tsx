@@ -210,13 +210,19 @@ export default function ChatPage() {
     };
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+  }, []);
+
   const scrollToBottom = useCallback((instant = false) => {
     chatEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
-    if (initialLoadDone) scrollToBottom();
-  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
+    if (initialLoadDone && isNearBottom()) scrollToBottom();
+  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone, isNearBottom]);
 
   useEffect(() => {
     const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
@@ -380,7 +386,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0">
+    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0 overflow-x-hidden">
       <ChatHeader
         remoteProfile={remoteProfile}
         remoteIsTyping={remoteIsTyping}
