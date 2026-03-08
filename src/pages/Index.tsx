@@ -165,7 +165,10 @@ export default function Index() {
           onRemove={clearProgress}
         />
 
-        <WatchPartyHistory />
+        <WatchPartyHistory
+          onResumeMovie={handleResumeMovieFromParty}
+          onResumeSeries={handleResumeSeriesFromParty}
+        />
 
         {myListMovies.length > 0 && (
           <MovieRow
