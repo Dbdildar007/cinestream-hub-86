@@ -14,7 +14,7 @@ const navItems = [
 
 export default function TopNav() {
   const location = useLocation();
-  const { notifications, unreadCount, markAsRead, markAllRead, clearNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
   return (
     <motion.header
@@ -50,6 +50,7 @@ export default function TopNav() {
           onMarkAsRead={markAsRead}
           onMarkAllRead={markAllRead}
           onClear={clearNotification}
+          onSendNotification={sendNotification}
         />
         <Link to="/friends" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Users className="w-5 h-5 text-foreground" />

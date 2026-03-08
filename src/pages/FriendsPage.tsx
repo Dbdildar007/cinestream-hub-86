@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2 } from "lucide-react";
+import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -27,6 +27,9 @@ interface Friendship {
   profile?: Profile;
 }
 
+// Track relationship status for search results
+type RelationshipStatus = "none" | "pending_sent" | "pending_received" | "accepted";
+
 interface FriendsPageProps {
   onStartCall?: (remoteUserId: string, remoteDisplayName: string) => void;
   onStartWatchParty?: (friendId: string, movieId: string) => void;
@@ -44,6 +47,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  // Track relationship status per user_id in search
+  const [relationshipMap, setRelationshipMap] = useState<Record<string, RelationshipStatus>>({});
 
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
@@ -53,36 +58,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
     : allMovies.slice(0, 8);
 
-  useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    loadFriends();
-    loadPendingRequests();
-
-    supabase
-      .from("profiles")
-      .update({ is_online: true, last_seen: new Date().toISOString() })
-      .eq("user_id", user.id)
-      .then();
-
-    const channel = supabase
-      .channel("friendships-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-        loadFriends();
-        loadPendingRequests();
-      })
-      .subscribe();
-
-    return () => {
-      supabase
-        .from("profiles")
-        .update({ is_online: false, last_seen: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .then();
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const loadFriends = async () => {
+  const loadFriends = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from("friendships")
@@ -105,9 +81,9 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       setFriends(friendsWithProfiles);
     }
     setLoading(false);
-  };
+  }, [user]);
 
-  const loadPendingRequests = async () => {
+  const loadPendingRequests = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from("friendships")
@@ -128,7 +104,65 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       );
       setPendingRequests(requestsWithProfiles);
     }
-  };
+  }, [user]);
+
+  // Build relationship map for search results
+  const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
+    if (!user || profiles.length === 0) return;
+    const userIds = profiles.map(p => p.user_id);
+    const { data } = await supabase
+      .from("friendships")
+      .select("*")
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+    const map: Record<string, RelationshipStatus> = {};
+    userIds.forEach(uid => { map[uid] = "none"; });
+
+    if (data) {
+      data.forEach(f => {
+        const otherUserId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+        if (userIds.includes(otherUserId)) {
+          if (f.status === "accepted") {
+            map[otherUserId] = "accepted";
+          } else if (f.status === "pending") {
+            map[otherUserId] = f.requester_id === user.id ? "pending_sent" : "pending_received";
+          }
+        }
+      });
+    }
+    setRelationshipMap(map);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    loadFriends();
+    loadPendingRequests();
+
+    supabase
+      .from("profiles")
+      .update({ is_online: true, last_seen: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .then();
+
+    const channel = supabase
+      .channel("friendships-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+        loadFriends();
+        loadPendingRequests();
+        // Refresh search results relationship status
+        if (searchResults.length > 0) buildRelationshipMap(searchResults);
+      })
+      .subscribe();
+
+    return () => {
+      supabase
+        .from("profiles")
+        .update({ is_online: false, last_seen: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .then();
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadFriends, loadPendingRequests]);
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
@@ -139,7 +173,9 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       .or(`unique_id.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
       .neq("user_id", user.id)
       .limit(10);
-    setSearchResults(data || []);
+    const results = data || [];
+    setSearchResults(results);
+    await buildRelationshipMap(results);
     setSearching(false);
   };
 
@@ -152,12 +188,15 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     if (error) {
       toast.error("Could not send request. Maybe already sent?");
     } else {
+      // Update local relationship map immediately
+      setRelationshipMap(prev => ({ ...prev, [profile.user_id]: "pending_sent" }));
       const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
       await sendNotification(
         profile.user_id,
         "friend_request",
         "Friend Request",
-        `${myProfile?.display_name || "Someone"} sent you a friend request`
+        `${myProfile?.display_name || "Someone"} sent you a friend request`,
+        { requester_id: user.id }
       );
       toast.success("Friend request sent!");
     }
@@ -174,7 +213,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         await sendNotification(
           requesterProfile.user_id,
           "friend_request",
-          "Request Accepted",
+          "Request Accepted ✅",
           `${myProfile?.display_name || "Someone"} accepted your friend request`
         );
       }
@@ -184,16 +223,27 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     }
   };
 
-  const declineRequest = async (friendshipId: string) => {
+  const declineRequest = async (friendshipId: string, requesterProfile?: Profile) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
-    if (!error) loadPendingRequests();
+    if (!error) {
+      // Notify the sender about the rejection
+      if (requesterProfile && user) {
+        const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+        await sendNotification(
+          requesterProfile.user_id,
+          "friend_request",
+          "Request Declined",
+          `${myProfile?.display_name || "Someone"} declined your friend request`
+        );
+      }
+      loadPendingRequests();
+    }
   };
 
   const handleInviteToWatchParty = async (movie: Movie) => {
     if (!user || !invitingFriend?.profile) return;
     const friendUserId = invitingFriend.profile.user_id;
 
-    // Create watch party
     const { data, error } = await supabase.from("watch_parties").insert({
       host_id: user.id,
       friend_id: friendUserId,
@@ -208,7 +258,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       return;
     }
 
-    // Send notification
     const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
     await sendNotification(
       friendUserId,
@@ -221,8 +270,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     toast.success(`Watch party started! ${invitingFriend.profile.display_name} will join automatically.`);
     setInvitingFriend(null);
     setMovieSearch("");
-
-    // Navigate home to start watching
     navigate("/");
   };
 
@@ -261,6 +308,39 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     { id: "requests" as const, label: "Requests", count: pendingRequests.length },
     { id: "search" as const, label: "Find Friends", count: null },
   ];
+
+  const getSearchButtonContent = (profile: Profile) => {
+    const status = relationshipMap[profile.user_id] || "none";
+    switch (status) {
+      case "accepted":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            <UserCheck className="w-3.5 h-3.5" /> Friends
+          </span>
+        );
+      case "pending_sent":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-muted-foreground text-xs font-medium">
+            <Send className="w-3.5 h-3.5" /> Sent
+          </span>
+        );
+      case "pending_received":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">
+            <UserPlus className="w-3.5 h-3.5" /> Respond
+          </span>
+        );
+      default:
+        return (
+          <button
+            onClick={() => sendFriendRequest(profile)}
+            className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
+          </button>
+        );
+    }
+  };
 
   return (
     <motion.div
@@ -327,12 +407,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
                   <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
                 </div>
-                <button
-                  onClick={() => sendFriendRequest(profile)}
-                  className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
-                >
-                  <UserPlus className="w-4 h-4" />
-                </button>
+                {getSearchButtonContent(profile)}
               </div>
             ))}
             {!searching && searchResults.length === 0 && searchQuery && (
@@ -371,7 +446,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
-                {/* Call button */}
                 {f.profile?.is_online && onStartCall && (
                   <button
                     onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}
@@ -381,7 +455,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <Phone className="w-4 h-4" />
                   </button>
                 )}
-                {/* Watch party button */}
                 <button
                   onClick={() => setInvitingFriend(f)}
                   className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
@@ -422,7 +495,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   <UserCheck className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => declineRequest(req.id)}
+                  onClick={() => declineRequest(req.id, req.profile)}
                   className="p-2 rounded-full hover:bg-destructive/20 text-destructive transition-colors"
                 >
                   <X className="w-4 h-4" />

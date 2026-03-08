@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Check, CheckCheck, X, UserPlus, Film, Phone, Trash2 } from "lucide-react";
+import { Bell, Check, CheckCheck, X, UserPlus, Film, Phone, UserCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import type { Notification } from "@/hooks/useNotifications";
 
 interface NotificationDropdownProps {
@@ -10,6 +13,7 @@ interface NotificationDropdownProps {
   onMarkAllRead: () => void;
   onClear: (id: string) => void;
   onAction?: (notification: Notification) => void;
+  onSendNotification?: (targetUserId: string, type: string, title: string, message: string, data?: Record<string, any>) => Promise<void>;
 }
 
 const typeIcons: Record<string, typeof Bell> = {
@@ -34,8 +38,98 @@ export default function NotificationDropdown({
   onMarkAllRead,
   onClear,
   onAction,
+  onSendNotification,
 }: NotificationDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+  const [handledIds, setHandledIds] = useState<Set<string>>(new Set());
+
+  const isFriendRequestActionable = (notif: Notification) => {
+    return (
+      notif.type === "friend_request" &&
+      notif.title === "Friend Request" &&
+      notif.data?.requester_id &&
+      !handledIds.has(notif.id)
+    );
+  };
+
+  const handleAcceptFromNotification = async (notif: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    const requesterId = notif.data?.requester_id as string;
+
+    // Find the friendship record
+    const { data: friendship } = await supabase
+      .from("friendships")
+      .select("*")
+      .eq("requester_id", requesterId)
+      .eq("addressee_id", user.id)
+      .eq("status", "pending")
+      .single();
+
+    if (!friendship) {
+      toast.error("Request no longer available");
+      setHandledIds(prev => new Set(prev).add(notif.id));
+      return;
+    }
+
+    const { error } = await supabase
+      .from("friendships")
+      .update({ status: "accepted" })
+      .eq("id", friendship.id);
+
+    if (!error) {
+      // Get my display name and notify requester
+      const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+      if (onSendNotification) {
+        await onSendNotification(
+          requesterId,
+          "friend_request",
+          "Request Accepted ✅",
+          `${myProfile?.display_name || "Someone"} accepted your friend request`
+        );
+      }
+      onMarkAsRead(notif.id);
+      setHandledIds(prev => new Set(prev).add(notif.id));
+      toast.success("Friend request accepted!");
+    }
+  };
+
+  const handleDeclineFromNotification = async (notif: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    const requesterId = notif.data?.requester_id as string;
+
+    const { data: friendship } = await supabase
+      .from("friendships")
+      .select("*")
+      .eq("requester_id", requesterId)
+      .eq("addressee_id", user.id)
+      .eq("status", "pending")
+      .single();
+
+    if (!friendship) {
+      toast.error("Request no longer available");
+      setHandledIds(prev => new Set(prev).add(notif.id));
+      return;
+    }
+
+    const { error } = await supabase.from("friendships").delete().eq("id", friendship.id);
+    if (!error) {
+      const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+      if (onSendNotification) {
+        await onSendNotification(
+          requesterId,
+          "friend_request",
+          "Request Declined",
+          `${myProfile?.display_name || "Someone"} declined your friend request`
+        );
+      }
+      onMarkAsRead(notif.id);
+      setHandledIds(prev => new Set(prev).add(notif.id));
+      toast("Friend request declined");
+    }
+  };
 
   return (
     <div className="relative">
@@ -89,6 +183,7 @@ export default function NotificationDropdown({
                 ) : (
                   notifications.map((notif) => {
                     const Icon = typeIcons[notif.type] || Bell;
+                    const actionable = isFriendRequestActionable(notif);
                     return (
                       <div
                         key={notif.id}
@@ -113,6 +208,24 @@ export default function NotificationDropdown({
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
                           <p className="text-[10px] text-muted-foreground/60 mt-1">{timeAgo(notif.created_at)}</p>
+
+                          {/* Accept/Decline buttons for friend requests */}
+                          {actionable && (
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={(e) => handleAcceptFromNotification(notif, e)}
+                                className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary/20 hover:bg-primary/30 text-primary text-[11px] font-medium transition-colors"
+                              >
+                                <UserCheck className="w-3 h-3" /> Accept
+                              </button>
+                              <button
+                                onClick={(e) => handleDeclineFromNotification(notif, e)}
+                                className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-destructive/20 text-destructive text-[11px] font-medium transition-colors"
+                              >
+                                <X className="w-3 h-3" /> Decline
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); onClear(notif.id); }}
