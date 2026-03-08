@@ -66,7 +66,8 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const [reminderSet, setReminderSet] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [trailerUrl, setTrailerUrl] = useState<string | null>(movie?.url?.trim() || null);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const [trailerChecked, setTrailerChecked] = useState(false);
 
   // Check if reminder exists
   useEffect(() => {
@@ -100,40 +101,28 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
     setLoadingReminder(false);
   }, [movie, user, reminderSet]);
 
+  // Fetch fresh trailer URL from DB when modal opens
   useEffect(() => {
     setShowTrailer(false);
-    setTrailerUrl(movie?.url?.trim() || null);
-  }, [movie?.id, movie?.url]);
+    setTrailerUrl(null);
+    setTrailerChecked(false);
 
-  const handlePlayTrailer = useCallback(async () => {
-    if (showTrailer) {
-      setShowTrailer(false);
-      return;
-    }
+    if (!movie?.id) return;
 
-    let resolvedUrl = trailerUrl;
-
-    if (!resolvedUrl && movie?.id) {
+    const fetchUrl = async () => {
       const { data } = await supabase
         .from("movies")
         .select("url")
         .eq("id", movie.id)
         .maybeSingle();
-
       const freshUrl = data?.url?.trim() || null;
-      if (freshUrl) {
-        resolvedUrl = freshUrl;
-        setTrailerUrl(freshUrl);
-      }
-    }
+      setTrailerUrl(freshUrl);
+      setTrailerChecked(true);
+    };
+    fetchUrl();
+  }, [movie?.id]);
 
-    if (resolvedUrl) {
-      setShowTrailer(true);
-      return;
-    }
-
-    toast("Trailer coming soon");
-  }, [movie?.id, showTrailer, trailerUrl]);
+  const hasTrailer = trailerChecked && !!trailerUrl;
 
   if (!movie) return null;
 
@@ -265,15 +254,21 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
               <div className="flex flex-col gap-3">
                 {/* Play Trailer */}
                 <button
-                  onClick={handlePlayTrailer}
+                  onClick={() => {
+                    if (showTrailer) setShowTrailer(false);
+                    else if (hasTrailer) setShowTrailer(true);
+                  }}
+                  disabled={!hasTrailer}
                   className={`flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
-                    showTrailer
-                      ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                    hasTrailer
+                      ? showTrailer
+                        ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  {showTrailer ? "Stop Trailer" : "Play Trailer"}
+                  {showTrailer ? "Stop Trailer" : hasTrailer ? "Play Trailer" : "Trailer Coming Soon"}
                 </button>
 
                 {/* Remind Me */}
