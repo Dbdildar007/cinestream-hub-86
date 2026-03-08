@@ -165,7 +165,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       }
     };
     loadSuggestions();
-  }, [user, friends]);
+  }, [user, friends, sentRequests]);
 
   useEffect(() => {
     if (!user) return;
