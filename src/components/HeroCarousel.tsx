@@ -57,17 +57,12 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             style={{ aspectRatio: "16 / 9" }}
             loading="eager" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-transparent" />
-          {/* Subtle corner vignettes */}
-          <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-background/50 to-transparent" />
-          <div className="absolute bottom-0 right-0 w-1/4 h-1/4 bg-gradient-to-tl from-background/30 to-transparent" />
-          <div className="absolute top-0 left-0 w-1/4 h-1/4 bg-gradient-to-br from-background/20 to-transparent" />
-          <div className="absolute top-0 right-0 w-1/4 h-1/4 bg-gradient-to-bl from-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent" />
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute bottom-[15%] md:bottom-[20%] left-0 right-0 px-6 md:px-12">
+      <div className="absolute bottom-[10%] md:bottom-[14%] left-0 right-0 px-6 md:px-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={movie.id}
