@@ -152,7 +152,11 @@ export default function VideoPlayer({
       onProgressUpdate(movie.id, v.currentTime, v.duration);
     }
     if (countdownRef.current) clearInterval(countdownRef.current);
-    if (watchPartyActive && onEndParty) onEndParty();
+    if (watchPartyActive && onEndParty) {
+      const ct = v?.currentTime ?? 0;
+      const dur = v?.duration ?? 0;
+      onEndParty(ct, dur);
+    }
     onClose();
   };
 
