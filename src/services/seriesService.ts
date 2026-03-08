@@ -34,6 +34,7 @@ export interface Series {
   language?: string;
   season_count?: number;
   seasons?: SeriesSeason[];
+  isPremium?: boolean;
 }
 
 export interface SeriesWithSeasons extends Series {
