@@ -88,16 +88,25 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     void initCheck();
 
     const checkSession = async () => {
-      // Only check for eviction if this device was previously registered as active
-      if (evictedRef.current || !registeredRef.current) return;
-      
+      if (evictedRef.current) return;
+
       const { data } = await supabase
         .from("profiles")
         .select("active_session_id")
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (data?.active_session_id && data.active_session_id !== deviceId && !evictedRef.current) {
+      const activeSessionId = data?.active_session_id ?? null;
+
+      // If this hook instance missed initial registration timing, auto-sync it.
+      if (!registeredRef.current) {
+        if (activeSessionId && activeSessionId === deviceId) {
+          registeredRef.current = true;
+        }
+        return;
+      }
+
+      if (activeSessionId && activeSessionId !== deviceId && !evictedRef.current) {
         evictedRef.current = true;
         registeredRef.current = false;
         onEvictedRef.current();
