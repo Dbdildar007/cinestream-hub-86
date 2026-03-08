@@ -79,9 +79,9 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
                     </span>
                   )}
                   {/* Play icon center */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity">
-                    <div className="p-3 rounded-full bg-primary/90">
-                      <Play className="w-6 h-6 text-primary-foreground fill-current" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity">
+                    <div className="p-2.5 sm:p-3 rounded-full bg-primary/90">
+                      <Play className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground fill-current" />
                     </div>
                   </div>
 
