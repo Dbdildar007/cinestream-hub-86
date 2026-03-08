@@ -15,6 +15,9 @@ export default function BottomNav() {
   const location = useLocation();
   const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
+  // Hide bottom nav on chat screens
+  if (location.pathname.startsWith("/chat/")) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-center justify-around bg-background/95 backdrop-blur-md border-t border-border py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       {items.map(({ icon: Icon, label, path }) => {
