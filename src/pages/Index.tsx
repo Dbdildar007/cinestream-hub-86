@@ -9,7 +9,7 @@ import WatchPartyHistory from "@/components/WatchPartyHistory";
 import SeriesModal from "@/components/SeriesModal";
 import SeriesVideoPlayer from "@/components/SeriesVideoPlayer";
 import { type Movie } from "@/services/movieService";
-import { useDownloads } from "@/hooks/useDownloads";
+
 import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress, type WatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -26,7 +26,7 @@ export default function Index() {
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const [initialLoad, setInitialLoad] = useState(false);
   const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
-  const { startDownload, getDownloadState } = useDownloads();
+  
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
@@ -175,8 +175,6 @@ export default function Index() {
             title="My List"
             movies={myListMovies}
             onMovieSelect={handleCardClick}
-            onDownload={startDownload}
-            getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
             isInWatchlist={isInWatchlist}
@@ -192,8 +190,6 @@ export default function Index() {
             title={category}
             movies={allMovies.filter(m => m.category.includes(category))}
             onMovieSelect={handleCardClick}
-            onDownload={startDownload}
-            getDownloadState={getDownloadState}
             getRating={getRating}
             onRate={setRating}
             isInWatchlist={isInWatchlist}
@@ -205,8 +201,6 @@ export default function Index() {
       <MovieModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
-        onDownload={startDownload}
-        downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
         onWatch={handleWatch}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle, Download, Check } from "lucide-react";
+import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSeriesDetail } from "@/hooks/useSeries";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
@@ -124,27 +124,27 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
 
               <p className="text-foreground/80 text-sm leading-relaxed mb-6">{series.description}</p>
 
-              {/* Star rating - Fixed to a single row */}
-<div className="mb-6 flex items-center gap-4">
-  <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
-  <div className="flex gap-1">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button 
-        key={star} 
-        onClick={() => onRate?.(series.id, star)}
-        className="p-1 -m-1 transition-transform hover:scale-110"
-      >
-        <Star 
-          className={`w-6 h-6 transition-colors ${
-            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
-          }`} 
-        />
-      </button>
-    ))}
-  </div>
-</div>
+              {/* Star rating */}
+              <div className="mb-6 flex items-center gap-4">
+                <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button 
+                      key={star} 
+                      onClick={() => onRate?.(series.id, star)}
+                      className="p-1 -m-1 transition-transform hover:scale-110"
+                    >
+                      <Star 
+                        className={`w-6 h-6 transition-colors ${
+                          star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+                        }`} 
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              {/* Action buttons - matches MovieModal layout */}
+              {/* Action buttons */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {detail && detail.seasons.length > 0 && detail.seasons[0].episodes.length > 0 && (
                   <button
@@ -167,8 +167,6 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
                   {isInWatchlist ? <CheckCircle className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                   {isInWatchlist ? "Listed" : "My List"}
                 </button>
-
-              
               </div>
 
               {loading && <LoadingSpinner size="sm" text="Loading episodes..." />}

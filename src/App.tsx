@@ -23,7 +23,7 @@ import WatchPartyComms from "./components/WatchPartyComms";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import FoldersPage from "./pages/FoldersPage";
-import DownloadsPage from "./pages/DownloadsPage";
+
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import FriendsPage from "./pages/FriendsPage";
@@ -79,7 +79,7 @@ function AppContent() {
         <Route path="/" element={<Index />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/folders" element={<FoldersPage />} />
-        <Route path="/downloads" element={<DownloadsPage />} />
+        
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/friends" element={<FriendsPage onStartCall={startCall} />} />

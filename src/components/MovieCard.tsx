@@ -1,22 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Download, Star, Check, Plus, CheckCircle, Tv } from "lucide-react";
+import { Star, Plus, CheckCircle, Tv } from "lucide-react";
 import type { Movie } from "@/services/movieService";
 
 interface MovieCardProps {
   movie: Movie;
   onSelect: (movie: Movie) => void;
-  onDownload: (movieId: string) => void;
-  downloadState?: { progress: number; status: string };
   userRating: number;
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: boolean;
   onToggleWatchlist?: (movieId: string) => void;
 }
 
-export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
+export default function MovieCard({ movie, onSelect, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
  const [hovered, setHovered] = useState(false);
-  // NEW: Add isMobile state and listener
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   useEffect(() => {
@@ -59,13 +56,13 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
           <div className="flex items-center gap-1 mb-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button 
-  key={star}
-  onClick={(e) => { 
-    e.stopPropagation(); 
-    if (onRate) onRate(movie.id, star); 
-  }}
-  className="p-1 -m-1" // Increases hit-box for mobile thumbs
->
+                key={star}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (onRate) onRate(movie.id, star); 
+                }}
+                className="p-1 -m-1"
+              >
                 <Star
                   className={`w-3 h-3 transition-colors ${
                     star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
@@ -89,31 +86,6 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
             </button>
           )}
         </motion.div>
-
-        {/* Download button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDownload(movie.id);
-          }}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-background/70 hover:bg-primary text-foreground transition-colors z-10"
-        >
-          {downloadState?.status === "complete" ? (
-            <Check className="w-3.5 h-3.5 text-primary" />
-          ) : (
-            <Download className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        {/* Download progress */}
-        {downloadState?.status === "downloading" && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${downloadState.progress}%` }}
-            />
-          </div>
-        )}
       </div>
 
       <h3 className="mt-2 text-xs md:text-sm font-medium text-foreground truncate">{movie.title}</h3>

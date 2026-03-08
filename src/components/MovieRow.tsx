@@ -7,8 +7,6 @@ interface MovieRowProps {
   title: string;
   movies: Movie[];
   onMovieSelect: (movie: Movie) => void;
-  onDownload: (movieId: string) => void;
-  getDownloadState: (movieId: string) => { progress: number; status: string } | undefined;
   getRating: (movieId: string) => number;
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: (movieId: string) => boolean;
@@ -17,7 +15,7 @@ interface MovieRowProps {
 }
 
 export default function MovieRow({
-  title, movies, onMovieSelect, onDownload, getDownloadState, getRating, onRate,
+  title, movies, onMovieSelect, getRating, onRate,
   isInWatchlist, onToggleWatchlist, showRemoveButton,
 }: MovieRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,9 +30,7 @@ export default function MovieRow({
   if (movies.length === 0) return null;
 
   return (
-    <section
-      className="relative px-4 md:px-12 mb-8"
-    >
+    <section className="relative px-4 md:px-12 mb-8">
       <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4">
         {title.toUpperCase()}
       </h2>
@@ -52,17 +48,15 @@ export default function MovieRow({
             <div key={movie.id} className="relative flex-shrink-0 group/card">
               {showRemoveButton && onToggleWatchlist && (
                 <button
-  onClick={(e) => { e.stopPropagation(); onToggleWatchlist(movie.id); }}
-  className="absolute -top-1 -right-1 z-20 p-1 rounded-full bg-destructive text-destructive-foreground opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity"
->
-  <X className="w-3 h-3" />
-</button>
+                  onClick={(e) => { e.stopPropagation(); onToggleWatchlist(movie.id); }}
+                  className="absolute -top-1 -right-1 z-20 p-1 rounded-full bg-destructive text-destructive-foreground opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
               <MovieCard
                 movie={movie}
                 onSelect={onMovieSelect}
-                onDownload={onDownload}
-                downloadState={getDownloadState(movie.id)}
                 userRating={getRating(movie.id)}
                 onRate={onRate}
                 isInWatchlist={isInWatchlist?.(movie.id)}

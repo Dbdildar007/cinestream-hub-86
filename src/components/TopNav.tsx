@@ -9,7 +9,7 @@ const navItems = [
   { label: "Search", path: "/search" },
   { label: "Folders", path: "/folders" },
   { label: "Friends", path: "/friends" },
-  { label: "Downloads", path: "/downloads" },
+  
 ];
 
 export default function TopNav() {
