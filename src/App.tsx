@@ -2,13 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { useState, useCallback } from "react";
 import TopNav from "./components/TopNav";
 import BottomNav from "./components/BottomNav";
 import FloatingVideoCall from "./components/FloatingVideoCall";
 import IncomingCallOverlay from "./components/IncomingCallOverlay";
 import { useVideoCall } from "./hooks/useVideoCall";
+import { useAuth } from "./hooks/useAuth";
+import { useDeviceSession } from "./hooks/useDeviceSession";
+import { EvictedDialog } from "./components/EvictedDialog";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import FoldersPage from "./pages/FoldersPage";
@@ -27,6 +31,22 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const { callState, startCall, acceptCall, declineCall, endCall, toggleMute, toggleCamera, toggleMinimize } = useVideoCall();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [showEvicted, setShowEvicted] = useState(false);
+
+  const handleEvicted = useCallback(() => {
+    setShowEvicted(true);
+  }, []);
+
+  const { clearSession } = useDeviceSession(user?.id, handleEvicted);
+
+  const handleEvictedAcknowledge = async () => {
+    await clearSession();
+    await signOut();
+    setShowEvicted(false);
+    navigate("/auth", { replace: true });
+  };
 
   return (
     <>
@@ -64,6 +84,10 @@ function AppContent() {
         onToggleMinimize={toggleMinimize}
         onEndCall={endCall}
       />
+
+      {showEvicted && (
+        <EvictedDialog onAcknowledge={handleEvictedAcknowledge} />
+      )}
     </>
   );
 }
