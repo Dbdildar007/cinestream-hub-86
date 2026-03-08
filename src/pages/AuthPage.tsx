@@ -251,7 +251,7 @@ export default function AuthPage() {
             transition={{ type: "spring", damping: 15 }}
             className="text-4xl font-display tracking-wider text-primary mb-2"
           >
-            CINESTREAM
+            Flicker
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 5 }}

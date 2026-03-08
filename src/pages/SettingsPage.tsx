@@ -100,7 +100,7 @@ export default function SettingsPage() {
             <p><strong>Downloads:</strong> Downloads are available for offline viewing. Check the Downloads page to manage your saved content.</p>
             <p><strong>Watchlist:</strong> Add movies and series to your watchlist by clicking the "My List" button on any card or modal.</p>
             <p><strong>Ratings:</strong> Rate content by clicking the stars on any movie or series card. Your ratings help improve recommendations.</p>
-            <p><strong>Contact Us:</strong> Email support@cinestream.app or reach out via the in-app feedback option.</p>
+            <p><strong>Contact Us:</strong> Email support@flicker.app or reach out via the in-app feedback option.</p>
           </div>
         </motion.div>
       )}
