@@ -62,6 +62,8 @@ export default function SeriesVideoPlayer({
   const [buffered, setBuffered] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [subtitlesOn, setSubtitlesOn] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [showNextEpisode, setShowNextEpisode] = useState(false);
