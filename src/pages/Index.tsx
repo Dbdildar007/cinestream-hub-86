@@ -29,7 +29,7 @@ export default function Index() {
   const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   
   const { getRating, setRating } = useRatings();
-  const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
+  const { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
   
 
