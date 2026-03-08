@@ -5,7 +5,6 @@ import type { ChatMessage } from "@/pages/ChatPage";
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   index: number;
-  receiverOnline?: boolean;
 }
 
 function formatTime(ts: string) {
@@ -16,7 +15,6 @@ function formatTime(ts: string) {
 export default function ChatMessageBubble({
   message: msg,
   index,
-  receiverOnline = false,
 }: ChatMessageBubbleProps) {
   return (
     <motion.div
@@ -47,13 +45,13 @@ export default function ChatMessageBubble({
           </span>
           {msg.isMine &&
             (msg.readAt ? (
-              <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
-            ) : msg.id.startsWith("temp-") ? (
-              <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
-            ) : receiverOnline ? (
-              <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/60" />
+              <CheckCheck className="w-3.5 h-3.5 text-primary" />
             ) : (
-              <Check className="w-3.5 h-3.5 text-primary-foreground/60" />
+              <Check
+                className={`w-3.5 h-3.5 ${
+                  msg.id.startsWith("temp-") ? "text-primary-foreground/40" : "text-primary-foreground/70"
+                }`}
+              />
             ))}
         </div>
       </div>
