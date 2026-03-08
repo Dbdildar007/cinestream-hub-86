@@ -46,7 +46,7 @@ function AppContent() {
     setShowEvicted(true);
   }, []);
 
-  const { clearSession } = useDeviceSession(user?.id, handleEvicted);
+  useDeviceSession(user?.id, handleEvicted);
 
   const handleEvictedAcknowledge = async () => {
     setShowEvicted(false);
