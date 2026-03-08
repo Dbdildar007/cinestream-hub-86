@@ -21,7 +21,7 @@ interface VideoPlayerProps {
   onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
-  onEndParty?: () => void;
+  onEndParty?: (currentTimeSec: number, durationSec: number) => void;
   guestName?: string;
   allMovies?: Movie[];
   onPlayMovie?: (movie: Movie) => void;
@@ -152,7 +152,11 @@ export default function VideoPlayer({
       onProgressUpdate(movie.id, v.currentTime, v.duration);
     }
     if (countdownRef.current) clearInterval(countdownRef.current);
-    if (watchPartyActive && onEndParty) onEndParty();
+    if (watchPartyActive && onEndParty) {
+      const ct = v?.currentTime ?? 0;
+      const dur = v?.duration ?? 0;
+      onEndParty(ct, dur);
+    }
     onClose();
   };
 
@@ -772,7 +776,7 @@ const skip = useCallback((seconds: number) => {
 
                 <div className="flex items-center gap-1 md:gap-2">
                   {watchPartyActive && isHost && onEndParty && (
-                    <button onClick={(e) => { e.stopPropagation(); onEndParty(); }}
+                    <button onClick={(e) => { e.stopPropagation(); const v = videoRef.current; onEndParty(v?.currentTime ?? 0, v?.duration ?? 0); }}
                       className="px-2 py-1 rounded bg-destructive/80 hover:bg-destructive text-destructive-foreground text-[10px] font-medium transition-colors">
                       End Party
                     </button>

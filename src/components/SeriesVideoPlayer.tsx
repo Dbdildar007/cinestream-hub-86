@@ -21,7 +21,7 @@ interface SeriesVideoPlayerProps {
   onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
-  onEndParty?: () => void;
+  onEndParty?: (currentTimeSec: number, durationSec: number) => void;
   guestName?: string;
   partyPhase?: PartyPhase;
   onEpisodeChangeReceived?: (cb: (data: { episode: SeriesEpisode; seasonNumber: number }) => void) => void;
@@ -410,7 +410,13 @@ export default function SeriesVideoPlayer({
           >
             {/* TOP BAR */}
             <div className="p-3 md:p-6 bg-gradient-to-b from-black/90 to-transparent flex items-center gap-3">
-              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <button onClick={() => {
+                if (watchPartyActive && onEndParty) {
+                  const v = videoRef.current;
+                  onEndParty(v?.currentTime ?? 0, v?.duration ?? 0);
+                }
+                onClose();
+              }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                 <ChevronLeft className="w-6 h-6 text-white" />
               </button>
               <div className="flex-1 min-w-0">
