@@ -105,11 +105,27 @@ export default function ChatPage() {
     if (!input.trim() || !user || !remoteUserId) return;
     const text = input.trim();
     setInput("");
-    await supabase.from("call_messages").insert({
+    // Optimistic UI - show message immediately
+    const tempId = `temp-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: tempId, text, isMine: true, timestamp: new Date().toISOString() },
+    ]);
+    const { data } = await supabase.from("call_messages").insert({
       sender_id: user.id,
       receiver_id: remoteUserId,
       message: text,
-    } as any);
+    } as any).select().single();
+    // Replace temp with real message
+    if (data) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { id: (data as any).id, text: (data as any).message, isMine: true, timestamp: (data as any).created_at }
+            : m
+        )
+      );
+    }
   };
 
   const formatTime = (ts: string) => {
