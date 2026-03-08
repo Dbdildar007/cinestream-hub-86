@@ -21,8 +21,9 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useMovies } from "@/hooks/useMovies";
-import { useAllSeries } from "@/hooks/useSeries";
+import { useAllSeries, useSeriesDetail } from "@/hooks/useSeries";
 import type { Movie } from "@/services/movieService";
+import type { Series, SeriesEpisode } from "@/services/seriesService";
 
 interface Profile {
   id: string;
