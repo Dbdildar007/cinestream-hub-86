@@ -253,13 +253,16 @@ export default function ChatPage() {
     ]);
 
     try {
+      const insertPayload: any = {
+        sender_id: user.id,
+        receiver_id: remoteUserId,
+        message: text,
+      };
+      if (replyId) insertPayload.reply_to_id = replyId;
+
       const { data, error } = await supabase
         .from("chat_messages")
-        .insert({
-          sender_id: user.id,
-          receiver_id: remoteUserId,
-          message: text,
-        } as any)
+        .insert(insertPayload)
         .select()
         .single();
 
