@@ -43,9 +43,7 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    // Clear all cached user data
     localStorage.removeItem('user_profile');
-    localStorage.removeItem('device_id');
     await supabase.auth.signOut();
   };
 
