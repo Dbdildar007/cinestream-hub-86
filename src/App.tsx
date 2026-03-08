@@ -69,6 +69,7 @@ function AppContent() {
         <Route path="/watch-history" element={<WatchHistoryPage />} />
         <Route path="/my-ratings" element={<MyRatingsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
