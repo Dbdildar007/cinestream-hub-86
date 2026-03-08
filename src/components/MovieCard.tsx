@@ -51,7 +51,7 @@ export default function MovieCard({ movie, onSelect, userRating, onRate, isInWat
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: isMobile ? 1 : (hovered ? 1 : 0) }}
-          className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent md:from-background md:via-background/50 flex flex-col justify-end p-3 transition-opacity"
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent md:from-background/70 md:via-background/30 flex flex-col justify-end p-3 transition-opacity"
         >
           <div className="flex items-center gap-1 mb-1">
             {[1, 2, 3, 4, 5].map((star) => (
