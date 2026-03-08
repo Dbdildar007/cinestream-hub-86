@@ -862,6 +862,29 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     </button>
                   </div>
                 </div>
+
+                {/* Genre filter chips */}
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 mt-3">
+                  <button
+                    onClick={() => setSelectedGenre(null)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      !selectedGenre ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    All
+                  </button>
+                  {allGenres.map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => setSelectedGenre(selectedGenre === genre ? null : genre)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        selectedGenre === genre ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Content */}
