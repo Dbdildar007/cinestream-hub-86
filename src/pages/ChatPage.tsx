@@ -176,28 +176,33 @@ export default function ChatPage() {
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
   // Scroll to bottom on new messages + handle keyboard resize on mobile
-  const scrollToBottom = useCallback(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = useCallback((instant = false) => {
+    chatEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, remoteIsTyping, scrollToBottom]);
+    if (initialLoadDone) {
+      scrollToBottom();
+    }
+  }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
 
-  // Handle mobile keyboard: adjust view when virtual keyboard opens
+  // Handle mobile keyboard: use visualViewport to keep input visible
   useEffect(() => {
+    const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
+    if (!vv) return;
+
     const handleResize = () => {
-      // When keyboard opens, viewport shrinks — scroll to latest message
-      setTimeout(scrollToBottom, 100);
+      // Offset the container so input stays above keyboard
+      const offsetY = window.innerHeight - vv.height;
+      const container = document.getElementById("chat-container");
+      if (container) {
+        container.style.height = `${vv.height}px`;
+      }
+      setTimeout(() => scrollToBottom(true), 50);
     };
 
-    if (typeof visualViewport !== "undefined" && visualViewport) {
-      visualViewport.addEventListener("resize", handleResize);
-      return () => visualViewport.removeEventListener("resize", handleResize);
-    }
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
   }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
