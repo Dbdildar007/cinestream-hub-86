@@ -348,7 +348,7 @@ export default function ChatPage() {
         />
         <button
           onClick={sendMessage}
-          disabled={!input.trim()}
+          disabled={!input.trim() || isSending}
           className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
         >
           <Send className="w-4 h-4" />
