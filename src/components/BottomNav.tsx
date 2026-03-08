@@ -18,14 +18,14 @@ export default function BottomNav() {
   if (location.pathname.startsWith("/chat/")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-center justify-around bg-background/95 backdrop-blur-md border-t border-border py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-center justify-around bg-background/95 backdrop-blur-md border-t border-border py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
       {items.map(({ icon: Icon, label, path }) => {
         const active = location.pathname === path;
         return (
           <Link
             key={path}
             to={path}
-            className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors relative ${
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 transition-colors relative min-w-[48px] min-h-[48px] justify-center active:scale-95 ${
               active ? "text-foreground" : "text-muted-foreground"
             }`}
           >

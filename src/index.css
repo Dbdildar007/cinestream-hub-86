@@ -111,6 +111,7 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -118,11 +119,19 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
   }
 
   h1, h2, h3 {
     font-family: var(--font-display);
     letter-spacing: 0.05em;
+  }
+
+  /* Ensure touch targets are at least 44px on mobile */
+  @media (pointer: coarse) {
+    button, a, [role="button"] {
+      min-height: 36px;
+    }
   }
 }
 

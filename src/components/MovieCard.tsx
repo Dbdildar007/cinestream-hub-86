@@ -10,10 +10,12 @@ interface MovieCardProps {
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: boolean;
   onToggleWatchlist?: (movieId: string) => void;
+  /** When true, card fills its container width instead of using fixed width */
+  fillWidth?: boolean;
 }
 
-export default function MovieCard({ movie, onSelect, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
- const [hovered, setHovered] = useState(false);
+export default function MovieCard({ movie, onSelect, userRating, onRate, isInWatchlist, onToggleWatchlist, fillWidth }: MovieCardProps) {
+  const [hovered, setHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   useEffect(() => {
@@ -24,21 +26,23 @@ export default function MovieCard({ movie, onSelect, userRating, onRate, isInWat
 
   return (
     <motion.div
-      className="relative flex-shrink-0 w-[140px] md:w-[180px] group cursor-pointer"
+      className={`relative group cursor-pointer ${
+        fillWidth ? "w-full" : "flex-shrink-0 w-[140px] md:w-[180px]"
+      }`}
       whileHover={{ scale: 1.05, zIndex: 10 }}
+      whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.2 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       onClick={() => onSelect(movie)}
     >
-      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-slate-50 border border-slate-200 dark:border-slate-700">
+      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-secondary border border-border">
         <img
           src={movie.poster}
           alt={movie.title}
-          className="w-full h-full object-cover group-hover:brightness-95 transition" 
+          className="w-full h-full object-cover group-hover:brightness-95 transition"
           loading="lazy"
         />
-
 
         {/* Series badge */}
         {movie.isSeries && (
@@ -56,16 +60,16 @@ export default function MovieCard({ movie, onSelect, userRating, onRate, isInWat
         >
           <div className="flex items-center gap-1 mb-1">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button 
+              <button
                 key={star}
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  if (onRate) onRate(movie.id, star); 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onRate) onRate(movie.id, star);
                 }}
-                className="p-1 -m-1"
+                className="p-1.5 -m-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <Star
-                  className={`w-3 h-3 transition-colors ${
+                  className={`w-3.5 h-3.5 transition-colors ${
                     star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
                   }`}
                 />
@@ -73,16 +77,16 @@ export default function MovieCard({ movie, onSelect, userRating, onRate, isInWat
             ))}
           </div>
           <p className="text-xs text-muted-foreground">{movie.year} • {movie.duration}</p>
-          
+
           {/* Watchlist button on hover */}
           {onToggleWatchlist && (
             <button
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(movie.id); }}
-              className={`mt-2 flex items-center gap-1 text-xs font-medium transition-colors ${
+              className={`mt-2 flex items-center gap-1.5 text-xs font-medium transition-colors min-h-[32px] ${
                 isInWatchlist ? "text-primary" : "text-foreground"
               }`}
             >
-              {isInWatchlist ? <CheckCircle className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              {isInWatchlist ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               {isInWatchlist ? "Listed" : "My List"}
             </button>
           )}

@@ -1,4 +1,4 @@
-import { useState,useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Trash2, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -9,22 +9,21 @@ import VideoPlayer from "@/components/VideoPlayer";
 
 export default function WatchlistPage() {
   const navigate = useNavigate();
-const { watchlist, toggleWatchlist } = useWatchlist();
-const { allMovies, loading: isLoading } = useMovies();
-const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
+  const { watchlist, toggleWatchlist } = useWatchlist();
+  const { allMovies, loading: isLoading } = useMovies();
+  const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
 
-// 2. Added useMemo and the loading check here
-const movies = useMemo(() => {
-  if (isLoading) return []; 
-  return watchlist
-    .map((id) => allMovies.find((m) => m.id === id))
-    .filter(Boolean) as Movie[];
-}, [allMovies, watchlist, isLoading]);
+  const movies = useMemo(() => {
+    if (isLoading) return [];
+    return watchlist
+      .map((id) => allMovies.find((m) => m.id === id))
+      .filter(Boolean) as Movie[];
+  }, [allMovies, watchlist, isLoading]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate("/profile")} className="p-2 rounded-full hover:bg-secondary transition-colors">
+        <button onClick={() => navigate("/profile")} className="p-2.5 rounded-full hover:bg-secondary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
         <h1 className="text-xl font-display tracking-wider text-foreground">MY WATCHLIST</h1>
@@ -34,10 +33,10 @@ const movies = useMemo(() => {
       {movies.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-muted-foreground mb-2">Your watchlist is empty</p>
-          <button onClick={() => navigate("/")} className="text-primary text-sm font-medium">Browse movies</button>
+          <button onClick={() => navigate("/")} className="text-primary text-sm font-medium min-h-[44px]">Browse movies</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
           {movies.map((movie) => (
             <motion.div key={movie.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative group rounded-lg overflow-hidden bg-secondary">
               <img src={movie.poster} alt={movie.title} className="w-full aspect-[2/3] object-cover" />
@@ -45,15 +44,14 @@ const movies = useMemo(() => {
                 <p className="text-foreground text-sm font-semibold truncate">{movie.title}</p>
                 <p className="text-muted-foreground text-xs">{movie.year} • {movie.rating}/10</p>
                 <div className="flex gap-2 mt-2">
-                  <button onClick={() => setPlayingMovie(movie)} className="flex-1 flex items-center justify-center gap-1 bg-primary text-primary-foreground py-1.5 rounded text-xs font-medium">
+                  <button onClick={() => setPlayingMovie(movie)} className="flex-1 flex items-center justify-center gap-1 bg-primary text-primary-foreground py-2 rounded text-xs font-medium active:scale-95 min-h-[36px]">
                     <Play className="w-3 h-3 fill-current" /> Play
                   </button>
-                  <button onClick={() => toggleWatchlist(movie.id)} className="p-1.5 rounded bg-destructive/80 text-destructive-foreground">
+                  <button onClick={() => toggleWatchlist(movie.id)} className="p-2 rounded bg-destructive/80 text-destructive-foreground active:scale-95 min-w-[36px] min-h-[36px] flex items-center justify-center">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-
             </motion.div>
           ))}
         </div>

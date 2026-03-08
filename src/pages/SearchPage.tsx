@@ -52,6 +52,7 @@ export default function SearchPage() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background pt-6 md:pt-24 px-4 md:px-12 pb-24 overflow-x-hidden"
     >
+      {/* Search input - larger touch target on mobile */}
       <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input
@@ -59,21 +60,22 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search movies..."
-          className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-12 pr-10 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-12 pr-10 py-3.5 md:py-3 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         {query && (
-          <button onClick={() => setQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2">
+          <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center">
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
       </div>
 
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-6 pb-1">
+      {/* Genre chips - larger touch targets */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-5 pb-1 -mx-4 px-4 md:mx-0 md:px-0">
         {genres.map((g) => (
           <button
             key={g}
             onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-colors min-h-[36px] active:scale-95 ${
               selectedGenre === g
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -84,12 +86,13 @@ export default function SearchPage() {
         ))}
       </div>
 
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-8 pb-1">
+      {/* Year + Rating chips */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-8 pb-1 -mx-4 px-4 md:mx-0 md:px-0">
         {years.map((y) => (
           <button
             key={y}
             onClick={() => setSelectedYear(selectedYear === y ? null : y)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-colors min-h-[36px] active:scale-95 ${
               selectedYear === y
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -102,7 +105,7 @@ export default function SearchPage() {
           <button
             key={r}
             onClick={() => setSelectedRating(selectedRating === r ? null : r)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-colors min-h-[36px] active:scale-95 ${
               selectedRating === r
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -114,7 +117,9 @@ export default function SearchPage() {
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">{filtered.length} results</p>
-     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 sm:gap-6">
+
+      {/* Responsive grid - proper breakpoints for all screen sizes */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 md:gap-5">
         {filtered.map((movie) => (
           <MovieCard
             key={movie.id}
@@ -122,6 +127,7 @@ export default function SearchPage() {
             onSelect={setSelectedMovie}
             userRating={getRating(movie.id)}
             onRate={setRating}
+            fillWidth
           />
         ))}
       </div>

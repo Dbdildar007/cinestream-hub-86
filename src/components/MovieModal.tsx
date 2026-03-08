@@ -58,22 +58,29 @@ export default function MovieModal({
             animate="visible"
             exit="exit"
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className={`fixed z-50 bg-card overflow-y-auto ${
+            className={`fixed z-50 bg-card overflow-y-auto overscroll-contain ${
               isMobile
-                ? "inset-x-0 bottom-0 top-[10%] rounded-t-2xl"
-                : "top-0 right-0 bottom-0 w-[480px] border-l border-border"
+                ? "inset-x-0 bottom-0 top-[8%] rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+                : "top-0 right-0 bottom-0 w-full sm:w-[480px] lg:w-[520px] border-l border-border"
             }`}
           >
-            <div className="relative aspect-[4/3] md:aspect-video">
-              <img 
-                src={movie.heroImage || movie.poster} 
-                alt={movie.title} 
-                className="w-full h-full object-cover object-center" 
+            {/* Drag handle on mobile */}
+            {isMobile && (
+              <div className="flex justify-center pt-3 pb-1 sticky top-0 z-10">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
+              </div>
+            )}
+
+            <div className="relative aspect-[4/3] sm:aspect-video">
+              <img
+                src={movie.heroImage || movie.poster}
+                alt={movie.title}
+                className="w-full h-full object-cover object-center"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full bg-background/60 hover:bg-background/80 transition-colors"
+                className="absolute top-4 right-4 p-2.5 rounded-full bg-background/60 hover:bg-background/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-foreground" />
               </button>
@@ -85,12 +92,12 @@ export default function MovieModal({
               )}
             </div>
 
-            <div className="px-6 pb-8 -mt-16 relative">
-              <h2 className="text-3xl font-display tracking-wider text-foreground mb-2">
+            <div className="px-5 sm:px-6 pb-8 -mt-16 relative">
+              <h2 className="text-2xl sm:text-3xl font-display tracking-wider text-foreground mb-2">
                 {movie.title.toUpperCase()}
               </h2>
 
-              <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-3 text-sm text-muted-foreground mb-4 flex-wrap">
                 <span className="flex items-center gap-1 text-primary font-semibold">
                   <Star className="w-4 h-4 fill-current" />
                   {movie.rating}
@@ -111,39 +118,39 @@ export default function MovieModal({
 
               <div className="flex gap-2 mb-4 flex-wrap">
                 {movie.genre.map((g) => (
-                  <span key={g} className="px-3 py-1 text-xs rounded-full bg-secondary text-secondary-foreground">
+                  <span key={g} className="px-3 py-1.5 text-xs rounded-full bg-secondary text-secondary-foreground">
                     {g}
                   </span>
                 ))}
               </div>
 
-                <p className="text-foreground/80 text-sm leading-relaxed mb-6">{movie.description}</p>
+              <p className="text-foreground/80 text-sm leading-relaxed mb-6">{movie.description}</p>
 
-             {/* Star rating */}
-<div className="mb-6 flex items-center gap-4">
-  <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
-  <div className="flex gap-1">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button 
-        key={star} 
-        onClick={() => onRate?.(movie.id, star)}
-        className="p-1 -m-1 transition-transform hover:scale-110"
-      >
-        <Star 
-          className={`w-6 h-6 transition-colors ${
-            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
-          }`} 
-        />
-      </button>
-    ))}
-  </div>
-</div>
+              {/* Star rating - larger touch targets */}
+              <div className="mb-6 flex items-center gap-4">
+                <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => onRate?.(movie.id, star)}
+                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                    >
+                      <Star
+                        className={`w-6 h-6 transition-colors ${
+                          star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => onWatch?.(movie)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors active:scale-[0.98] min-h-[48px]"
                 >
                   <Play className="w-4 h-4 fill-current" />
                   {movie.isSeries ? "Play S1 E1" : "Watch Now"}
@@ -151,7 +158,7 @@ export default function MovieModal({
 
                 <button
                   onClick={() => onToggleWatchlist?.(movie.id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors active:scale-95 min-h-[48px] ${
                     isInWatchlist
                       ? "bg-primary/20 text-primary border border-primary/30"
                       : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
@@ -171,7 +178,7 @@ export default function MovieModal({
                       <button
                         key={episode.id}
                         onClick={() => onWatch?.(movie)}
-                        className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                        className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors min-h-[48px]"
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-bold text-primary">E{episode.number}</span>
