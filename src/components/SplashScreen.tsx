@@ -1,20 +1,79 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
+// Generate a short "whoosh" sound using Web Audio API
+function playWhoosh() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+  } catch {}
+}
+
+// Short cinematic "ding" for brand reveal
+function playRevealDing() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.6);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+  } catch {}
+}
+
+function triggerHaptic() {
+  try {
+    if (navigator.vibrate) navigator.vibrate(30);
+  } catch {}
+}
+
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const [phase, setPhase] = useState<"logo" | "expand" | "done">("logo");
+  const soundPlayed = useRef(false);
 
   useEffect(() => {
+    // Play whoosh + haptic when logo lands
+    const t0 = setTimeout(() => {
+      if (!soundPlayed.current) {
+        soundPlayed.current = true;
+        playWhoosh();
+        triggerHaptic();
+      }
+    }, 600);
+
+    // Play reveal ding when text appears
+    const tDing = setTimeout(() => {
+      playRevealDing();
+      triggerHaptic();
+    }, 1200);
+
     const t1 = setTimeout(() => setPhase("expand"), 1800);
     const t2 = setTimeout(() => {
       setPhase("done");
       onComplete();
     }, 2600);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t0); clearTimeout(tDing); clearTimeout(t1); clearTimeout(t2); };
   }, [onComplete]);
 
   return (
