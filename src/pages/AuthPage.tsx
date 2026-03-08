@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, CheckCircle, MailOpen, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, MailOpen, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useDeviceSession } from "@/hooks/useDeviceSession";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { DeviceLimitModal } from "@/components/DeviceLimitModal";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,22 +15,97 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [deviceConflict, setDeviceConflict] = useState<any>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const { signIn, signUp, user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-redirect when user verifies email and session appears
+  const { registerDevice } = useDeviceSession(pendingUserId || user?.id, useCallback(() => {}, []));
+
   useEffect(() => {
-    if (user) {
+    if (user && !deviceConflict) {
       navigate("/", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, deviceConflict]);
+
+  const handleDeviceCheck = async (userId: string) => {
+    setPendingUserId(userId);
+    const result = await (async () => {
+      // We need to call registerDevice with the userId directly
+      const { useDeviceSession: _ } = await import("@/hooks/useDeviceSession");
+      // Actually, let's just call the RPC directly here
+      const { getDeviceInfo } = await import("@/utils/deviceInfo");
+      const { supabase } = await import("@/integrations/supabase/client");
+
+      const info = await getDeviceInfo();
+      const deviceInfo = {
+        device: /android|iphone|ipad/i.test(navigator.userAgent) ? "mobile" : "desktop",
+        browser: info.browser,
+        os: info.deviceName,
+        ip: info.ip,
+        last_login: new Date().toLocaleString(),
+      };
+
+      const { data, error } = await (supabase.rpc as any)("handle_single_device_login", {
+        p_user_id: userId,
+        p_device_id: info.deviceId,
+        p_device_info: deviceInfo,
+        p_force_login: false,
+      });
+
+      if (error) {
+        console.error("Device check error:", error);
+        return { status: "ok" }; // Proceed on error
+      }
+      return data as { status: string; existing_device?: any };
+    })();
+
+    if (result.status === "conflict") {
+      setDeviceConflict(result.existing_device);
+      return false; // Don't proceed
+    }
+    return true; // Proceed with login
+  };
+
+  const handleForceLogin = async () => {
+    if (!pendingUserId) return;
+
+    const { getDeviceInfo } = await import("@/utils/deviceInfo");
+    const { supabase } = await import("@/integrations/supabase/client");
+
+    const info = await getDeviceInfo();
+    const deviceInfo = {
+      device: /android|iphone|ipad/i.test(navigator.userAgent) ? "mobile" : "desktop",
+      browser: info.browser,
+      os: info.deviceName,
+      ip: info.ip,
+      last_login: new Date().toLocaleString(),
+    };
+
+    await (supabase.rpc as any)("handle_single_device_login", {
+      p_user_id: pendingUserId,
+      p_device_id: info.deviceId,
+      p_device_info: deviceInfo,
+      p_force_login: true,
+    });
+
+    setDeviceConflict(null);
+    toast.success("Welcome back! Other device has been logged out.");
+    navigate("/");
+  };
+
+  const handleCancelConflict = async () => {
+    setDeviceConflict(null);
+    setPendingUserId(null);
+    await signOut();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     if (isLogin) {
-      const { error } = await signIn(email, password);
+      const { data, error } = await signIn(email, password);
       if (error) {
         if (error.message.includes("Email not confirmed")) {
           toast.error("Please verify your email first.");
@@ -36,16 +113,18 @@ export default function AuthPage() {
         } else {
           toast.error(error.message);
         }
-      } else {
-        toast.success("Welcome back!");
-        navigate("/");
+      } else if (data?.user) {
+        const canProceed = await handleDeviceCheck(data.user.id);
+        if (canProceed) {
+          toast.success("Welcome back!");
+          navigate("/");
+        }
       }
     } else {
       const { data, error } = await signUp(email, password, displayName);
       if (error) {
         toast.error(error.message);
       } else if (data?.user && data.user.identities && data.user.identities.length === 0) {
-        // Supabase returns empty identities when email already exists
         toast.error("This email is already registered. Please sign in instead.", { duration: 5000 });
         setIsLogin(true);
       } else {
@@ -54,6 +133,17 @@ export default function AuthPage() {
     }
     setLoading(false);
   };
+
+  // Device conflict modal
+  if (deviceConflict) {
+    return (
+      <DeviceLimitModal
+        deviceInfo={deviceConflict}
+        onConfirm={handleForceLogin}
+        onCancel={handleCancelConflict}
+      />
+    );
+  }
 
   // Email verification screen
   if (showVerification) {
@@ -64,7 +154,6 @@ export default function AuthPage() {
         className="min-h-screen bg-background flex items-center justify-center px-4 pt-16 pb-24"
       >
         <div className="w-full max-w-sm text-center">
-          {/* Animated mail icon */}
           <motion.div
             initial={{ scale: 0, rotate: -30 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -106,7 +195,6 @@ export default function AuthPage() {
             {email}
           </motion.p>
 
-          {/* Animated steps */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,7 +221,6 @@ export default function AuthPage() {
             ))}
           </motion.div>
 
-          {/* Waiting indicator */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
