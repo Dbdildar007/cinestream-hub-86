@@ -57,7 +57,8 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             style={{ aspectRatio: "16 / 9" }}
             loading="eager" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent dark:via-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent" />
         </motion.div>
       </AnimatePresence>
 
