@@ -212,6 +212,30 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          movie_id: string
+          notified: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movie_id: string
+          notified?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movie_id?: string
+          notified?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       movies: {
         Row: {
           category: string[]
