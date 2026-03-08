@@ -386,14 +386,14 @@ export default function ChatPage() {
   }
 
   return (
-    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0 overflow-x-hidden">
+    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0 overflow-hidden">
       <ChatHeader
         remoteProfile={remoteProfile}
         remoteIsTyping={remoteIsTyping}
         onBack={() => navigate("/friends")}
       />
 
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-2">
         {isLoading ? (
           <ChatLoadingSkeleton />
         ) : messages.length === 0 ? (

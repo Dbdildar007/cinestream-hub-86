@@ -33,7 +33,7 @@ export default function ChatHeader({ remoteProfile, remoteIsTyping, onBack }: Ch
   const isOnline = remoteProfile?.is_online ?? false;
 
   return (
-    <div className="sticky top-0 md:top-20 z-30 bg-card border-b border-border px-4 py-2 md:py-3 flex items-center gap-3">
+    <div className="sticky top-0 z-30 bg-card border-b border-border px-4 py-2 md:py-3 flex items-center gap-3 flex-shrink-0">
       <button
         onClick={onBack}
         className="p-1.5 rounded-full hover:bg-secondary transition-colors"
