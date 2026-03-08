@@ -777,8 +777,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             >
               {/* Header with avatar & gradient */}
               <div className="relative px-5 pt-5 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
-                {/* Drag handle on mobile */}
-                <div className="md:hidden w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+                {/* Drag handle on mobile - hidden in fullscreen */}
 
                 <div className="flex items-center gap-3 mb-4">
                   <div className="relative">
