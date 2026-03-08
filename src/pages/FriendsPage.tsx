@@ -52,7 +52,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
-  const { friends, pendingRequests, loading, invalidate } = useFriends();
+  const { friends, pendingRequests, sentRequests, loading, invalidate } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
