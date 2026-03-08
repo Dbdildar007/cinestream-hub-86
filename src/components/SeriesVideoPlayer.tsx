@@ -15,6 +15,7 @@ interface SeriesVideoPlayerProps {
   series: Series;
   initialEpisode: SeriesEpisode;
   initialSeason: number;
+  initialTime?: number;
   onClose: () => void;
   watchPartyActive?: boolean;
   isHost?: boolean;
