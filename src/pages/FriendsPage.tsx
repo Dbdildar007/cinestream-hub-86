@@ -63,6 +63,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
   const [movieSearch, setMovieSearch] = useState("");
+  const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
 
   const filteredMovies = movieSearch
     ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
