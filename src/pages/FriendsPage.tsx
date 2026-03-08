@@ -373,7 +373,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </div>
           ) : (
             friends.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
+              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                f.profile?.is_online 
+                  ? "bg-primary/10 border border-primary/20 hover:bg-primary/15" 
+                  : "bg-secondary hover:bg-secondary/80"
+              }`}>
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-sm font-bold text-primary">
