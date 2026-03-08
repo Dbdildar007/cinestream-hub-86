@@ -19,8 +19,9 @@ interface WatchPartyContextType {
   isHost: boolean;
   partyPhase: PartyPhase;
   friendName: string;
+  friendUserId: string;
   pendingInvite: PendingInvite | null;
-  startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string) => void;
+  startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => void;
   acceptInvite: () => Promise<void>;
   declineInvite: () => Promise<void>;
   closePlayer: () => void;
@@ -47,11 +48,13 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
   const [friendName, setFriendName] = useState("");
+  const [friendUserId, setFriendUserId] = useState("");
 
   // Host starts a watch party — open player in "waiting" phase
-  const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string) => {
+  const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => {
     setFriendName(friendDisplayName);
-    watchParty.joinParty(partyId, true); // host joins as host
+    setFriendUserId(friendId);
+    watchParty.joinParty(partyId, true);
     setPlayingMovie(movie);
   }, [watchParty]);
 
@@ -92,6 +95,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const acceptInvite = useCallback(async () => {
     if (!pendingInvite) return;
     setFriendName(pendingInvite.hostName);
+    setFriendUserId(pendingInvite.hostId);
     const joined = await watchParty.joinParty(pendingInvite.partyId, false);
     if (joined) {
       const movie = allMovies.find(m => m.id === pendingInvite.movieId);
@@ -118,6 +122,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
     }
     setPlayingMovie(null);
     setFriendName("");
+    setFriendUserId("");
   }, [watchParty]);
 
   // Listen for party end phase from other user
@@ -126,6 +131,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       if (phase === "ended") {
         setPlayingMovie(null);
         setFriendName("");
+        setFriendUserId("");
       }
     });
   }, [watchParty.onPhaseChange]);
@@ -137,6 +143,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       isHost: watchParty.isHost,
       partyPhase: watchParty.partyPhase,
       friendName,
+      friendUserId,
       pendingInvite,
       startWatchParty,
       acceptInvite,

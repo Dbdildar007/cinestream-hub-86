@@ -18,6 +18,7 @@ import { WatchPartyProvider, useWatchPartyContext } from "./contexts/WatchPartyC
 import WatchPartyInviteOverlay from "./components/WatchPartyInviteOverlay";
 import VideoPlayer from "./components/VideoPlayer";
 import WatchPartyCountdown from "./components/WatchPartyCountdown";
+import WatchPartyComms from "./components/WatchPartyComms";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import FoldersPage from "./pages/FoldersPage";
@@ -137,6 +138,14 @@ function AppContent() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Watch Party Comms - video call + chat (renders outside player so it floats) */}
+      {wpCtx.playingMovie && wpCtx.friendUserId && wpCtx.partyPhase === "playing" && (
+        <WatchPartyComms
+          friendUserId={wpCtx.friendUserId}
+          friendName={wpCtx.friendName}
+        />
+      )}
 
       {showEvicted && (
         <EvictedDialog onAcknowledge={handleEvictedAcknowledge} />

@@ -338,7 +338,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     setMovieSearch("");
 
     // Open the video player for the host immediately via context
-    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name);
+    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name, friendUserId);
   };
 
   if (!user) {
