@@ -75,7 +75,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             <h1 className="text-4xl md:text-7xl font-display tracking-wider text-white dark:text-foreground mb-3 drop-shadow-lg">
               {movie.title.toUpperCase()}
             </h1>
-            <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-3 mb-4 text-sm text-white/70 dark:text-muted-foreground flex-wrap">
               <span className="text-primary font-semibold">{movie.rating}/10</span>
               <span>•</span>
               <span>{movie.year}</span>
