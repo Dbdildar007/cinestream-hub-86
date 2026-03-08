@@ -439,7 +439,7 @@ const skip = useCallback((seconds: number) => {
         key={movie.url}
         src={movie.url}
         className="w-full h-full object-contain"
-        autoPlay
+        autoPlay={shouldAutoPlay}
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
