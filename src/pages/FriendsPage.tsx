@@ -98,12 +98,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   useEffect(() => {
     if (!user) return;
 
-    supabase
-      .from("profiles")
-      .update({ is_online: true, last_seen: new Date().toISOString() })
-      .eq("user_id", user.id)
-      .then();
-
     const channel = supabase
       .channel("friendships-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
@@ -113,11 +107,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       .subscribe();
 
     return () => {
-      supabase
-        .from("profiles")
-        .update({ is_online: false, last_seen: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .then();
       supabase.removeChannel(channel);
     };
   }, [user, invalidate, buildRelationshipMap, searchResults]);
