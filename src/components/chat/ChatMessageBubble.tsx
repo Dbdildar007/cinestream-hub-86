@@ -167,7 +167,7 @@ export default function ChatMessageBubble({
 
   return (
     <div
-      className={`relative py-0.5 ${isMine ? "flex justify-end pr-3" : "flex justify-start"}`}
+      className={`relative py-0.5 ${isMine ? "flex justify-end pr-3" : "flex justify-start pl-1"}`}
       onContextMenu={handleContextMenu}
     >
       {/* Swipe reply indicator */}
