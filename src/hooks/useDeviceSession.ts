@@ -154,17 +154,32 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     }, 10 * 60 * 1000);
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") void checkSession();
+      if (document.visibilityState === "visible") {
+        void checkSession();
+        supabase
+          .from("profiles")
+          .update({ is_online: true, last_seen: new Date().toISOString() } as any)
+          .eq("user_id", userId)
+          .then();
+      }
     };
     window.addEventListener("focus", onVisible);
     document.addEventListener("visibilitychange", onVisible);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.clearInterval(pollId);
       window.clearInterval(heartbeatId);
       window.removeEventListener("focus", onVisible);
       document.removeEventListener("visibilitychange", onVisible);
+      document.removeEventListener("visibilitychange", handleVisibility);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
+      // Set offline on unmount
+      supabase
+        .from("profiles")
+        .update({ is_online: false, last_seen: new Date().toISOString() } as any)
+        .eq("user_id", userId)
+        .then();
     };
   }, [userId, getDeviceId]);
 
