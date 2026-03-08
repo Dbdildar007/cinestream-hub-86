@@ -1,29 +1,26 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Tv, Plus, CheckCircle } from "lucide-react"; 
+import { Star, Tv, Plus, CheckCircle } from "lucide-react";
 import type { Series } from "@/services/seriesService";
-
 
 interface SeriesCardProps {
   series: any;
-  onSelect: (series: any) => void; 
+  onSelect: (series: any) => void;
   onRate?: (id: string, rating: number) => void;
   userRating?: number;
   onToggleWatchlist?: (id: string) => void;
   isWatchlisted?: boolean;
 }
 
-// 1. Updated destructuring to include userRating and isWatchlisted
-export default function SeriesCard({ 
-  series, 
-  onSelect, 
-  onRate, 
-  userRating = 0, // Default to 0 if not provided
+export default function SeriesCard({
+  series,
+  onSelect,
+  onRate,
+  userRating = 0,
   onToggleWatchlist,
-  isWatchlisted = false // Default to false
+  isWatchlisted = false
 }: SeriesCardProps) {
   const [hovered, setHovered] = useState(false);
-
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   useEffect(() => {
@@ -36,21 +33,22 @@ export default function SeriesCard({
     <motion.div
       className="relative flex-shrink-0 w-[140px] md:w-[180px] group cursor-pointer"
       whileHover={{ scale: 1.05, zIndex: 10 }}
+      whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.2 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       onClick={() => onSelect(series)}
     >
-      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-slate-50 border border-slate-200 dark:border-slate-700 shadow-lg">
+      <div className="relative rounded-md overflow-hidden aspect-[2/3] bg-secondary border border-border shadow-lg">
         {series.poster_url ? (
           <img
             src={series.poster_url}
             alt={series.title}
-            className="w-full h-full object-cover group-hover:brightness-95 transition" 
+            className="w-full h-full object-cover group-hover:brightness-95 transition"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-slate-50">
+          <div className="w-full h-full flex items-center justify-center bg-secondary">
             <Tv className="w-8 h-8 text-muted-foreground" />
           </div>
         )}
@@ -60,7 +58,6 @@ export default function SeriesCard({
           Series
         </div>
 
-
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: isMobile ? 1 : (hovered ? 1 : 0) }}
@@ -69,31 +66,27 @@ export default function SeriesCard({
           <p className="text-[10px] md:text-xs text-muted-foreground">
             {series.release_year} • {series.genre?.join(", ")}
           </p>
-          
+
           {onRate && (
-  <div className="flex items-center gap-0.5">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        onClick={(e) => {
-          e.stopPropagation();
-          // FIX 1: Use onRate instead of onToggleWatchlist
-          // FIX 2: Use series.id instead of movie.id
-          if (onRate) onRate(series.id, star);
-        }}
-        // FIX 3: Add p-1 -m-1 for touch hitbox, remove watchlist-specific styles
-        className="p-1 -m-1 mt-1 transition-colors"
-      >
-        <Star
-          className={`w-3 h-3 transition-colors ${
-            star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
-          }`}
-        />
-      </button>
-    ))}
-  </div>
-)}
-              
+            <div className="flex items-center gap-0.5 mt-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onRate) onRate(series.id, star);
+                  }}
+                  className="p-1.5 -m-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                >
+                  <Star
+                    className={`w-3.5 h-3.5 transition-colors ${
+                      star <= userRating ? "text-cine-gold fill-cine-gold" : "text-muted-foreground"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
           {onToggleWatchlist && (
             <button
@@ -101,14 +94,14 @@ export default function SeriesCard({
                 e.stopPropagation();
                 onToggleWatchlist(series.id);
               }}
-              className={`mt-1 flex items-center gap-1 text-xs font-medium transition-colors ${
+              className={`mt-1.5 flex items-center gap-1.5 text-xs font-medium transition-colors min-h-[32px] ${
                 isWatchlisted ? "text-primary" : "text-foreground"
               }`}
             >
               {isWatchlisted ? (
-                <CheckCircle className="w-3 h-3" />
+                <CheckCircle className="w-4 h-4" />
               ) : (
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
               )}
               {isWatchlisted ? "Listed" : "My List"}
             </button>
