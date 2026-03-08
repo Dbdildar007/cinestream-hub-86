@@ -873,7 +873,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       title: series.title,
                       description: series.description,
                       poster: series.poster_url,
-                      year: series.year,
+                      year: series.release_year,
                       genre: series.genre,
                       rating: series.rating,
                       duration: `${series.seasons?.length || 0} Season${(series.seasons?.length || 0) !== 1 ? "s" : ""}`,
