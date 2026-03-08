@@ -11,6 +11,7 @@ interface SeriesCardProps {
   userRating?: number;
   onToggleWatchlist?: (id: string) => void;
   isWatchlisted?: boolean;
+  index?: number;
 }
 
 // 1. Updated destructuring to include userRating and isWatchlisted
