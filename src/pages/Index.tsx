@@ -258,6 +258,6 @@ export default function Index() {
       </AnimatePresence>
 
       <Footer />
-    </motion.div>
+    </div>
   );
 }
