@@ -5,9 +5,10 @@ import { getDeviceInfo } from "@/utils/deviceInfo";
 export function useDeviceSession(userId: string | undefined, onEvicted: () => void) {
   const deviceIdRef = useRef<string>("");
   const channelRef = useRef<any>(null);
-  const hasEvictedRef = useRef(false);
+  const evictedRef = useRef(false);
+  const onEvictedRef = useRef(onEvicted);
+  onEvictedRef.current = onEvicted;
 
-  // Get or create persistent device ID
   const getDeviceId = useCallback(() => {
     if (deviceIdRef.current) return deviceIdRef.current;
     let id = localStorage.getItem("device_id");
@@ -18,32 +19,6 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     deviceIdRef.current = id;
     return id;
   }, []);
-
-  const triggerEviction = useCallback(() => {
-    if (hasEvictedRef.current) return;
-    hasEvictedRef.current = true;
-    onEvicted();
-  }, [onEvicted]);
-
-  const verifyActiveSession = useCallback(
-    async (targetUserId?: string) => {
-      const effectiveUserId = targetUserId ?? userId;
-      if (!effectiveUserId) return;
-
-      const deviceId = getDeviceId();
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("active_session_id")
-        .eq("user_id", effectiveUserId)
-        .maybeSingle();
-
-      if (error || !data?.active_session_id) return;
-      if (data.active_session_id !== deviceId) {
-        triggerEviction();
-      }
-    },
-    [userId, getDeviceId, triggerEviction]
-  );
 
   const registerDevice = useCallback(
     async (
@@ -81,56 +56,54 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     [userId, getDeviceId]
   );
 
-  // Listen for eviction via realtime + polling fallback
+  // Realtime + polling eviction listener
   useEffect(() => {
     if (!userId) return;
 
-    hasEvictedRef.current = false;
+    evictedRef.current = false;
+    const deviceId = getDeviceId();
+
+    const checkSession = async () => {
+      if (evictedRef.current) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("active_session_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (data?.active_session_id && data.active_session_id !== deviceId && !evictedRef.current) {
+        evictedRef.current = true;
+        onEvictedRef.current();
+      }
+    };
 
     channelRef.current = supabase
       .channel(`device-eviction-${userId}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `user_id=eq.${userId}`,
-        },
-        async () => {
-          await verifyActiveSession(userId);
-        }
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` },
+        () => { void checkSession(); }
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          void verifyActiveSession(userId);
-        }
+        if (status === "SUBSCRIBED") void checkSession();
       });
 
-    const pollId = window.setInterval(() => {
-      void verifyActiveSession(userId);
-    }, 3000);
+    const pollId = window.setInterval(checkSession, 3000);
 
-    const onFocusOrVisible = () => {
-      if (document.visibilityState === "visible") {
-        void verifyActiveSession(userId);
-      }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void checkSession();
     };
-
-    window.addEventListener("focus", onFocusOrVisible);
-    document.addEventListener("visibilitychange", onFocusOrVisible);
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       window.clearInterval(pollId);
-      window.removeEventListener("focus", onFocusOrVisible);
-      document.removeEventListener("visibilitychange", onFocusOrVisible);
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
-  }, [userId, verifyActiveSession]);
+  }, [userId, getDeviceId]);
 
-  // Clear session on logout
   const clearSession = useCallback(async () => {
     if (!userId) return;
     await supabase
