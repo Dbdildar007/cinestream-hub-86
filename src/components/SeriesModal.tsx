@@ -21,6 +21,7 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
   const isMobile = useIsMobile();
   const [selectedSeason, setSelectedSeason] = useState(1);
   const { series: seriesDetail, loading } = useSeriesDetail(series?.id || null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     setSelectedSeason(1);
