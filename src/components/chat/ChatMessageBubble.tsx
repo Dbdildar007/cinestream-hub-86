@@ -291,21 +291,21 @@ export default function ChatMessageBubble({
 
         {/* Desktop action buttons - right side for own messages */}
         {!isMobile && isMine && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity order-0">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity order-2">
+            {onReply && (
+              <button
+                onClick={() => onReply(msg)}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+              >
+                <Reply className="w-3.5 h-3.5" />
+              </button>
+            )}
             {onContextAction && (
               <button
                 onClick={handleDesktopMenuClick}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {onReply && (
-              <button
-                onClick={() => onReply(msg)}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
