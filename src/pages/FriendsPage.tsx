@@ -394,34 +394,49 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
           {/* Default suggestions - people you may know */}
           {!searchQuery && defaultSuggestions.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">People you may know</h3>
-              {defaultSuggestions.map((profile) => (
-                <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">
-                        {profile.display_name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <Circle
-                      className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${
-                        profile.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
-                      }`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
-                    <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
-                  </div>
-                  <button
-                    onClick={() => sendFriendRequest(profile)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {defaultSuggestions.map((profile, i) => (
+                  <motion.div
+                    key={profile.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.3 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 transition-all"
                   >
-                    <UserPlus className="w-3.5 h-3.5" /> Add
-                  </button>
-                </div>
-              ))}
+                    <div className="relative">
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt={profile.display_name} className="w-11 h-11 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">
+                            {profile.display_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span
+                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${
+                          profile.is_online ? "bg-green-500" : "bg-muted-foreground/40"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
+                      <p className="text-[11px] text-muted-foreground">{profile.unique_id}</p>
+                      <p className={`text-[10px] mt-0.5 ${profile.is_online ? "text-green-500" : "text-muted-foreground"}`}>
+                        {profile.is_online ? "Online" : "Offline"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => sendFriendRequest(profile)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" /> Connect
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
 
