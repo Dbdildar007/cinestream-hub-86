@@ -140,10 +140,14 @@ export default function Index() {
     setSelectedSeries(movieToSeries(movie));
   }, [movieToSeries]);
 
- if (loading && allMovies.length === 0 && !user){
+ if (loading && allMovies.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <LoadingSpinner fullScreen text="Loading CineStream..." />
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <div className="-mt-10 md:-mt-35 relative z-10">
+          <MovieRowSkeleton title="loading" />
+          <MovieRowSkeleton title="loading" />
+          <MovieRowSkeleton title="loading" />
+        </div>
       </div>
     );
   }
