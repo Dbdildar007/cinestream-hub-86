@@ -101,40 +101,28 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
     setLoadingReminder(false);
   }, [movie, user, reminderSet]);
 
+  // Fetch fresh trailer URL from DB when modal opens
   useEffect(() => {
     setShowTrailer(false);
-    setTrailerUrl(movie?.url?.trim() || null);
-  }, [movie?.id, movie?.url]);
+    setTrailerUrl(null);
+    setTrailerChecked(false);
 
-  const handlePlayTrailer = useCallback(async () => {
-    if (showTrailer) {
-      setShowTrailer(false);
-      return;
-    }
+    if (!movie?.id) return;
 
-    let resolvedUrl = trailerUrl;
-
-    if (!resolvedUrl && movie?.id) {
+    const fetchUrl = async () => {
       const { data } = await supabase
         .from("movies")
         .select("url")
         .eq("id", movie.id)
         .maybeSingle();
-
       const freshUrl = data?.url?.trim() || null;
-      if (freshUrl) {
-        resolvedUrl = freshUrl;
-        setTrailerUrl(freshUrl);
-      }
-    }
+      setTrailerUrl(freshUrl);
+      setTrailerChecked(true);
+    };
+    fetchUrl();
+  }, [movie?.id]);
 
-    if (resolvedUrl) {
-      setShowTrailer(true);
-      return;
-    }
-
-    toast("Trailer coming soon");
-  }, [movie?.id, showTrailer, trailerUrl]);
+  const hasTrailer = trailerChecked && !!trailerUrl;
 
   if (!movie) return null;
 
