@@ -305,7 +305,7 @@ export default function ChatMessageBubble({
                 onClick={() => onReply(msg)}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
-                <CornerUpLeft className="w-3.5 h-3.5" />
+                <Undo2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
