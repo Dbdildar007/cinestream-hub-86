@@ -146,6 +146,8 @@ export default function SeriesVideoPlayer({
   const handleVideoEnded = useCallback(() => {
     setIsPlaying(false);
     setVideoEnded(true);
+    // In watch party, only host triggers auto-next; guest waits for broadcast
+    if (controlsDisabled) return;
     const next = getNextEpisode();
     if (next) {
       setShowNextEpisode(true);
@@ -161,7 +163,7 @@ export default function SeriesVideoPlayer({
         });
       }, 1000);
     }
-  }, [getNextEpisode, playEpisode]);
+  }, [getNextEpisode, playEpisode, controlsDisabled]);
 
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
