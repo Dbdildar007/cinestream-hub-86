@@ -215,7 +215,7 @@ export default function ChatPage() {
       ...prev,
       { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
-    const { data } = await supabase.from("call_messages").insert({
+    const { data } = await supabase.from("chat_messages").insert({
       sender_id: user.id,
       receiver_id: remoteUserId,
       message: text,
