@@ -32,7 +32,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const { callState, startCall, acceptCall, declineCall, endCall, toggleMute, toggleCamera, toggleMinimize } = useVideoCall();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showEvicted, setShowEvicted] = useState(false);
 
