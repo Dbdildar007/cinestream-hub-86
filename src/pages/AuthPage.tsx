@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, MailOpen, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, MailOpen, Loader2, CheckCircle, XCircle } from "lucide-react";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { useDeviceSession } from "@/hooks/useDeviceSession";
@@ -20,6 +20,8 @@ export default function AuthPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [deviceConflict, setDeviceConflict] = useState<any>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { signIn, signUp, user, signOut } = useAuth();
   const navigate = useNavigate();
 
