@@ -28,6 +28,7 @@ interface Profile {
   unique_id: string;
   is_online: boolean;
   avatar_url: string | null;
+  location?: string | null;
 }
 
 interface Friendship {
@@ -98,12 +99,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
   // Static fallback suggestions when no real profiles available
   const STATIC_SUGGESTIONS: Profile[] = [
-    { id: "static-1", user_id: "static-1", display_name: "Alex Morgan", unique_id: "CS-alex2024", is_online: true, avatar_url: null },
-    { id: "static-2", user_id: "static-2", display_name: "Priya Sharma", unique_id: "CS-priya007", is_online: false, avatar_url: null },
-    { id: "static-3", user_id: "static-3", display_name: "James Wilson", unique_id: "CS-james99", is_online: true, avatar_url: null },
-    { id: "static-4", user_id: "static-4", display_name: "Sara Khan", unique_id: "CS-sara456", is_online: false, avatar_url: null },
-    { id: "static-5", user_id: "static-5", display_name: "Mike Chen", unique_id: "CS-mike321", is_online: true, avatar_url: null },
-    { id: "static-6", user_id: "static-6", display_name: "Emma Davis", unique_id: "CS-emma88", is_online: false, avatar_url: null },
+    { id: "static-1", user_id: "static-1", display_name: "Alex Morgan", unique_id: "CS-alex2024", is_online: true, avatar_url: null, location: "New York, USA" },
+    { id: "static-2", user_id: "static-2", display_name: "Priya Sharma", unique_id: "CS-priya007", is_online: false, avatar_url: null, location: "Mumbai, India" },
+    { id: "static-3", user_id: "static-3", display_name: "James Wilson", unique_id: "CS-james99", is_online: true, avatar_url: null, location: "London, UK" },
+    { id: "static-4", user_id: "static-4", display_name: "Sara Khan", unique_id: "CS-sara456", is_online: false, avatar_url: null, location: "Dubai, UAE" },
+    { id: "static-5", user_id: "static-5", display_name: "Mike Chen", unique_id: "CS-mike321", is_online: true, avatar_url: null, location: "Tokyo, Japan" },
+    { id: "static-6", user_id: "static-6", display_name: "Emma Davis", unique_id: "CS-emma88", is_online: false, avatar_url: null, location: "Sydney, Australia" },
   ];
 
   // Load default suggestions for Find Friends
@@ -452,7 +453,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 hover:bg-secondary hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-default"
                   >
                     <div className="relative">
                       {profile.avatar_url ? (
@@ -473,13 +474,13 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
                       <p className="text-[11px] text-muted-foreground">{profile.unique_id}</p>
-                      <p className={`text-[10px] mt-0.5 ${profile.is_online ? "text-green-500" : "text-muted-foreground"}`}>
-                        {profile.is_online ? "Online" : "Offline"}
-                      </p>
+                      {profile.location?.trim() && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">📍 {profile.location}</p>
+                      )}
                     </div>
                     <button
                       onClick={() => sendFriendRequest(profile)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all"
                     >
                       <UserPlus className="w-3.5 h-3.5" /> Connect
                     </button>
@@ -509,26 +510,30 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </div>
           ) : (
             friends.map((f) => (
-              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
                 f.profile?.is_online 
-                  ? "bg-primary/10 border border-primary/20 hover:bg-primary/15" 
+                  ? "bg-green-500/5 border border-green-500/20 hover:bg-green-500/10" 
                   : "bg-secondary hover:bg-secondary/80"
               }`}>
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary">
-                      {f.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                    </span>
-                  </div>
-                  <Circle
-                    className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
-                      f.profile?.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
+                  {f.profile?.avatar_url ? (
+                    <img src={f.profile.avatar_url} alt={f.profile.display_name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">
+                        {f.profile?.display_name?.charAt(0).toUpperCase() || "?"}
+                      </span>
+                    </div>
+                  )}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                      f.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
                     }`}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{f.profile?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className={`text-xs ${f.profile?.is_online ? "text-green-500 font-medium" : "text-muted-foreground"}`}>
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
