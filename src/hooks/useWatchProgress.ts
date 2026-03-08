@@ -62,10 +62,12 @@ export function useWatchProgress() {
     fetchProgress();
   }, [user]);
 
-  // Persist locally
+  // Persist locally (only when logged in, so logout reset doesn't overwrite cleared cache)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressList));
-  }, [progressList]);
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progressList));
+    }
+  }, [progressList, user]);
 
  const updateProgress = useCallback((movieId: string, currentTime: number, duration: number, mediaType: 'movie' | 'series' = 'movie', episodeId?: string, 
   seasonNumber?: number, episodeNumber?: number) => {
