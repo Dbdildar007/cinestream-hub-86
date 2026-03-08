@@ -31,6 +31,7 @@ export function useWatchProgress() {
  // Clear on logout, load cache + sync on login
   useEffect(() => {
     if (!user) {
+      // Clear React state but keep localStorage cache for instant display on re-login
       setProgressList([]);
       return;
     }
