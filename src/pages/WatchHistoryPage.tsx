@@ -140,7 +140,7 @@ export default function WatchHistoryPage() {
             series={playingSeries.series}
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
-            onClose={() => setPlayingSeries(null)}
+            onClose={() => { setPlayingSeries(null); refetchProgress(); }}
           />
         )}
       </AnimatePresence>
