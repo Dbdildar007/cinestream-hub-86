@@ -449,7 +449,7 @@ export default function SeriesVideoPlayer({
             </div>
 
             {/* CENTER CONTROLS */}
-            <div className="flex items-center justify-center gap-8 md:gap-12">
+            <div className={`flex items-center justify-center gap-8 md:gap-12 transition-opacity ${isBuffering ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <button onClick={() => skip(-10)} className="p-3 md:p-4 bg-white/5 hover:bg-white/10 rounded-full text-white backdrop-blur-sm transition-all">
                 <SkipBack className="w-6 h-6 md:w-8 md:h-8" />
               </button>
