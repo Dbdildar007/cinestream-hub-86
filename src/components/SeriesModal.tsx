@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle, Crown } from "lucide-react";
+import { X, Play, Star, Clock, Calendar, Globe, Tv, AlertCircle, Plus, CheckCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSeriesDetail } from "@/hooks/useSeries";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
 import LoadingSpinner from "./LoadingSpinner";
-import PremiumPaywall from "./PremiumPaywall";
 
 interface SeriesModalProps {
   series: Series | null;
@@ -21,7 +20,6 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
   const isMobile = useIsMobile();
   const [selectedSeason, setSelectedSeason] = useState(1);
   const { series: seriesDetail, loading } = useSeriesDetail(series?.id || null);
-  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     setSelectedSeason(1);
@@ -47,7 +45,6 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
   const variants = isMobile ? mobileVariants : desktopVariants;
 
   return (
-    <>
     <AnimatePresence>
       {series && (
         <>
@@ -90,12 +87,6 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
                 <Tv className="w-3.5 h-3.5 text-primary-foreground" />
                 <span className="text-xs font-semibold text-primary-foreground">Series</span>
               </div>
-              {series.isPremium && (
-                <div className="absolute top-4 left-28 flex items-center gap-1 bg-yellow-500/90 px-2.5 py-1 rounded-full">
-                  <Crown className="w-3.5 h-3.5 text-black" />
-                  <span className="text-xs font-bold text-black">PREMIUM</span>
-                </div>
-              )}
             </div>
 
             <div className="px-6 pb-8 -mt-16 relative">
@@ -157,30 +148,11 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
               <div className="flex flex-wrap gap-2 mb-4">
                 {detail && detail.seasons.length > 0 && detail.seasons[0].episodes.length > 0 && (
                   <button
-                    onClick={() => {
-                      if (series.isPremium) {
-                        setShowPaywall(true);
-                      } else {
-                        onPlayEpisode(series, detail.seasons[0].episodes[0], 1);
-                      }
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
-                      series.isPremium
-                        ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-black hover:from-yellow-400 hover:to-yellow-500"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    }`}
+                    onClick={() => onPlayEpisode(series, detail.seasons[0].episodes[0], 1)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-md font-semibold text-sm transition-colors"
                   >
-                    {series.isPremium ? (
-                      <>
-                        <Crown className="w-4 h-4" />
-                        Unlock Premium
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4 fill-current" />
-                        Play S1 E1
-                      </>
-                    )}
+                    <Play className="w-4 h-4 fill-current" />
+                    Play S1 E1
                   </button>
                 )}
 
@@ -232,13 +204,7 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
                       return (
                         <button
                           key={episode.id}
-                          onClick={() => {
-                            if (series.isPremium) {
-                              setShowPaywall(true);
-                            } else {
-                              onPlayEpisode(series, episode, selectedSeason);
-                            }
-                          }}
+                          onClick={() => onPlayEpisode(series, episode, selectedSeason)}
                           className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
                         >
                           <div className="flex items-start gap-3">
@@ -293,12 +259,5 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
         </>
       )}
     </AnimatePresence>
-
-    <PremiumPaywall
-      open={showPaywall}
-      onClose={() => setShowPaywall(false)}
-      title={series?.title || ""}
-    />
-    </>
   );
 }
