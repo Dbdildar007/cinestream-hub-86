@@ -25,11 +25,13 @@ export default function IncomingCallOverlay({ callerName, onAccept, onDecline }:
         <motion.div
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4"
+          className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden"
         >
-          <span className="text-3xl font-bold text-primary">
-            {callerName?.charAt(0)?.toUpperCase() || "?"}
-          </span>
+          <img
+            src={getAvatarUrl(null, callerName || undefined)}
+            alt={callerName || "User"}
+            className="w-full h-full object-cover"
+          />
         </motion.div>
 
         <h3 className="text-xl font-display tracking-wider text-foreground mb-1">
