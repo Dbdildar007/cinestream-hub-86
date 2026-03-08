@@ -217,6 +217,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       setRelationshipMap(prev => ({ ...prev, [profile.user_id]: "pending_sent" }));
       // Remove from default suggestions
       setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
+      // Invalidate queries so Requests tab updates immediately
+      invalidate();
       const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
       await sendNotification(
         profile.user_id,
