@@ -176,8 +176,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         );
       }
       toast.success("Friend request accepted!");
-      loadFriends();
-      loadPendingRequests();
+      invalidate();
     }
   };
 
