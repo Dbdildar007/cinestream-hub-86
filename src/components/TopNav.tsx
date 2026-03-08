@@ -1,7 +1,6 @@
-import { Search, User, Users, Moon, Sun } from "lucide-react";
+import { Search, User, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useTheme } from "@/hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -15,7 +14,6 @@ const navItems = [
 
 export default function TopNav() {
   const location = useLocation();
-  const { isDark, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
   return (
@@ -43,9 +41,6 @@ export default function TopNav() {
         </nav>
       </div>
       <div className="flex items-center gap-4">
-        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-secondary transition-colors">
-          {isDark ? <Sun className="w-5 h-5 text-foreground" strokeWidth={2.5} /> : <Moon className="w-5 h-5 text-foreground" strokeWidth={2.5} />}
-        </button>
         <Link to="/search" className="p-2 rounded-full hover:bg-secondary transition-colors">
           <Search className="w-5 h-5 text-foreground" strokeWidth={2.5} />
         </Link>
