@@ -65,11 +65,19 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
           table: "profiles",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        async (payload) => {
           const newSession = payload.new?.active_session_id;
-          // If session changed to something else (not us), we've been evicted
+          // If session changed to something else (not us), verify with a fresh query
           if (newSession && newSession !== deviceId) {
-            onEvicted();
+            // Double-check from DB to avoid false evictions on WiFi reconnect
+            const { data } = await supabase
+              .from("profiles")
+              .select("active_session_id")
+              .eq("user_id", userId)
+              .single();
+            if (data && data.active_session_id && data.active_session_id !== deviceId) {
+              onEvicted();
+            }
           }
         }
       )
