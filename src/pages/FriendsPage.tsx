@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle, Tv, LayoutGrid, List } from "lucide-react";
 import { getAvatarUrl } from "@/utils/avatarUrl";
@@ -72,6 +72,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [modalView, setModalView] = useState<"list" | "grid">("grid");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
 
   // Collect all genres from movies & series
   const allGenres = [...new Set([
@@ -820,7 +821,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setModalTab("movies")}
+                      onClick={() => { setModalTab("movies"); setSelectedGenre(null); modalContentRef.current?.scrollTo(0, 0); }}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                         modalTab === "movies"
                           ? "bg-primary text-primary-foreground"
@@ -831,7 +832,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       Movies
                     </button>
                     <button
-                      onClick={() => setModalTab("series")}
+                      onClick={() => { setModalTab("series"); setSelectedGenre(null); modalContentRef.current?.scrollTo(0, 0); }}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                         modalTab === "series"
                           ? "bg-primary text-primary-foreground"
@@ -887,7 +888,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1 scrollbar-hide">
+              <div ref={modalContentRef} className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1 scrollbar-hide">
                 {/* GRID VIEW */}
                 {modalView === "grid" && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
