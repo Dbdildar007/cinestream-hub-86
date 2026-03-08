@@ -47,6 +47,7 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
   const variants = isMobile ? mobileVariants : desktopVariants;
 
   return (
+    <>
     <AnimatePresence>
       {series && (
         <>
