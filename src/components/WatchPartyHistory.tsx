@@ -101,10 +101,6 @@ export default function WatchPartyHistory() {
                   <Users className="w-3 h-3" />
                   <span className="truncate">with {item.friend_name}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>{formatDuration(item.duration_watched_sec)}</span>
-                </div>
                 <p className="text-[10px] text-muted-foreground/60">{formatDate(item.started_at)}</p>
               </div>
             </motion.div>
