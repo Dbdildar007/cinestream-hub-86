@@ -49,6 +49,7 @@ export default function ChatPage() {
 
   const mapMessage = useCallback((m: any, userId: string): ChatMessage => ({
     id: m.id,
+    stableKey: m.id,
     text: m.message,
     isMine: m.sender_id === userId,
     timestamp: m.created_at,
