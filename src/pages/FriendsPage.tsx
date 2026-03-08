@@ -75,6 +75,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const [inviteCooldowns, setInviteCooldowns] = useState<Record<string, number>>({});
   // Cooldown: track last invite time per friend
   const [inviteCooldowns, setInviteCooldowns] = useState<Record<string, number>>({});
 
