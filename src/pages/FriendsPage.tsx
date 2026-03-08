@@ -307,13 +307,18 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   };
 
   const handleInviteToWatchParty = async (movie: Movie) => {
-    if (!user || !invitingFriend?.profile) return;
+    setConfirmMovie(movie);
+  };
+
+  const handleConfirmWatchParty = async () => {
+    if (!user || !invitingFriend?.profile || !confirmMovie) return;
+    setIsStarting(true);
     const friendUserId = invitingFriend.profile.user_id;
 
     const { data, error } = await supabase.from("watch_parties").insert({
       host_id: user.id,
       friend_id: friendUserId,
-      movie_id: movie.id,
+      movie_id: confirmMovie.id,
       status: "active",
       is_playing: true,
       current_time_sec: 0,
@@ -321,6 +326,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
     if (error) {
       toast.error("Failed to create watch party");
+      setIsStarting(false);
       return;
     }
 
@@ -329,11 +335,13 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       friendUserId,
       "watch_party",
       "Watch Party Invite",
-      `${myProfile?.display_name || "Someone"} invited you to watch "${movie.title}"`,
-      { party_id: data.id, movie_id: movie.id }
+      `${myProfile?.display_name || "Someone"} invited you to watch "${confirmMovie.title}"`,
+      { party_id: data.id, movie_id: confirmMovie.id }
     );
 
     toast.success(`Watch party started! ${invitingFriend.profile.display_name} will join automatically.`);
+    setIsStarting(false);
+    setConfirmMovie(null);
     setInvitingFriend(null);
     setMovieSearch("");
     navigate("/");
