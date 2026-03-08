@@ -90,7 +90,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
                 </>
               )}
             </div>
-            <p className="text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none">
+            <p className="text-white/80 dark:text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none drop-shadow-sm">
               {movie.description}
             </p>
             <div className="flex gap-3 flex-wrap">
