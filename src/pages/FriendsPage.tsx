@@ -271,14 +271,27 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     }
   };
 
-  const cancelSentRequest = async (friendshipId: string) => {
+  const cancelSentRequest = async (friendshipId: string, profile?: Profile) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
     if (!error) {
       toast.success("Request cancelled");
+      if (profile) {
+        setDefaultSuggestions((prev) =>
+          prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+        );
+      }
       invalidate();
     } else {
       toast.error("Failed to cancel request");
     }
+  };
+
+  const cancelStaticSentRequest = (profile: Profile) => {
+    setSentStaticRequests((prev) => prev.filter((p) => p.user_id !== profile.user_id));
+    setDefaultSuggestions((prev) =>
+      prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+    );
+    toast.success("Request cancelled");
   };
 
   const handleInviteToWatchParty = async (movie: Movie) => {
