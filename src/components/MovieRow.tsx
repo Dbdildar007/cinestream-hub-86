@@ -32,11 +32,7 @@ export default function MovieRow({
   if (movies.length === 0) return null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5 }}
+    <section
       className="relative px-4 md:px-12 mb-8"
     >
       <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4">
