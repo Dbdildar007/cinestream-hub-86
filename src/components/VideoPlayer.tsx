@@ -38,7 +38,8 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const shouldAutoPlay = !watchPartyActive || partyPhase === "playing";
+  const [isPlaying, setIsPlaying] = useState(shouldAutoPlay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
