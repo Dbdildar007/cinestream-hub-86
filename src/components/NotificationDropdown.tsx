@@ -281,6 +281,11 @@ export default function NotificationDropdown({
 
   return (
     <>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+        )}
+      </AnimatePresence>
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -301,7 +306,6 @@ export default function NotificationDropdown({
         <AnimatePresence>
           {isOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
               <motion.div
                 initial={{ opacity: 0, y: isMobile ? 10 : -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
