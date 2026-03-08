@@ -357,7 +357,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     );
   }
 
-  const totalRequests = pendingRequests.length + sentRequests.length;
+  const totalSentRequests = sentRequests.length + sentStaticRequests.length;
+  const totalRequests = pendingRequests.length + totalSentRequests;
 
   const tabs = [
     { id: "friends" as const, label: "Friends", count: null },
