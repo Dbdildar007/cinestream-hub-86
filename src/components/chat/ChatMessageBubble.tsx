@@ -1,7 +1,14 @@
 import { useState, useRef, useCallback } from "react";
-import { Check, CheckCheck, Reply } from "lucide-react";
+import { Check, CheckCheck, Reply, Heart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChatMessage } from "@/pages/ChatPage";
+
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  isMine: boolean;
+}
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -9,7 +16,9 @@ interface ChatMessageBubbleProps {
   replyToMessage?: ChatMessage | null;
   onReply?: (msg: ChatMessage) => void;
   onContextAction?: (msg: ChatMessage, position: { x: number; y: number }) => void;
+  onReact?: (msg: ChatMessage, emoji: string) => void;
   isEditing?: boolean;
+  reactions?: MessageReaction[];
 }
 
 function formatTime(ts: string) {
@@ -26,6 +35,7 @@ function getTickIcon(msg: ChatMessage, isRemoteOnline: boolean) {
 }
 
 const SWIPE_THRESHOLD = 60;
+const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
 export default function ChatMessageBubble({
   message: msg,
@@ -33,16 +43,40 @@ export default function ChatMessageBubble({
   replyToMessage,
   onReply,
   onContextAction,
+  onReact,
   isEditing = false,
+  reactions = [],
 }: ChatMessageBubbleProps) {
   const isMine = msg.isMine;
   const isMobile = useIsMobile();
   const [swipeX, setSwipeX] = useState(0);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [heartAnimation, setHeartAnimation] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const triggeredRef = useRef(false);
   const isSwipingRef = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
+  const lastTapRef = useRef(0);
+
+  // Double-tap to heart
+  const handleDoubleTap = useCallback(() => {
+    if (!onReact) return;
+    setHeartAnimation(true);
+    onReact(msg, "❤️");
+    setTimeout(() => setHeartAnimation(false), 800);
+  }, [onReact, msg]);
+
+  const handleClick = useCallback(() => {
+    if (isMobile) return; // mobile uses touch events
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      handleDoubleTap();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  }, [isMobile, handleDoubleTap]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -51,7 +85,6 @@ export default function ChatMessageBubble({
     isSwipingRef.current = false;
     longPressTriggeredRef.current = false;
 
-    // Long press detection
     if (onContextAction) {
       longPressTimerRef.current = setTimeout(() => {
         if (!isSwipingRef.current && touchStartRef.current) {
@@ -63,13 +96,33 @@ export default function ChatMessageBubble({
     }
   }, [onContextAction, msg]);
 
+  const handleTouchEnd = useCallback(() => {
+    // Double-tap detection for mobile
+    if (!isSwipingRef.current && !longPressTriggeredRef.current && touchStartRef.current) {
+      const now = Date.now();
+      if (now - lastTapRef.current < 300) {
+        handleDoubleTap();
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    }
+
+    touchStartRef.current = null;
+    isSwipingRef.current = false;
+    setSwipeX(0);
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, [handleDoubleTap]);
+
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStartRef.current || longPressTriggeredRef.current) return;
     const touch = e.touches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
     const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
 
-    // Cancel long press if moved
     if (Math.abs(deltaX) > 8 || deltaY > 8) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
@@ -79,7 +132,6 @@ export default function ChatMessageBubble({
 
     if (triggeredRef.current) return;
 
-    // If vertical scroll is dominant, cancel swipe
     if (!isSwipingRef.current && deltaY > 10 && Math.abs(deltaX) < deltaY) {
       touchStartRef.current = null;
       return;
@@ -89,13 +141,11 @@ export default function ChatMessageBubble({
 
     const direction = isMine ? -1 : 1;
     const raw = deltaX * direction;
-
     if (raw > 10) isSwipingRef.current = true;
 
     if (isSwipingRef.current) {
       const clamped = Math.min(Math.max(raw, 0), SWIPE_THRESHOLD + 20);
       setSwipeX(clamped * direction);
-
       if (clamped >= SWIPE_THRESHOLD && !triggeredRef.current) {
         triggeredRef.current = true;
         if (navigator.vibrate) navigator.vibrate(15);
@@ -103,16 +153,6 @@ export default function ChatMessageBubble({
       }
     }
   }, [onReply, isMine, msg]);
-
-  const handleTouchEnd = useCallback(() => {
-    touchStartRef.current = null;
-    isSwipingRef.current = false;
-    setSwipeX(0);
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     if (isMobile) return;
@@ -124,15 +164,13 @@ export default function ChatMessageBubble({
 
   return (
     <div
-      className={`group relative overflow-hidden ${isMine ? "flex justify-end" : "flex justify-start"}`}
+      className={`group relative overflow-visible ${isMine ? "flex justify-end" : "flex justify-start"}`}
       onContextMenu={handleContextMenu}
     >
       {/* Swipe reply indicator */}
       {isMobile && onReply && swipeX !== 0 && (
         <div
-          className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center ${
-            isMine ? "left-2" : "right-2"
-          }`}
+          className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center ${isMine ? "left-2" : "right-2"}`}
           style={{ opacity: swipeProgress }}
         >
           <div className={`p-1.5 rounded-full bg-secondary ${swipeProgress >= 1 ? "scale-110" : ""} transition-transform`}>
@@ -152,7 +190,7 @@ export default function ChatMessageBubble({
         onTouchEnd={isMobile ? handleTouchEnd : undefined}
         onTouchCancel={isMobile ? handleTouchEnd : undefined}
       >
-        {/* Reply button - desktop only, left side for received */}
+        {/* Reply button - desktop only */}
         {!isMobile && !isMine && onReply && (
           <button
             onClick={() => onReply(msg)}
@@ -162,7 +200,7 @@ export default function ChatMessageBubble({
           </button>
         )}
 
-        <div className={`max-w-[75%] ${isMine ? "order-1" : ""}`}>
+        <div className={`max-w-[75%] relative ${isMine ? "order-1" : ""}`}>
           {replyToMessage && (
             <div
               className={`mx-1 mb-0.5 px-2.5 py-1.5 rounded-t-xl text-[11px] border-l-2 ${
@@ -179,13 +217,12 @@ export default function ChatMessageBubble({
           )}
 
           <div
-            className={`px-3 py-1.5 inline-flex items-end gap-2 ${
+            className={`px-3 py-1.5 inline-flex items-end gap-2 relative ${
               replyToMessage ? "rounded-b-2xl rounded-t-sm" : "rounded-2xl"
             } ${
-              isMine
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
+              isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
             } ${isEditing ? "ring-2 ring-accent" : ""}`}
+            onClick={handleClick}
           >
             <p className="text-sm break-words">{msg.text}</p>
             <span className="flex items-center gap-0.5 flex-shrink-0 pb-0.5">
@@ -194,19 +231,69 @@ export default function ChatMessageBubble({
                   edited
                 </span>
               )}
-              <span
-                className={`text-[10px] leading-none ${
-                  isMine ? "text-primary-foreground/50" : "text-muted-foreground"
-                }`}
-              >
+              <span className={`text-[10px] leading-none ${isMine ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
                 {formatTime(msg.timestamp)}
               </span>
               {getTickIcon(msg, isRemoteOnline)}
             </span>
+
+            {/* Heart animation overlay */}
+            <AnimatePresence>
+              {heartAnimation && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 1.4, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <Heart className="w-10 h-10 text-red-500 fill-red-500" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {/* Reactions display */}
+          {reactions.length > 0 && (
+            <div className={`flex gap-0.5 mt-0.5 ${isMine ? "justify-end mr-1" : "justify-start ml-1"}`}>
+              {reactions.map((r) => (
+                <button
+                  key={r.emoji}
+                  onClick={() => onReact?.(msg, r.emoji)}
+                  className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] transition-colors ${
+                    r.isMine
+                      ? "bg-primary/20 border border-primary/30"
+                      : "bg-secondary border border-border"
+                  }`}
+                >
+                  <span>{r.emoji}</span>
+                  {r.count > 1 && <span className="text-muted-foreground text-[10px]">{r.count}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Desktop reaction picker on hover */}
+          {!isMobile && onReact && (
+            <div
+              className={`absolute -top-8 ${isMine ? "right-0" : "left-0"} opacity-0 group-hover:opacity-100 transition-opacity z-10`}
+            >
+              <div className="flex gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg">
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => onReact(msg, emoji)}
+                    className="text-sm hover:scale-125 transition-transform px-0.5"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Reply button - desktop only, right side for own */}
+        {/* Reply button - desktop only */}
         {!isMobile && isMine && onReply && (
           <button
             onClick={() => onReply(msg)}
