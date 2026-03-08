@@ -808,30 +808,50 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   />
                 </div>
 
-                {/* Movies / Series toggle */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setModalTab("movies")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      modalTab === "movies"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Film className="w-3.5 h-3.5" />
-                    Movies
-                  </button>
-                  <button
-                    onClick={() => setModalTab("series")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      modalTab === "series"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Tv className="w-3.5 h-3.5" />
-                    Series
-                  </button>
+                {/* Movies / Series toggle + View toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setModalTab("movies")}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        modalTab === "movies"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Film className="w-3.5 h-3.5" />
+                      Movies
+                    </button>
+                    <button
+                      onClick={() => setModalTab("series")}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        modalTab === "series"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Tv className="w-3.5 h-3.5" />
+                      Series
+                    </button>
+                  </div>
+                  <div className="flex gap-1 bg-secondary rounded-lg p-1">
+                    <button
+                      onClick={() => setModalView("list")}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        modalView === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setModalView("grid")}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        modalView === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
