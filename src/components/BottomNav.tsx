@@ -14,6 +14,7 @@ const items = [
 
 export default function BottomNav() {
   const location = useLocation();
+  const { isDark, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllRead, clearNotification, sendNotification } = useNotifications();
 
   // Hide bottom nav on chat screens
