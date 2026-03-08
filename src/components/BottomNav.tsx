@@ -25,19 +25,17 @@ export default function BottomNav() {
       {items.map(({ icon: Icon, label, path }) => {
         const active = location.pathname === path;
 
-        // Replace Profile slot with notification dropdown on mobile
-        if (label === "Profile") {
+        // Theme toggle button
+        if (label === "Theme") {
           return (
-            <Link
-              key={path}
-              to={path}
-              className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors relative ${
-                active ? "text-foreground" : "text-muted-foreground"
-              }`}
+            <button
+              key="theme"
+              onClick={toggleTheme}
+              className="flex flex-col items-center gap-1 px-3 py-1 transition-colors text-muted-foreground"
             >
-              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-              <span className={`text-[10px] ${active ? "font-bold text-foreground" : "font-medium"}`}>Profile</span>
-            </Link>
+              {isDark ? <Sun className="w-5 h-5" strokeWidth={2} /> : <Moon className="w-5 h-5" strokeWidth={2} />}
+              <span className="text-[10px] font-medium">{isDark ? "Light" : "Dark"}</span>
+            </button>
           );
         }
 
@@ -49,7 +47,7 @@ export default function BottomNav() {
               active ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
+            {Icon && <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />}
             <span className={`text-[10px] ${active ? "font-bold text-foreground" : "font-medium"}`}>{label}</span>
           </Link>
         );
