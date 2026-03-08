@@ -969,7 +969,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                           <p className="text-xs text-muted-foreground mt-0.5">{series.release_year} • {series.genre.slice(0, 2).join(", ")}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-[11px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
-                              Series{sc ? ` · ${sc} Season${sc !== 1 ? "s" : ""}` : ""}
+                              Series{series.season_count ? ` · ${series.season_count} Season${series.season_count !== 1 ? "s" : ""}` : ""}
                             </span>
                             <span className="text-[11px] text-muted-foreground">⭐ {series.rating}</span>
                           </div>
