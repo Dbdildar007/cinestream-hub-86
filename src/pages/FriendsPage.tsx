@@ -72,6 +72,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [modalView, setModalView] = useState<"list" | "grid">("grid");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [confirmMovie, setConfirmMovie] = useState<Movie | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const modalContentRef = useRef<HTMLDivElement>(null);
 
   // Collect all genres from movies & series
