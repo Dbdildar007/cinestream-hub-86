@@ -149,7 +149,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -159,7 +159,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
             animate="visible"
             exit="exit"
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className={`fixed z-50 bg-card overflow-y-auto ${
+            className={`fixed z-[60] bg-card overflow-y-auto ${
               isMobile
                 ? "inset-x-0 bottom-0 top-[10%] rounded-t-2xl"
                 : "top-0 right-0 bottom-0 w-[480px] border-l border-border"
