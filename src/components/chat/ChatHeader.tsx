@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 
 interface RemoteProfile {
   display_name: string;
@@ -8,14 +9,6 @@ interface RemoteProfile {
   is_online: boolean;
   last_seen: string | null;
 }
-
-interface ChatHeaderProps {
-  remoteProfile: RemoteProfile | null;
-  remoteIsTyping: boolean;
-  onBack: () => void;
-}
-
-const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&crop=face";
 
 function formatLastSeen(lastSeen: string | null): string {
   if (!lastSeen) return "Offline";
