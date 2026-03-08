@@ -144,13 +144,13 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
       </div>
 
       {/* Dots indicator */}
-      <div className="absolute bottom-20 sm:bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
+      <div className="absolute bottom-24 sm:bottom-14 md:bottom-5 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5">
         {featuredMovies.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 min-w-[12px] sm:min-w-[16px] min-h-[12px] sm:min-h-[16px] flex items-center justify-center p-0 ${
-              i === current ? "w-5 sm:w-8 bg-primary" : "w-2.5 sm:w-4 bg-muted-foreground/40"
+            className={`h-[3px] sm:h-1 md:h-1 rounded-full transition-all duration-300 min-w-[10px] sm:min-w-[12px] min-h-[10px] sm:min-h-[12px] flex items-center justify-center p-0 ${
+              i === current ? "w-4 sm:w-5 md:w-6 bg-primary" : "w-2 sm:w-2.5 md:w-3 bg-muted-foreground/40"
             }`}
           />
         ))}
