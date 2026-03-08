@@ -52,7 +52,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
-  const { friends, pendingRequests, loading, invalidate } = useFriends();
+  const { friends, pendingRequests, sentRequests, loading, invalidate } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "search">("friends");
@@ -252,7 +252,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const declineRequest = async (friendshipId: string, requesterProfile?: Profile) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
     if (!error) {
-      // Notify the sender about the rejection
       if (requesterProfile && user) {
         const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
         await sendNotification(
@@ -263,6 +262,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
         );
       }
       invalidate();
+    }
+  };
+
+  const cancelSentRequest = async (friendshipId: string) => {
+    const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
+    if (!error) {
+      toast.success("Request cancelled");
+      invalidate();
+    } else {
+      toast.error("Failed to cancel request");
     }
   };
 
@@ -329,9 +338,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     );
   }
 
+  const totalRequests = pendingRequests.length + sentRequests.length;
+
   const tabs = [
     { id: "friends" as const, label: "Friends", count: null },
-    { id: "requests" as const, label: "Requests", count: pendingRequests.length },
+    { id: "requests" as const, label: "Requests", count: totalRequests },
     { id: "search" as const, label: "Find Friends", count: null },
   ];
 
@@ -572,38 +583,120 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
       {/* Requests Tab */}
       {activeTab === "requests" && (
-        <div className="space-y-2">
-          {pendingRequests.length === 0 ? (
+        <div className="space-y-5">
+          {/* Incoming requests - shown first */}
+          {pendingRequests.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                Incoming Requests ({pendingRequests.length})
+              </h3>
+              {pendingRequests.map((req, i) => (
+                <motion.div
+                  key={req.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.25 }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15 hover:bg-primary/10 transition-all duration-200"
+                >
+                  <div className="relative flex-shrink-0">
+                    {req.profile?.avatar_url ? (
+                      <img src={req.profile.avatar_url} alt={req.profile.display_name} className="w-11 h-11 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">
+                          {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <span
+                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-card ${
+                        req.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{req.profile?.display_name}</p>
+                    <p className="text-[11px] text-muted-foreground">{req.profile?.unique_id}</p>
+                    {(req.profile as any)?.location?.trim() && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">📍 {(req.profile as any).location}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => acceptRequest(req.id, req.profile)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" /> Accept
+                    </button>
+                    <button
+                      onClick={() => setDeclineTarget({ id: req.id, profile: req.profile })}
+                      className="p-1.5 rounded-full hover:bg-destructive/20 text-destructive transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Sent requests */}
+          {sentRequests.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                Sent Requests ({sentRequests.length})
+              </h3>
+              {sentRequests.map((req, i) => (
+                <motion.div
+                  key={req.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.25 }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:bg-secondary transition-all duration-200"
+                >
+                  <div className="relative flex-shrink-0">
+                    {req.profile?.avatar_url ? (
+                      <img src={req.profile.avatar_url} alt={req.profile.display_name} className="w-11 h-11 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">
+                          {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <span
+                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-card ${
+                        req.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{req.profile?.display_name}</p>
+                    <p className="text-[11px] text-muted-foreground">{req.profile?.unique_id}</p>
+                    {(req.profile as any)?.location?.trim() && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">📍 {(req.profile as any).location}</p>
+                    )}
+                    <p className="text-[10px] text-amber-500 mt-0.5 flex items-center gap-1">
+                      <Send className="w-2.5 h-2.5" /> Pending
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => cancelSentRequest(req.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary border border-border text-muted-foreground text-xs font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 active:scale-95 transition-all"
+                  >
+                    <X className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {pendingRequests.length === 0 && sentRequests.length === 0 && (
             <div className="text-center py-16">
               <Send className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground text-sm">No pending requests</p>
             </div>
-          ) : (
-            pendingRequests.map((req) => (
-              <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">
-                    {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{req.profile?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">{req.profile?.unique_id}</p>
-                </div>
-                <button
-                  onClick={() => acceptRequest(req.id, req.profile)}
-                  className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
-                >
-                  <UserCheck className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setDeclineTarget({ id: req.id, profile: req.profile })}
-                  className="p-2 rounded-full hover:bg-destructive/20 text-destructive transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))
           )}
         </div>
       )}
