@@ -286,7 +286,7 @@ export default function AuthPage() {
                     placeholder="Display Name"
                     value={displayName}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      const val = e.target.value.replace(/\s{2,}/g, ' ');
                       setDisplayName(val);
                       if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
                       if (val.trim().length < 2) {
