@@ -1,0 +1,1 @@
+ALTER TABLE public.watch_parties ADD COLUMN episode_id text DEFAULT NULL;
