@@ -21,79 +21,16 @@ export default function ProfilePage() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Forgot password state
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetEmailError, setResetEmailError] = useState("");
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("display_name, unique_id")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setProfile(data);
-        localStorage.setItem('user_profile', JSON.stringify(data));
-      });
-  }, [user]);
-
-  const historyCount = getContinueWatching().length;
-  const ratingsCount = Object.keys(ratings).length;
-
-  const menuItems = [
-    { icon: Heart, label: "My Watchlist", count: String(watchlist.length), action: () => navigate("/watchlist") },
-    { icon: Clock, label: "Watch History", count: String(historyCount), action: () => navigate("/watch-history") },
-    { icon: Star, label: "My Ratings", count: String(ratingsCount), action: () => navigate("/my-ratings") },
-    { icon: Users, label: "Friends", count: null, action: () => navigate("/friends") },
-    { icon: Settings, label: "Settings", count: null, action: () => navigate("/settings") },
-  ];
-
-  const handleSignOut = async () => {
-    await signOut();
-    localStorage.removeItem('user_profile');
-    toast.success("Signed out");
-    navigate("/");
-  };
-
-  const copyUniqueId = () => {
-    if (profile?.unique_id) {
-      navigator.clipboard.writeText(profile.unique_id);
-      toast.success("ID copied to clipboard!");
-    }
-  };
-
-  const validateEmail = (email: string): boolean => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email.trim());
-  };
-
-  const handleForgotPassword = async () => {
-    setResetEmailError("");
-    const trimmed = resetEmail.trim();
-    if (!trimmed) {
-      setResetEmailError("Please enter your email address.");
-      return;
-    }
-    if (!validateEmail(trimmed)) {
-      setResetEmailError("Please enter a valid email address.");
-      return;
-    }
-    setResetLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-      redirectTo: window.location.origin,
-    });
-    setResetLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Password reset link sent! Check your email.");
-      setShowForgotPassword(false);
-      setResetEmail("");
-    }
-  };
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changeLoading, setChangeLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   return (
     <motion.div
