@@ -423,29 +423,41 @@ export type Database = {
       }
       watch_party_history: {
         Row: {
+          current_time_sec: number
+          duration_sec: number
           duration_watched_sec: number
           ended_at: string | null
+          episode_id: string | null
           friend_id: string
           host_id: string
           id: string
+          media_type: string | null
           movie_id: string
           started_at: string
         }
         Insert: {
+          current_time_sec?: number
+          duration_sec?: number
           duration_watched_sec?: number
           ended_at?: string | null
+          episode_id?: string | null
           friend_id: string
           host_id: string
           id?: string
+          media_type?: string | null
           movie_id: string
           started_at?: string
         }
         Update: {
+          current_time_sec?: number
+          duration_sec?: number
           duration_watched_sec?: number
           ended_at?: string | null
+          episode_id?: string | null
           friend_id?: string
           host_id?: string
           id?: string
+          media_type?: string | null
           movie_id?: string
           started_at?: string
         }
