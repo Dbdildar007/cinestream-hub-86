@@ -23,7 +23,7 @@ import WatchPartyComms from "./components/WatchPartyComms";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import FoldersPage from "./pages/FoldersPage";
-import DownloadsPage from "./pages/DownloadsPage";
+
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import FriendsPage from "./pages/FriendsPage";
