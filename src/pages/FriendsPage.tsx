@@ -888,18 +888,21 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         key={series.id}
                         whileTap={{ scale: 0.95 }}
                         whileHover={{ scale: 1.03 }}
-                        onClick={() => handleInviteToWatchParty({
-                          id: series.id, title: series.title, description: series.description,
-                          poster: series.poster_url, year: series.release_year, genre: series.genre,
-                          rating: series.rating, duration: `${series.seasons?.length || 0} Season${(series.seasons?.length || 0) !== 1 ? "s" : ""}`,
-                          language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
-                        } as Movie)}
+                        onClick={() => {
+                          const sc = series.season_count || 0;
+                          handleInviteToWatchParty({
+                            id: series.id, title: series.title, description: series.description,
+                            poster: series.poster_url, year: series.release_year, genre: series.genre,
+                            rating: series.rating, duration: `${sc} Season${sc !== 1 ? "s" : ""}`,
+                            language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
+                          } as Movie);
+                        }}
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-primary/90 px-1.5 py-0.5 rounded text-[9px] font-semibold text-primary-foreground z-10">
                           <Tv className="w-2.5 h-2.5" />
-                          {series.seasons?.length || 0}S
+                          Series{series.season_count ? ` · ${series.season_count}S` : ""}
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                           <p className="text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
