@@ -139,6 +139,14 @@ function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Watch Party Comms - video call + chat (renders outside player so it floats) */}
+      {wpCtx.playingMovie && wpCtx.friendUserId && wpCtx.partyPhase === "playing" && (
+        <WatchPartyComms
+          friendUserId={wpCtx.friendUserId}
+          friendName={wpCtx.friendName}
+        />
+      )}
+
       {showEvicted && (
         <EvictedDialog onAcknowledge={handleEvictedAcknowledge} />
       )}
