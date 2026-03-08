@@ -247,7 +247,6 @@ export type Database = {
           id: string
           is_editor_choice: boolean
           is_featured: boolean
-          is_premium: boolean
           is_series: boolean
           is_trending: boolean
           language: string
@@ -269,7 +268,6 @@ export type Database = {
           id: string
           is_editor_choice?: boolean
           is_featured?: boolean
-          is_premium?: boolean
           is_series?: boolean
           is_trending?: boolean
           language?: string
@@ -291,7 +289,6 @@ export type Database = {
           id?: string
           is_editor_choice?: boolean
           is_featured?: boolean
-          is_premium?: boolean
           is_series?: boolean
           is_trending?: boolean
           language?: string
