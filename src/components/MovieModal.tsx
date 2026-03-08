@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Star, Clock, Calendar, Globe, Plus, CheckCircle, Tv } from "lucide-react";
+import { X, Play, Star, Clock, Calendar, Globe, Plus, CheckCircle, Tv, Crown } from "lucide-react";
 import type { Movie } from "@/services/movieService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
+import PremiumPaywall from "./PremiumPaywall";
 
 interface MovieModalProps {
   movie: Movie | null;
