@@ -102,7 +102,7 @@ export default function ChatPage() {
       .channel(channelName)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "call_messages" },
+        { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           if (
