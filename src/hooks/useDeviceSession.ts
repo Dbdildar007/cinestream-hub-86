@@ -74,6 +74,19 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     evictedRef.current = false;
     const deviceId = getDeviceId();
 
+    // On mount, check if this device is already the active session
+    const initCheck = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("active_session_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data?.active_session_id === deviceId) {
+        registeredRef.current = true;
+      }
+    };
+    void initCheck();
+
     const checkSession = async () => {
       // Only check for eviction if this device was previously registered as active
       if (evictedRef.current || !registeredRef.current) return;
