@@ -16,13 +16,18 @@ export function useWatchlist() {
   const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<string[]>(loadLocal);
 
-  // Clear state on logout, load from DB on login
+  // Clear on logout, load cache + sync on login
   useEffect(() => {
     if (!user) {
       setWatchlist([]);
-      localStorage.removeItem(STORAGE_KEY);
       return;
     }
+
+    // Instantly show cached data
+    const cached = loadLocal();
+    if (cached.length) setWatchlist(cached);
+
+    // Then sync from DB
     const fetch = async () => {
       const { data } = await supabase
         .from("watchlist")

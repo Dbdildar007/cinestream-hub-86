@@ -9,10 +9,16 @@ export function useRatings() {
   useEffect(() => {
     if (!user) {
       setRatings({});
-      localStorage.removeItem("cinestream-ratings");
       return;
     }
 
+    // Instantly show cached data
+    const saved = localStorage.getItem("cinestream-ratings");
+    if (saved) {
+      try { setRatings(JSON.parse(saved)); } catch {}
+    }
+
+    // Then sync from DB in background
     const fetchRatings = async () => {
       try {
         const { data, error } = await supabase
