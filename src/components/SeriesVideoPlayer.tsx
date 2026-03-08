@@ -30,7 +30,7 @@ interface SeriesVideoPlayerProps {
 }
 
 export default function SeriesVideoPlayer({
-  series, initialEpisode, initialSeason, onClose,
+  series, initialEpisode, initialSeason, initialTime, onClose,
   watchPartyActive = false, isHost = true,
   onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
   partyPhase, onEpisodeChangeReceived, broadcastEpisodeChange,
