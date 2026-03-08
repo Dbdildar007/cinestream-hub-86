@@ -187,23 +187,25 @@ export default function ChatPage() {
     }
   }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
 
-  // Handle mobile keyboard: use visualViewport to keep input visible
+  // Handle mobile keyboard: keep input visible above keyboard
   useEffect(() => {
     const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
     if (!vv) return;
 
     const handleResize = () => {
-      // Offset the container so input stays above keyboard
-      const offsetY = window.innerHeight - vv.height;
-      const container = document.getElementById("chat-container");
-      if (container) {
-        container.style.height = `${vv.height}px`;
-      }
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      setKeyboardInset(inset);
       setTimeout(() => scrollToBottom(true), 50);
     };
 
     vv.addEventListener("resize", handleResize);
-    return () => vv.removeEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    handleResize();
+
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
   }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
