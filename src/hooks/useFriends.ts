@@ -63,6 +63,28 @@ async function fetchPendingRequests(userId: string): Promise<Friendship[]> {
   }));
 }
 
+async function fetchSentRequests(userId: string): Promise<Friendship[]> {
+  const { data } = await supabase
+    .from("friendships")
+    .select("*")
+    .eq("requester_id", userId)
+    .eq("status", "pending");
+
+  if (!data || data.length === 0) return [];
+
+  const addresseeIds = data.map(f => f.addressee_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("*")
+    .in("user_id", addresseeIds);
+
+  const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+  return data.map(f => ({
+    ...f,
+    profile: profileMap.get(f.addressee_id) || undefined,
+  }));
+}
+
 export function useFriends() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -81,14 +103,23 @@ export function useFriends() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const sentQuery = useQuery({
+    queryKey: ["sent-requests", user?.id],
+    queryFn: () => fetchSentRequests(user!.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["friends"] });
     queryClient.invalidateQueries({ queryKey: ["pending-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["sent-requests"] });
   };
 
   return {
     friends: friendsQuery.data || [],
     pendingRequests: pendingQuery.data || [],
+    sentRequests: sentQuery.data || [],
     loading: friendsQuery.isLoading,
     invalidate,
   };
