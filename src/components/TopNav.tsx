@@ -1,6 +1,7 @@
-import { Search, User, Users } from "lucide-react";
+import { Search, User, Users, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTheme } from "@/hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 import { useNotifications } from "@/hooks/useNotifications";
 
