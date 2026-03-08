@@ -575,7 +575,7 @@ const skip = useCallback((seconds: number) => {
                   <button
                     key={rec.id}
                     onClick={() => handlePlayRecommended(rec)}
-                    className="group text-left rounded-lg overflow-hidden bg-secondary/30 hover:bg-secondary/60 transition-all hover:scale-[1.03]"
+                    className="group text-left rounded-xl overflow-hidden bg-secondary/30 hover:bg-secondary/60 transition-all hover:scale-[1.03]"
                   >
                     <div className="relative aspect-[2/3]">
                       <img src={rec.poster} alt={rec.title} className="w-full h-full object-cover" />
