@@ -126,6 +126,7 @@ function AppContent() {
               onSyncReceived={wpCtx.onSyncReceived}
               onEndParty={wpCtx.endParty}
               guestName={wpCtx.friendName}
+              partyPhase={wpCtx.partyPhase}
             />
             <WatchPartyCountdown
               phase={wpCtx.partyPhase}
