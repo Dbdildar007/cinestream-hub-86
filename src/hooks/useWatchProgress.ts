@@ -28,13 +28,18 @@ export function useWatchProgress() {
   const [progressList, setProgressList] = useState<WatchProgress[]>(loadLocalProgress);
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
- // Clear on logout, load from DB on login
+ // Clear on logout, load cache + sync on login
   useEffect(() => {
     if (!user) {
       setProgressList([]);
-      localStorage.removeItem(STORAGE_KEY);
       return;
     }
+
+    // Instantly show cached data
+    const cached = loadLocalProgress();
+    if (cached.length) setProgressList(cached);
+
+    // Then sync from DB
     const fetchProgress = async () => {
       const { data } = await supabase
         .from("watch_progress")
