@@ -33,7 +33,7 @@ interface WatchPartyContextType {
   acceptInvite: () => Promise<void>;
   declineInvite: () => Promise<void>;
   ignoreInvite: () => void;
-  closePlayer: () => void;
+  closePlayer: (currentTimeSec?: number, durationSec?: number) => void;
   syncPlayback: ReturnType<typeof useWatchParty>["syncPlayback"];
   forceSyncPlayback: ReturnType<typeof useWatchParty>["forceSyncPlayback"];
   endParty: ReturnType<typeof useWatchParty>["endParty"];
