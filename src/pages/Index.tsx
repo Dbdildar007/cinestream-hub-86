@@ -225,6 +225,11 @@ export default function Index() {
         onToggleWatchlist={toggleWatchlist}
       />
 
+      <UpcomingModal
+        movie={selectedUpcoming}
+        onClose={() => setSelectedUpcoming(null)}
+      />
+
       <AnimatePresence>
         {playingMovie && (
           <VideoPlayer
