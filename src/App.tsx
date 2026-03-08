@@ -186,19 +186,26 @@ function AppContent() {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <WatchPartyProvider>
-          <AppContent />
-        </WatchPartyProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [splashDone, setSplashDone] = useState(false);
+
+  return (
+    <>
+      {!splashDone && <SplashScreen onComplete={() => setSplashDone(true)} />}
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ScrollToTop />
+            <WatchPartyProvider>
+              <AppContent />
+            </WatchPartyProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </>
+  );
+};
 
 export default App;
