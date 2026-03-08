@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
-  SkipBack, SkipForward, Settings, X, ChevronLeft, 
+  SkipBack, SkipForward, Settings, X, ChevronLeft, ChevronUp,
   Lock, Unlock, List, SkipForward as NextIcon, 
   RefreshCw, AlertCircle, Subtitles, Users, Loader2
 } from "lucide-react";
