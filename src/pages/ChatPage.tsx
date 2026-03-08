@@ -165,9 +165,30 @@ export default function ChatPage() {
     };
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
-  useEffect(() => {
+  // Scroll to bottom on new messages + handle keyboard resize on mobile
+  const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, remoteIsTyping]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, remoteIsTyping, scrollToBottom]);
+
+  // Handle mobile keyboard: adjust view when virtual keyboard opens
+  useEffect(() => {
+    const handleResize = () => {
+      // When keyboard opens, viewport shrinks — scroll to latest message
+      setTimeout(scrollToBottom, 100);
+    };
+
+    if (typeof visualViewport !== "undefined" && visualViewport) {
+      visualViewport.addEventListener("resize", handleResize);
+      return () => visualViewport.removeEventListener("resize", handleResize);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
     if (!channelRef.current || !user) return;
