@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Star, Clock, Calendar, Globe, Bell, BellOff, Tv, Film, Timer } from "lucide-react";
 import type { Movie } from "@/services/movieService";
@@ -66,7 +66,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const [reminderSet, setReminderSet] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(movie?.url?.trim() || null);
 
   // Check if reminder exists
   useEffect(() => {
@@ -100,13 +100,46 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
     setLoadingReminder(false);
   }, [movie, user, reminderSet]);
 
+  useEffect(() => {
+    setShowTrailer(false);
+    setTrailerUrl(movie?.url?.trim() || null);
+  }, [movie?.id, movie?.url]);
+
+  const handlePlayTrailer = useCallback(async () => {
+    if (showTrailer) {
+      setShowTrailer(false);
+      return;
+    }
+
+    let resolvedUrl = trailerUrl;
+
+    if (!resolvedUrl && movie?.id) {
+      const { data } = await supabase
+        .from("movies")
+        .select("url")
+        .eq("id", movie.id)
+        .maybeSingle();
+
+      const freshUrl = data?.url?.trim() || null;
+      if (freshUrl) {
+        resolvedUrl = freshUrl;
+        setTrailerUrl(freshUrl);
+      }
+    }
+
+    if (resolvedUrl) {
+      setShowTrailer(true);
+      return;
+    }
+
+    toast("Trailer coming soon");
+  }, [movie?.id, showTrailer, trailerUrl]);
+
   if (!movie) return null;
 
   const mobileVariants = { hidden: { y: "100%" }, visible: { y: 0 }, exit: { y: "100%" } };
   const desktopVariants = { hidden: { x: "100%" }, visible: { x: 0 }, exit: { x: "100%" } };
   const variants = isMobile ? mobileVariants : desktopVariants;
-
-  const hasTrailer = !!(movie?.url && movie.url.trim() !== "");
 
   return (
     <AnimatePresence>
@@ -134,10 +167,9 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
           >
             {/* Hero image / Trailer */}
             <div className="relative aspect-[4/3] md:aspect-video">
-              {showTrailer && movie.url ? (
+              {showTrailer && trailerUrl ? (
                 <video
-                  ref={videoRef}
-                  src={movie.url}
+                  src={trailerUrl}
                   className="w-full h-full object-cover object-center bg-black"
                   controls
                   autoPlay
@@ -233,24 +265,15 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
               <div className="flex flex-col gap-3">
                 {/* Play Trailer */}
                 <button
-                  onClick={() => {
-                    if (showTrailer) {
-                      setShowTrailer(false);
-                    } else if (hasTrailer) {
-                      setShowTrailer(true);
-                    }
-                  }}
+                  onClick={handlePlayTrailer}
                   className={`flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
-                    hasTrailer
-                      ? showTrailer
-                        ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                    showTrailer
+                      ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
                   }`}
-                  disabled={!hasTrailer}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  {showTrailer ? "Stop Trailer" : hasTrailer ? "Play Trailer" : "Trailer Coming Soon"}
+                  {showTrailer ? "Stop Trailer" : "Play Trailer"}
                 </button>
 
                 {/* Remind Me */}
