@@ -110,7 +110,20 @@ export default function ChatPage() {
             (m.sender_id === remoteUserId && m.receiver_id === user.id)
           ) {
             setMessages((prev) => {
+              // Skip if already exists with real id
               if (prev.some((p) => p.id === m.id)) return prev;
+              // If this is our own message, replace the temp version instead of adding
+              if (m.sender_id === user.id) {
+                const hasTemp = prev.some((p) => p.id.startsWith("temp-") && p.text === m.message);
+                if (hasTemp) {
+                  return prev.map((p) =>
+                    p.id.startsWith("temp-") && p.text === m.message
+                      ? mapMessage(m, user.id)
+                      : p
+                  );
+                }
+                return prev; // already replaced by sendMessage response
+              }
               return [...prev, mapMessage(m, user.id)];
             });
             if (m.sender_id === remoteUserId) {

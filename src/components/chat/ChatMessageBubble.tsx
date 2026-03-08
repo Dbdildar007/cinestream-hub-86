@@ -40,13 +40,13 @@ export default function ChatMessageBubble({ message: msg, index }: ChatMessageBu
           >
             {formatTime(msg.timestamp)}
           </span>
-          {msg.isMine &&
+        {msg.isMine &&
             (msg.readAt ? (
               <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
             ) : msg.id.startsWith("temp-") ? (
               <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
             ) : (
-              <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/40" />
+              <Check className="w-3.5 h-3.5 text-primary-foreground/60" />
             ))}
         </div>
       </div>
