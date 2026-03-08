@@ -404,7 +404,7 @@ export default function SeriesVideoPlayer({
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
               <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-primary/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
             </div>
-            <span className="text-white/60 mt-4 text-xs font-medium tracking-wider uppercase">Loading</span>
+            <span className="text-white mt-4 text-sm font-bold tracking-wider uppercase">Loading...</span>
           </motion.div>
         )}
       </AnimatePresence>
