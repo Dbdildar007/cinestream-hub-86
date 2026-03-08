@@ -747,57 +747,95 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 flex items-end md:items-center justify-center p-0 md:p-4"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6"
             onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}
           >
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-card rounded-t-2xl md:rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+              initial={{ y: "100%", scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: "100%", scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="bg-card rounded-t-3xl md:rounded-3xl w-full max-w-xl max-h-[85vh] overflow-hidden border border-border/50 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-display tracking-wider text-foreground">
-                    Watch with {invitingFriend.profile?.display_name}
-                  </h3>
-                  <button onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}>
-                    <X className="w-5 h-5 text-muted-foreground" />
+              {/* Header with avatar & gradient */}
+              <div className="relative px-5 pt-5 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
+                {/* Drag handle on mobile */}
+                <div className="md:hidden w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative">
+                    <img
+                      src={getAvatarUrl(invitingFriend.profile?.avatar_url ?? null, invitingFriend.profile?.display_name ?? "User")}
+                      alt={invitingFriend.profile?.display_name}
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/40"
+                    />
+                    {invitingFriend.profile?.is_online && (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-card" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-display tracking-wider text-foreground truncate">
+                      Watch with {invitingFriend.profile?.display_name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Choose a movie to start the party 🍿</p>
+                  </div>
+                  <button
+                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}
+                    className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
+
+                {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={movieSearch}
                     onChange={(e) => setMovieSearch(e.target.value)}
                     placeholder="Search for a movie..."
-                    className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full bg-secondary/80 text-foreground placeholder:text-muted-foreground rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                   />
                 </div>
               </div>
-              <div className="overflow-y-auto max-h-[60vh] p-2">
+
+              {/* Movie list */}
+              <div className="overflow-y-auto max-h-[60vh] px-3 pb-4 pt-1 space-y-1">
                 {filteredMovies.map((movie) => (
-                  <button
+                  <motion.button
                     key={movie.id}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleInviteToWatchParty(movie)}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
+                    className="w-full flex items-center gap-3.5 p-3 rounded-xl hover:bg-primary/10 transition-all text-left group"
                   >
-                    <img
-                      src={movie.poster}
-                      alt={movie.title}
-                      className="w-12 h-16 rounded object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{movie.title}</p>
-                      <p className="text-xs text-muted-foreground">{movie.year} • {movie.genre.join(", ")}</p>
-                      <p className="text-xs text-primary">{movie.duration}</p>
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={movie.poster}
+                        alt={movie.title}
+                        className="w-14 h-20 rounded-lg object-cover shadow-md group-hover:shadow-primary/20 transition-shadow"
+                      />
+                      <div className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-all">
+                        <Film className="w-5 h-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                    <Film className="w-4 h-4 text-primary flex-shrink-0" />
-                  </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{movie.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{movie.year} • {movie.genre.slice(0, 2).join(", ")}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{movie.duration}</span>
+                        <span className="text-[11px] text-muted-foreground">⭐ {movie.rating}</span>
+                      </div>
+                    </div>
+                  </motion.button>
                 ))}
+                {filteredMovies.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Film className="w-10 h-10 mb-3 opacity-40" />
+                    <p className="text-sm">No movies found</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
