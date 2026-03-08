@@ -1,12 +1,14 @@
-import { Home, Search, User, Users } from "lucide-react";
+import { Home, Search, User, Users, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useTheme } from "@/hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 
 const items = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Search, label: "Search", path: "/search" },
   { icon: Users, label: "Friends", path: "/friends" },
+  { icon: null, label: "Theme", path: "" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
