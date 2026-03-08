@@ -832,7 +832,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       Movies
                     </button>
                     <button
-                      onClick={() => setModalTab("series")}
+                      onClick={() => { setModalTab("series"); setSelectedGenre(null); modalContentRef.current?.scrollTo(0, 0); }}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                         modalTab === "series"
                           ? "bg-primary text-primary-foreground"
