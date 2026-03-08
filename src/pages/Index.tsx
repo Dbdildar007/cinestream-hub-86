@@ -244,7 +244,7 @@ export default function Index() {
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
             initialTime={overrideInitialTime ?? undefined}
-            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); }}
+            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); refetchProgress(); }}
           />
         )}
       </AnimatePresence>
