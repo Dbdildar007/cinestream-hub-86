@@ -125,17 +125,23 @@ export default function SeriesVideoPlayer({
   const nextEpisode = getNextEpisode();
 
   const playEpisode = useCallback((episode: SeriesEpisode) => {
+    if (controlsDisabled) return;
     setCurrentEpisode(episode);
     setShowEpisodes(false);
     setShowNextEpisode(false);
     setVideoEnded(false);
     lastSavedTimeRef.current = 0;
     if (countdownRef.current) clearInterval(countdownRef.current);
+    let seasonNum = selectedSeason;
     if (seriesDetail) {
       const season = seriesDetail.seasons.find(s => s.episodes.some(e => e.id === episode.id));
-      if (season) setSelectedSeason(season.number);
+      if (season) { setSelectedSeason(season.number); seasonNum = season.number; }
     }
-  }, [seriesDetail]);
+    // Host broadcasts episode change
+    if (watchPartyActive && isHost && broadcastEpisodeChange) {
+      broadcastEpisodeChange(episode, seasonNum);
+    }
+  }, [seriesDetail, controlsDisabled, watchPartyActive, isHost, broadcastEpisodeChange, selectedSeason]);
 
   const handleVideoEnded = useCallback(() => {
     setIsPlaying(false);
