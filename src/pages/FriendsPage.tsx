@@ -54,6 +54,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
+  const { allSeries } = useAllSeries();
   const { friends, pendingRequests, sentRequests, loading, invalidate } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -67,11 +68,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
   const [movieSearch, setMovieSearch] = useState("");
+  const [modalTab, setModalTab] = useState<"movies" | "series">("movies");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
 
   const filteredMovies = movieSearch
-    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
-    : allMovies.slice(0, 8);
+    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
+    : allMovies.slice(0, 10);
+
+  const filteredSeries = movieSearch
+    ? allSeries.filter(s => s.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
+    : allSeries.slice(0, 10);
 
   // Build relationship map for search results
   const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
