@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Check, CheckCheck, Reply, Heart } from "lucide-react";
+import { Check, CheckCheck, CornerUpLeft, Heart, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChatMessage } from "@/pages/ChatPage";
