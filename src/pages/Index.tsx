@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
@@ -14,13 +14,12 @@ import { useRatings } from "@/hooks/useRatings";
 import { useWatchProgress, type WatchProgress } from "@/hooks/useWatchProgress";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { MovieRowSkeleton } from "@/components/LoadingSpinner";
-import { toast } from "sonner";
 import { useMovies } from '@/hooks/useMovies';
 import type { Series, SeriesEpisode } from '@/services/seriesService';
 import { seriesService } from '@/services/seriesService';
+
 export default function Index() {
   const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
