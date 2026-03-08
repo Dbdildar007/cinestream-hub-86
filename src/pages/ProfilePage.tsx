@@ -138,6 +138,10 @@ export default function ProfilePage() {
         setEditingLocation={setEditingLocation}
         saveLocation={saveLocation}
         copyUniqueId={copyUniqueId}
+        onAvatarUpdated={(url) => {
+          setProfile(prev => prev ? { ...prev, avatar_url: url } : prev);
+          localStorage.setItem('user_profile', JSON.stringify({ ...profile, avatar_url: url }));
+        }}
       />
 
       {/* Stats row */}
