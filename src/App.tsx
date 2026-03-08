@@ -40,9 +40,9 @@ function AppContent() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showEvicted, setShowEvicted] = useState(false);
+  const wpCtx = useWatchPartyContext();
 
   const handleEvicted = useCallback(async () => {
-    // Auto sign out immediately when evicted - don't clear session (device 2 owns it now)
     localStorage.removeItem('user_profile');
     localStorage.removeItem('cinestream_watchlist');
     localStorage.removeItem('cinestream-ratings');
@@ -53,7 +53,6 @@ function AppContent() {
 
   const { registerDevice } = useDeviceSession(user?.id, handleEvicted);
 
-  // Re-register device on page refresh when user session is restored
   const hasReregistered = useRef(false);
   useEffect(() => {
     if (user?.id && !hasReregistered.current) {
@@ -108,6 +107,25 @@ function AppContent() {
         onToggleMinimize={toggleMinimize}
         onEndCall={endCall}
       />
+
+      {/* Watch Party Invite Overlay */}
+      <WatchPartyInviteOverlay />
+
+      {/* Watch Party Video Player - renders at App level */}
+      <AnimatePresence>
+        {wpCtx.playingMovie && (
+          <VideoPlayer
+            movie={wpCtx.playingMovie}
+            onClose={wpCtx.closePlayer}
+            watchPartyActive={!!wpCtx.activeParty}
+            isHost={wpCtx.isHost}
+            onSyncPlayback={wpCtx.syncPlayback}
+            onForceSyncPlayback={wpCtx.forceSyncPlayback}
+            onSyncReceived={wpCtx.onSyncReceived}
+            onEndParty={wpCtx.endParty}
+          />
+        )}
+      </AnimatePresence>
 
       {showEvicted && (
         <EvictedDialog onAcknowledge={handleEvictedAcknowledge} />
