@@ -1,0 +1,1 @@
+ALTER TABLE public.movies DROP COLUMN IF EXISTS is_premium;

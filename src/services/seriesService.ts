@@ -34,7 +34,6 @@ export interface Series {
   language?: string;
   season_count?: number;
   seasons?: SeriesSeason[];
-  isPremium?: boolean;
 }
 
 export interface SeriesWithSeasons extends Series {
@@ -60,7 +59,6 @@ function mapSeries(row: any): Series {
     release_year: row.year || row.release_year || new Date().getFullYear(),
     is_featured: !!row.is_featured,
     language: row.language || '',
-    isPremium: !!row.is_premium || !!row.isPremium,
   };
 }
 
