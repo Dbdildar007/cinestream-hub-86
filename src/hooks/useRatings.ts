@@ -44,36 +44,64 @@ export function useRatings() {
 
   const setRating = useCallback(
     async (id: string, rating: number) => {
-      // Optimistic update - always works even without login
-      setRatings((prev) => {
-        const updated = { ...prev, [id]: rating };
-        localStorage.setItem("cinestream-ratings", JSON.stringify(updated));
-        return updated;
-      });
+      const currentRating = ratings[id] || 0;
+      // Toggle to zero if clicking same star
+      const newRating = currentRating === rating ? 0 : rating;
 
-      if (!user) return;
+      if (newRating === 0) {
+        // Remove from state and cache
+        setRatings((prev) => {
+          const { [id]: _, ...rest } = prev;
+          localStorage.setItem("cinestream-ratings", JSON.stringify(rest));
+          return rest;
+        });
 
-      try {
-        const { error } = await supabase
-          .from('movie_ratings')
-          .upsert(
-            { movie_id: id, user_id: user.id, rating },
-            { onConflict: 'user_id,movie_id' }
-          );
+        if (!user) return;
 
-        if (error) {
-          console.error("Error setting rating:", error);
-          setRatings((prev) => {
-            const { [id]: _, ...rest } = prev;
-            localStorage.setItem("cinestream-ratings", JSON.stringify(rest));
-            return rest;
-          });
+        // Delete from DB
+        try {
+          const { error } = await supabase
+            .from('movie_ratings')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('movie_id', id);
+
+          if (error) console.error("Error deleting rating:", error);
+        } catch (e) {
+          console.error("Rating delete error:", e);
         }
-      } catch (e) {
-        console.error("Rating save error:", e);
+      } else {
+        // Set/update rating
+        setRatings((prev) => {
+          const updated = { ...prev, [id]: newRating };
+          localStorage.setItem("cinestream-ratings", JSON.stringify(updated));
+          return updated;
+        });
+
+        if (!user) return;
+
+        try {
+          const { error } = await supabase
+            .from('movie_ratings')
+            .upsert(
+              { movie_id: id, user_id: user.id, rating: newRating },
+              { onConflict: 'user_id,movie_id' }
+            );
+
+          if (error) {
+            console.error("Error setting rating:", error);
+            setRatings((prev) => {
+              const { [id]: _, ...rest } = prev;
+              localStorage.setItem("cinestream-ratings", JSON.stringify(rest));
+              return rest;
+            });
+          }
+        } catch (e) {
+          console.error("Rating save error:", e);
+        }
       }
     },
-    [user]
+    [user, ratings]
   );
 
   const getRating = useCallback((movieId: string) => {
