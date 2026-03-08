@@ -14,7 +14,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 
 export default function WatchHistoryPage() {
   const navigate = useNavigate();
-  const { getContinueWatching, clearProgress, updateProgress, getProgress } = useWatchProgress();
+  const { getContinueWatching, clearProgress, updateProgress, getProgress, refetchProgress } = useWatchProgress();
   const { allMovies } = useMovies();
   const { getRating, setRating } = useRatings();
   const { isInWatchlist, toggleWatchlist } = useWatchlist();
