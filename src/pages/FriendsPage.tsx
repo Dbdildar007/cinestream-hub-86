@@ -896,21 +896,17 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       <motion.button
                         key={movie.id}
                         whileTap={{ scale: 0.95 }}
-                        whileHover={{ scale: 1.03 }}
                         onClick={() => handleInviteToWatchParty(movie)}
-                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary"
+                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                          <p className="text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
+                        {/* Always visible on mobile, hover on desktop */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                          <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-[10px] text-primary-foreground/70">{movie.year}</span>
-                            <span className="text-[10px] text-primary-foreground/70">⭐ {movie.rating}</span>
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{movie.year}</span>
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {movie.rating}</span>
                           </div>
-                        </div>
-                        {/* Always-visible title on mobile */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 md:hidden">
-                          <p className="text-[10px] font-medium text-primary-foreground truncate">{movie.title}</p>
                         </div>
                       </motion.button>
                     ))}
