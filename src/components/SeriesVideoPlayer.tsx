@@ -515,9 +515,27 @@ export default function SeriesVideoPlayer({
                 </div>
                 
                 <div className="flex items-center gap-1 md:gap-2">
+                  {/* Subtitles */}
+                  <div className="relative">
+                    <button onClick={() => { setShowSubtitleMenu(!showSubtitleMenu); setShowSpeedMenu(false); }}
+                      className={`p-1.5 rounded transition-colors ${subtitlesOn ? "bg-primary/30 text-primary" : "hover:bg-white/10 text-white"}`}>
+                      <Subtitles className="w-5 h-5" />
+                    </button>
+                    {showSubtitleMenu && (
+                      <div className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-white/10 rounded-lg p-2 min-w-[140px] shadow-lg">
+                        <p className="text-xs text-white/50 px-2 mb-1">Subtitles</p>
+                        {["Off", "English", "Hindi"].map((lang) => (
+                          <button key={lang} onClick={() => { setSubtitlesOn(lang !== "Off"); setShowSubtitleMenu(false); }}
+                            className={`block w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
+                              (lang === "Off" && !subtitlesOn) || (lang === "English" && subtitlesOn) ? "text-primary bg-primary/10" : "text-white hover:bg-white/10"
+                            }`}>{lang}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {/* Speed / Settings */}
                   <div className="relative">
-                    <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} className="p-1.5 hover:bg-white/10 rounded transition-colors">
+                    <button onClick={() => { setShowSpeedMenu(!showSpeedMenu); setShowSubtitleMenu(false); }} className="p-1.5 hover:bg-white/10 rounded transition-colors">
                       <Settings className="w-5 h-5" />
                     </button>
                     {showSpeedMenu && (
