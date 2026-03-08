@@ -281,11 +281,11 @@ export default function ChatMessageBubble({
           </div>
         )}
 
-        {/* Desktop: reply quote icon at top-right of bubble on hover */}
+        {/* Reply quote icon at top-right of bubble on hover (desktop) */}
         {!isMobile && onReply && (
           <button
             onClick={() => onReply(msg)}
-            className={`absolute -top-2 ${isMine ? "right-0" : "right-0"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
+            className={`absolute -top-2 ${isMine ? "-left-2" : "-right-2"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
           >
             <Quote className="w-3 h-3" />
           </button>
