@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Smile, Check, CheckCheck } from "lucide-react";
+import { Send, Smile } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,10 +36,12 @@ export default function ChatPage() {
   const [showEmojis, setShowEmojis] = useState(false);
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remoteTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const sendLockRef = useRef(false);
 
   const mapMessage = useCallback((m: any, userId: string): ChatMessage => ({
     id: m.id,
@@ -209,25 +211,45 @@ export default function ChatPage() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || !user || !remoteUserId) return;
+    if (!input.trim() || !user || !remoteUserId || sendLockRef.current) return;
+
     const text = input.trim();
-    setInput("");
     const tempId = `temp-${Date.now()}`;
+    sendLockRef.current = true;
+    setIsSending(true);
+    setInput("");
     setMessages((prev) => [
       ...prev,
       { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
-    const { data } = await supabase.from("chat_messages").insert({
-      sender_id: user.id,
-      receiver_id: remoteUserId,
-      message: text,
-    } as any).select().single();
-    if (data) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId ? mapMessage(data as any, user.id) : m
-        )
-      );
+
+    try {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .insert({
+          sender_id: user.id,
+          receiver_id: remoteUserId,
+          message: text,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setMessages((prev) => {
+          const mapped = mapMessage(data as any, user.id);
+          const alreadyExists = prev.some((m) => m.id === mapped.id);
+          const replaced = prev.map((m) => (m.id === tempId ? mapped : m));
+          return alreadyExists ? replaced.filter((m) => m.id !== tempId) : replaced;
+        });
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setInput(text);
+    } finally {
+      sendLockRef.current = false;
+      setIsSending(false);
     }
   };
 
@@ -268,7 +290,6 @@ export default function ChatPage() {
                 key={msg.id}
                 message={msg}
                 index={index}
-                receiverOnline={remoteProfile?.is_online ?? false}
               />
             ))}
           </AnimatePresence>
@@ -316,13 +337,18 @@ export default function ChatPage() {
           type="text"
           value={input}
           onChange={handleInputChange}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.repeat) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
           placeholder="Type a message..."
           className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         <button
           onClick={sendMessage}
-          disabled={!input.trim()}
+          disabled={!input.trim() || isSending}
           className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
         >
           <Send className="w-4 h-4" />
