@@ -354,6 +354,7 @@ export default function ChatPage() {
           type="text"
           value={input}
           onChange={handleInputChange}
+          onFocus={() => setTimeout(() => scrollToBottom(true), 80)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.repeat) {
               e.preventDefault();
