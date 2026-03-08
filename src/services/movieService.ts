@@ -30,6 +30,7 @@ export interface Movie {
   isEditorChoice?: boolean;
   isSeries?: boolean;
   upcomingDate?: string;
+  isPremium?: boolean;
 }
 
 export const posterMap: Record<string, string> = {
