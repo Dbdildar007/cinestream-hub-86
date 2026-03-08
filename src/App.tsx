@@ -27,6 +27,7 @@ import MyRatingsPage from "./pages/MyRatingsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ChatPage from "./pages/ChatPage";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
