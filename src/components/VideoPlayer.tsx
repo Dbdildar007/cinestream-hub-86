@@ -106,6 +106,22 @@ export default function VideoPlayer({
     return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
   }, [watchPartyActive, isHost, onSyncPlayback]);
 
+  // Watch party phase: pause during waiting/countdown, auto-play on "playing"
+  useEffect(() => {
+    if (!watchPartyActive) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (partyPhase === "waiting" || partyPhase === "countdown") {
+      v.pause();
+      v.currentTime = 0;
+      setIsPlaying(false);
+    } else if (partyPhase === "playing") {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [partyPhase, watchPartyActive]);
+
   const getNextEpisode = useCallback((): any | null => {
     if (!seriesInfo || !currentEpisode) return null;
     const currentSeasonData = seriesInfo.seasons.find(s => s.number === selectedSeason);
