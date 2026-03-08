@@ -243,7 +243,8 @@ export default function Index() {
             series={playingSeries.series}
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
-            onClose={() => setPlayingSeries(null)}
+            initialTime={overrideInitialTime ?? undefined}
+            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); }}
           />
         )}
       </AnimatePresence>
