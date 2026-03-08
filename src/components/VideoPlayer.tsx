@@ -604,7 +604,7 @@ const skip = useCallback((seconds: number) => {
       {!videoEnded && !showRecommendations && recommendedMovies.length > 0 && showControls && !isLocked && (
         <button
           onClick={(e) => { e.stopPropagation(); setShowRecommendations(true); }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[106] flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-white/90 text-xs font-light hover:bg-white/50 transition-colors"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[106] flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-white/90 text-xs font-light hover:bg-white/50 transition-colors"
         >
           <ChevronUp className="w-3.5 h-3.5" />
           More like this
