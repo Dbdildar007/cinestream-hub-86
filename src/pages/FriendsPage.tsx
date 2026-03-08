@@ -193,7 +193,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           `${myProfile?.display_name || "Someone"} declined your friend request`
         );
       }
-      loadPendingRequests();
+      invalidate();
     }
   };
 
