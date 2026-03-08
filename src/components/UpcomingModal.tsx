@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Star, Clock, Calendar, Globe, Bell, BellOff, Tv, Film, Timer } from "lucide-react";
 import type { Movie } from "@/services/movieService";
@@ -65,6 +65,8 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const { user } = useAuth();
   const [reminderSet, setReminderSet] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Check if reminder exists
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const desktopVariants = { hidden: { x: "100%" }, visible: { x: 0 }, exit: { x: "100%" } };
   const variants = isMobile ? mobileVariants : desktopVariants;
 
-  const hasTrailer = !!(movie.url && movie.url.trim() !== "");
+  const hasTrailer = !!(movie?.url && movie.url.trim() !== "");
 
   return (
     <AnimatePresence>
@@ -130,33 +132,48 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
                 : "top-0 right-0 bottom-0 w-[480px] border-l border-border"
             }`}
           >
-            {/* Hero image */}
+            {/* Hero image / Trailer */}
             <div className="relative aspect-[4/3] md:aspect-video">
-              <img
-                src={movie.heroImage || movie.poster}
-                alt={movie.title}
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+              {showTrailer && movie.url ? (
+                <video
+                  ref={videoRef}
+                  src={movie.url}
+                  className="w-full h-full object-cover object-center bg-black"
+                  controls
+                  autoPlay
+                  onEnded={() => setShowTrailer(false)}
+                />
+              ) : (
+                <>
+                  <img
+                    src={movie.heroImage || movie.poster}
+                    alt={movie.title}
+                    className="w-full h-full object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+                </>
+              )}
 
               <button
-                onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full bg-background/60 hover:bg-background/80 transition-colors"
+                onClick={() => { setShowTrailer(false); onClose(); }}
+                className="absolute top-4 right-4 p-2 rounded-full bg-background/60 hover:bg-background/80 transition-colors z-10"
               >
                 <X className="w-5 h-5 text-foreground" />
               </button>
 
               {/* Type badge */}
-              <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-accent/90 px-2.5 py-1 rounded-full">
-                {movie.isSeries ? (
-                  <><Tv className="w-3.5 h-3.5 text-accent-foreground" /><span className="text-xs font-semibold text-accent-foreground">Upcoming Series</span></>
-                ) : (
-                  <><Film className="w-3.5 h-3.5 text-accent-foreground" /><span className="text-xs font-semibold text-accent-foreground">Upcoming Movie</span></>
-                )}
-              </div>
+              {!showTrailer && (
+                <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-accent/90 px-2.5 py-1 rounded-full">
+                  {movie.isSeries ? (
+                    <><Tv className="w-3.5 h-3.5 text-accent-foreground" /><span className="text-xs font-semibold text-accent-foreground">Upcoming Series</span></>
+                  ) : (
+                    <><Film className="w-3.5 h-3.5 text-accent-foreground" /><span className="text-xs font-semibold text-accent-foreground">Upcoming Movie</span></>
+                  )}
+                </div>
+              )}
 
               {/* Countdown overlay at bottom */}
-              {movie.upcomingDate && (
+              {!showTrailer && movie.upcomingDate && (
                 <div className="absolute bottom-4 left-4 right-4 flex justify-center">
                   <CountdownTimer targetDate={movie.upcomingDate} />
                 </div>
@@ -164,7 +181,7 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
             </div>
 
             {/* Content */}
-            <div className="px-6 pb-8 -mt-8 relative">
+            <div className="px-6 pb-8 mt-2 relative">
               <h2 className="text-3xl font-display tracking-wider text-foreground mb-2">
                 {movie.title.toUpperCase()}
               </h2>
@@ -216,15 +233,24 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
               <div className="flex flex-col gap-3">
                 {/* Play Trailer */}
                 <button
-                  disabled={!hasTrailer}
+                  onClick={() => {
+                    if (showTrailer) {
+                      setShowTrailer(false);
+                    } else if (hasTrailer) {
+                      setShowTrailer(true);
+                    }
+                  }}
                   className={`flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
                     hasTrailer
-                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      ? showTrailer
+                        ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
+                  disabled={!hasTrailer}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  {hasTrailer ? "Play Trailer" : "Trailer Coming Soon"}
+                  {showTrailer ? "Stop Trailer" : hasTrailer ? "Play Trailer" : "Trailer Coming Soon"}
                 </button>
 
                 {/* Remind Me */}
