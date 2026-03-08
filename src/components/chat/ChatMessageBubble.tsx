@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Check, CheckCheck, Reply, Heart } from "lucide-react";
+import { Check, CheckCheck, CornerUpLeft, Heart, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChatMessage } from "@/pages/ChatPage";
@@ -35,7 +35,6 @@ function getTickIcon(msg: ChatMessage, isRemoteOnline: boolean) {
 }
 
 const SWIPE_THRESHOLD = 60;
-const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
 export default function ChatMessageBubble({
   message: msg,
@@ -50,7 +49,6 @@ export default function ChatMessageBubble({
   const isMine = msg.isMine;
   const isMobile = useIsMobile();
   const [swipeX, setSwipeX] = useState(0);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [heartAnimation, setHeartAnimation] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const triggeredRef = useRef(false);
@@ -68,7 +66,7 @@ export default function ChatMessageBubble({
   }, [onReact, msg]);
 
   const handleClick = useCallback(() => {
-    if (isMobile) return; // mobile uses touch events
+    if (isMobile) return;
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       handleDoubleTap();
@@ -97,7 +95,6 @@ export default function ChatMessageBubble({
   }, [onContextAction, msg]);
 
   const handleTouchEnd = useCallback(() => {
-    // Double-tap detection for mobile
     if (!isSwipingRef.current && !longPressTriggeredRef.current && touchStartRef.current) {
       const now = Date.now();
       if (now - lastTapRef.current < 300) {
@@ -160,11 +157,17 @@ export default function ChatMessageBubble({
     onContextAction?.(msg, { x: e.clientX, y: e.clientY });
   }, [isMobile, onContextAction, msg]);
 
+  // Desktop: click three-dot menu to open context menu
+  const handleDesktopMenuClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onContextAction?.(msg, { x: e.clientX, y: e.clientY });
+  }, [onContextAction, msg]);
+
   const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_THRESHOLD, 1);
 
   return (
     <div
-      className={`relative py-0.5 ${isMine ? "flex justify-end" : "flex justify-start"}`}
+      className={`relative py-0.5 ${isMine ? "flex justify-end pr-3" : "flex justify-start"}`}
       onContextMenu={handleContextMenu}
     >
       {/* Swipe reply indicator */}
@@ -174,7 +177,7 @@ export default function ChatMessageBubble({
           style={{ opacity: swipeProgress }}
         >
           <div className={`p-1.5 rounded-full bg-secondary ${swipeProgress >= 1 ? "scale-110" : ""} transition-transform`}>
-            <Reply className="w-4 h-4 text-muted-foreground" />
+            <CornerUpLeft className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
       )}
@@ -190,14 +193,26 @@ export default function ChatMessageBubble({
         onTouchEnd={isMobile ? handleTouchEnd : undefined}
         onTouchCancel={isMobile ? handleTouchEnd : undefined}
       >
-        {/* Reply button - desktop only */}
-        {!isMobile && !isMine && onReply && (
-          <button
-            onClick={() => onReply(msg)}
-            className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-secondary"
-          >
-            <Reply className="w-3.5 h-3.5" />
-          </button>
+        {/* Desktop action buttons - left side for received messages */}
+        {!isMobile && !isMine && (
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onReply && (
+              <button
+                onClick={() => onReply(msg)}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+              >
+                <CornerUpLeft className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onContextAction && (
+              <button
+                onClick={handleDesktopMenuClick}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+              >
+                <MoreVertical className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
 
         <div className={`max-w-[75%] relative ${isMine ? "order-1" : ""}`}>
@@ -247,7 +262,7 @@ export default function ChatMessageBubble({
                   transition={{ duration: 0.6, ease: "easeOut" }}
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
-                  <Heart className="w-10 h-10 text-red-500 fill-red-500" />
+                  <Heart className="w-10 h-10 text-destructive fill-destructive" />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -272,35 +287,28 @@ export default function ChatMessageBubble({
               ))}
             </div>
           )}
-
-          {/* Desktop reaction picker on hover */}
-          {!isMobile && onReact && (
-            <div
-              className={`absolute -top-8 ${isMine ? "right-0" : "left-0"} opacity-0 group-hover:opacity-100 transition-opacity z-10`}
-            >
-              <div className="flex gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg">
-                {REACTION_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => onReact(msg, emoji)}
-                    className="text-sm hover:scale-125 transition-transform px-0.5"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Reply button - desktop only */}
-        {!isMobile && isMine && onReply && (
-          <button
-            onClick={() => onReply(msg)}
-            className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-secondary order-0"
-          >
-            <Reply className="w-3.5 h-3.5" />
-          </button>
+        {/* Desktop action buttons - right side for own messages */}
+        {!isMobile && isMine && (
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity order-0">
+            {onContextAction && (
+              <button
+                onClick={handleDesktopMenuClick}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+              >
+                <MoreVertical className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onReply && (
+              <button
+                onClick={() => onReply(msg)}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+              >
+                <CornerUpLeft className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
