@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Lock, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
+import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
