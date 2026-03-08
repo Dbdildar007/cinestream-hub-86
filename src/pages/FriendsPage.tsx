@@ -53,6 +53,7 @@ interface FriendsPageProps {
 export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsPageProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const wpCtx = useWatchPartyContext();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
   const { allSeries } = useAllSeries();
