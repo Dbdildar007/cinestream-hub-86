@@ -30,6 +30,9 @@ interface SeriesVideoPlayerProps {
 
 export default function SeriesVideoPlayer({
   series, initialEpisode, initialSeason, onClose,
+  watchPartyActive = false, isHost = true,
+  onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
+  partyPhase, onEpisodeChangeReceived, broadcastEpisodeChange,
 }: SeriesVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,9 +43,12 @@ export default function SeriesVideoPlayer({
   const { series: seriesDetail } = useSeriesDetail(series.id);
   const { updateProgress, getProgress } = useWatchProgress();
 
+  const controlsDisabled = watchPartyActive && !isHost;
+  const shouldAutoPlay = !watchPartyActive || partyPhase === "playing";
+
   const [currentEpisode, setCurrentEpisode] = useState<SeriesEpisode>(initialEpisode);
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(shouldAutoPlay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
