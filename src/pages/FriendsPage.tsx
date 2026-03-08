@@ -1075,6 +1075,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   </div>
                 )}
               </div>
+              </>
+              )}
             </motion.div>
           </motion.div>
         )}
