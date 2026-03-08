@@ -19,9 +19,10 @@ export default function SeriesCard({
   series, 
   onSelect, 
   onRate, 
-  userRating = 0, // Default to 0 if not provided
+  userRating = 0,
   onToggleWatchlist,
-  isWatchlisted = false // Default to false
+  isWatchlisted = false,
+  index = 0
 }: SeriesCardProps) {
   const [hovered, setHovered] = useState(false);
 
