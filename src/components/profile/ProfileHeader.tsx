@@ -1,4 +1,5 @@
 import { User, MapPin, Copy, Edit2, Check } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import type { User as AuthUser } from "@supabase/supabase-js";
 
 interface ProfileHeaderProps {
