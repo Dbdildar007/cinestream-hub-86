@@ -13,7 +13,6 @@ interface PartyHistoryItem {
   movie_id: string;
   started_at: string;
   ended_at: string | null;
-  duration_watched_sec: number;
   friend_name?: string;
 }
 

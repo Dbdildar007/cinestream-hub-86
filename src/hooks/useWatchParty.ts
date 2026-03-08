@@ -208,7 +208,6 @@ export function useWatchParty() {
           host_id: activeParty.hostId,
           friend_id: activeParty.friendId,
           movie_id: activeParty.movieId,
-          duration_watched_sec: activeParty.currentTimeSec,
           ended_at: new Date().toISOString(),
         });
       }
