@@ -318,6 +318,8 @@ export default function AuthPage() {
             </button>
           </div>
 
+          {!isLogin && <PasswordStrengthIndicator password={password} />}
+
           {isLogin && (
             <div className="text-right -mt-2">
               <button
