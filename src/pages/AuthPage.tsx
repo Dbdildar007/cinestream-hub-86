@@ -66,7 +66,8 @@ export default function AuthPage() {
   const handleCancelConflict = async () => {
     setDeviceConflict(null);
     setPendingUserId(null);
-    await signOut();
+    // Only sign out locally — do NOT clear active_session_id in DB (Device 1 owns it)
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
