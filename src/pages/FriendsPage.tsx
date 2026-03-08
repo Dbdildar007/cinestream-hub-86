@@ -58,6 +58,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [searching, setSearching] = useState(false);
   // Track relationship status per user_id in search
   const [relationshipMap, setRelationshipMap] = useState<Record<string, RelationshipStatus>>({});
+  const [defaultSuggestions, setDefaultSuggestions] = useState<Profile[]>([]);
 
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
