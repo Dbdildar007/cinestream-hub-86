@@ -195,7 +195,7 @@ export default function ChatMessageBubble({
       >
         {/* No left-side buttons for received messages anymore */}
 
-        <div className={`max-w-[75%] relative ${isMine ? "order-1" : ""}`}>
+        <div className={`max-w-[75%] relative group/bubble ${isMine ? "order-1" : ""}`}>
           {replyToMessage && (
             <div
               className={`mx-1 mb-0.5 px-2.5 py-1.5 rounded-t-xl text-[11px] border-l-2 ${
@@ -248,6 +248,16 @@ export default function ChatMessageBubble({
             </AnimatePresence>
           </div>
 
+          {/* Reply quote icon at top-right corner of message bubble on hover */}
+          {onReply && (
+            <button
+              onClick={() => onReply(msg)}
+              className={`absolute -top-2 ${isMine ? "-right-2" : "-right-2"} opacity-0 group-hover/bubble:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10 shadow-sm`}
+            >
+              <Quote className="w-3 h-3" />
+            </button>
+          )}
+
           {/* Reactions display */}
           {reactions.length > 0 && (
             <div className={`flex gap-0.5 mt-0.5 ${isMine ? "justify-end mr-1" : "justify-start ml-1"}`}>
@@ -279,16 +289,6 @@ export default function ChatMessageBubble({
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
-
-        {/* Reply quote icon at top-right of bubble on hover (desktop) */}
-        {!isMobile && onReply && (
-          <button
-            onClick={() => onReply(msg)}
-            className={`absolute -top-2 ${isMine ? "-left-2" : "-right-2"} opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent z-10`}
-          >
-            <Quote className="w-3 h-3" />
-          </button>
         )}
       </div>
     </div>
