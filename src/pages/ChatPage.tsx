@@ -80,7 +80,7 @@ export default function ChatPage() {
     const loadMessages = async () => {
       setIsLoading(true);
       const { data } = await supabase
-        .from("call_messages")
+        .from("chat_messages")
         .select("*")
         .or(
           `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
