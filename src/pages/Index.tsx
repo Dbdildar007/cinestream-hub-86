@@ -207,12 +207,6 @@ export default function Index() {
             onClose={() => setPlayingMovie(null)}
             onProgressUpdate={updateProgress}
             initialTime={getProgress(playingMovie.id)?.currentTime || 0}
-            watchPartyActive={!!activeParty}
-            isHost={isHost}
-            onSyncPlayback={syncPlayback}
-            onForceSyncPlayback={forceSyncPlayback}
-            onSyncReceived={onSyncReceived}
-            onEndParty={endParty}
             allMovies={allMovies}
             onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }}
           />
