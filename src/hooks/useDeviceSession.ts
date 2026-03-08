@@ -74,6 +74,13 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     evictedRef.current = false;
     const deviceId = getDeviceId();
 
+    // Set online status on mount
+    supabase
+      .from("profiles")
+      .update({ is_online: true, last_seen: new Date().toISOString() } as any)
+      .eq("user_id", userId)
+      .then();
+
     // On mount, check if this device is already the active session
     const initCheck = async () => {
       const { data } = await supabase
@@ -86,6 +93,17 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
       }
     };
     void initCheck();
+
+    // Set offline on visibility hidden, online on visible
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        supabase
+          .from("profiles")
+          .update({ last_seen: new Date().toISOString() } as any)
+          .eq("user_id", userId)
+          .then();
+      }
+    };
 
     const checkSession = async () => {
       if (evictedRef.current) return;
