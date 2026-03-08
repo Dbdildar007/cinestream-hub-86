@@ -143,6 +143,7 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       isHost: watchParty.isHost,
       partyPhase: watchParty.partyPhase,
       friendName,
+      friendUserId,
       pendingInvite,
       startWatchParty,
       acceptInvite,
