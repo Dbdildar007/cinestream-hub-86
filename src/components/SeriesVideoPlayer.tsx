@@ -585,7 +585,7 @@ export default function SeriesVideoPlayer({
                     </div>
                     <div className="p-2">
                       <p className="text-white text-xs font-medium truncate">{rec.title}</p>
-                      <p className="text-white/40 text-[10px]">{rec.year} • {rec.genre[0]}</p>
+                      <p className="text-white/40 text-[10px]">{rec.release_year} • {rec.genre[0]}</p>
                     </div>
                   </div>
                 ))}
