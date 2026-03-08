@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [deviceConflict, setDeviceConflict] = useState<any>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const { signIn, signUp, user, signOut } = useAuth();
