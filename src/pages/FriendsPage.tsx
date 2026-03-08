@@ -479,15 +479,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     className="flex items-center gap-3 p-3 rounded-xl bg-secondary/80 border border-border hover:border-primary/30 hover:bg-secondary hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-default"
                   >
                     <div className="relative">
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt={profile.display_name} className="w-11 h-11 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {profile.display_name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+                      <img src={getAvatarUrl(profile.avatar_url, profile.display_name)} alt={profile.display_name} className="w-11 h-11 rounded-full object-cover" />
                       <span
                         className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${
                           profile.is_online ? "bg-green-500" : "bg-muted-foreground/40"
