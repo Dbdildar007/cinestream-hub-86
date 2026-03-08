@@ -7,12 +7,11 @@ export function useRatings() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const saved = localStorage.getItem("cinestream-ratings");
-    if (saved) {
-      try { setRatings(JSON.parse(saved)); } catch {}
+    if (!user) {
+      setRatings({});
+      localStorage.removeItem("cinestream-ratings");
+      return;
     }
-
-    if (!user) return;
 
     const fetchRatings = async () => {
       try {

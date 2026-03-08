@@ -46,6 +46,9 @@ export function useAuth() {
 
   const signOut = async () => {
     localStorage.removeItem('user_profile');
+    localStorage.removeItem('cinestream_watchlist');
+    localStorage.removeItem('cinestream-ratings');
+    localStorage.removeItem('cinestream_watch_progress');
     queryClient.clear();
     await supabase.auth.signOut();
   };
