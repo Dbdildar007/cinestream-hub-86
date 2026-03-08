@@ -203,8 +203,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     if (!user) return;
     // Handle static suggestions (demo profiles)
     if (profile.user_id.startsWith("static-")) {
+      setSentStaticRequests((prev) =>
+        prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+      );
+      setDefaultSuggestions((prev) => prev.filter((p) => p.user_id !== profile.user_id));
       toast.success("Friend request sent!");
-      setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
       return;
     }
     const { error } = await supabase.from("friendships").insert({
