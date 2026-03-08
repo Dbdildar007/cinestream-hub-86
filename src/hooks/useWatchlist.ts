@@ -44,8 +44,10 @@ export function useWatchlist() {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
-  }, [watchlist]);
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
+    }
+  }, [watchlist, user]);
 
   const toggleWatchlist = useCallback(async (movieId: string) => {
     const isIn = watchlist.includes(movieId);
