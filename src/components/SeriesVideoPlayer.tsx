@@ -172,6 +172,7 @@ export default function SeriesVideoPlayer({
   }, [isPlaying, isLocked]);
 
   const togglePlay = useCallback(() => {
+    if (controlsDisabled) return;
     const v = videoRef.current;
     if (!v) return;
     if (videoEnded) {
@@ -183,7 +184,13 @@ export default function SeriesVideoPlayer({
       if (v.paused) { v.play(); setIsPlaying(true); }
       else { v.pause(); setIsPlaying(false); }
     }
-  }, [videoEnded]);
+    if (watchPartyActive && isHost && onForceSyncPlayback) {
+      setTimeout(() => {
+        const vid = videoRef.current;
+        if (vid) onForceSyncPlayback(!vid.paused, vid.currentTime);
+      }, 50);
+    }
+  }, [videoEnded, controlsDisabled, watchPartyActive, isHost, onForceSyncPlayback]);
 
   const skip = useCallback((seconds: number) => {
     if (videoRef.current) {
