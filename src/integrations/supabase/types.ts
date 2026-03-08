@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       episodes: {
         Row: {
           created_at: string
