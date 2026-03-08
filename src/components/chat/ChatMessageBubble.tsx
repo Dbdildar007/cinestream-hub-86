@@ -167,7 +167,7 @@ export default function ChatMessageBubble({
 
   return (
     <div
-      className={`relative py-0.5 ${isMine ? "flex justify-end pr-3" : "flex justify-start"}`}
+      className={`relative py-0.5 ${isMine ? "flex justify-end pr-3" : "flex justify-start pl-1"}`}
       onContextMenu={handleContextMenu}
     >
       {/* Swipe reply indicator */}
@@ -193,27 +193,7 @@ export default function ChatMessageBubble({
         onTouchEnd={isMobile ? handleTouchEnd : undefined}
         onTouchCancel={isMobile ? handleTouchEnd : undefined}
       >
-        {/* Desktop action buttons - left side for received messages */}
-        {!isMobile && !isMine && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onReply && (
-              <button
-                onClick={() => onReply(msg)}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {onContextAction && (
-              <button
-                onClick={handleDesktopMenuClick}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <MoreVertical className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        )}
+        {/* No left-side buttons for received messages anymore */}
 
         <div className={`max-w-[75%] relative ${isMine ? "order-1" : ""}`}>
           {replyToMessage && (
@@ -289,9 +269,9 @@ export default function ChatMessageBubble({
           )}
         </div>
 
-        {/* Desktop action buttons - right side for own messages */}
-        {!isMobile && isMine && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity order-0">
+        {/* Desktop action buttons - right side for all messages */}
+        {!isMobile && (
+          <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? "order-0" : ""}`}>
             {onContextAction && (
               <button
                 onClick={handleDesktopMenuClick}
