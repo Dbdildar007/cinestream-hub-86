@@ -201,8 +201,6 @@ export default function Index() {
       <MovieModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
-        onDownload={startDownload}
-        downloadState={selectedMovie ? getDownloadState(selectedMovie.id) : undefined}
         userRating={selectedMovie ? getRating(selectedMovie.id) : 0}
         onRate={setRating}
         onWatch={handleWatch}

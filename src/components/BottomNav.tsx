@@ -1,4 +1,4 @@
-import { Home, Search, Download, User, Users } from "lucide-react";
+import { Home, Search, User, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationDropdown from "./NotificationDropdown";
@@ -7,7 +7,6 @@ const items = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Search, label: "Search", path: "/search" },
   { icon: Users, label: "Friends", path: "/friends" },
-  { icon: Download, label: "Downloads", path: "/downloads" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
