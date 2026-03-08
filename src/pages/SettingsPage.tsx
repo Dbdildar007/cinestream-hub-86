@@ -85,7 +85,7 @@ export default function SettingsPage() {
             <p><strong>Data Sharing:</strong> We do not sell your personal data. We may share anonymized analytics with partners.</p>
             <p><strong>Your Rights:</strong> You can request data deletion, export your data, or update your preferences at any time from your profile settings.</p>
             <p><strong>Security:</strong> We use industry-standard encryption and secure storage to protect your data.</p>
-            <p>Last updated: March 2026. Contact us at privacy@cinestream.app for questions.</p>
+            <p>Last updated: March 2026. Contact us at privacy@flicker.app for questions.</p>
           </div>
         </motion.div>
       )}
