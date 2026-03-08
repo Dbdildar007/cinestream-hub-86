@@ -585,7 +585,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <img
                       src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
                       alt={f.profile?.display_name || "User"}
-                      className={`w-10 h-10 rounded-full object-cover bg-primary/10 ${!isOnline ? "brightness-90" : ""}`}
+                      className={`w-10 h-10 rounded-full object-cover bg-primary/10 ${!isOnline ? "ring-2 ring-[#8b5e3c]/60" : "ring-2 ring-green-500/40"}`}
                     />
                     <span
                       className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
@@ -594,8 +594,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isOnline ? "text-foreground" : "text-[#d4a574]"}`}>{f.profile?.display_name}</p>
-                    <p className={`text-xs ${isOnline ? "text-green-500 font-medium" : "text-[#8b5e3c]"}`}>
+                    <p className="text-sm font-bold text-foreground truncate">{f.profile?.display_name}</p>
+                    <p className={`text-xs font-medium ${isOnline ? "text-green-500" : "text-destructive"}`}>
                       {isOnline ? "● Online" : "● Offline"}
                     </p>
                   </div>
@@ -603,7 +603,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     onClick={() => {
                       if (f.profile) navigate(`/chat/${f.profile.user_id}`);
                     }}
-                    className={`p-2 rounded-full transition-colors ${isOnline ? "hover:bg-primary/20 text-primary" : "hover:bg-[#5c3d24]/30 text-[#c4956a]"}`}
+                    className="p-2 rounded-full hover:bg-primary/20 text-foreground transition-colors"
                     title="Message"
                   >
                     <MessageCircle className="w-4 h-4" />
