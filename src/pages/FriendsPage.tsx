@@ -1009,15 +1009,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       <motion.button
                         key={series.id}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          const sc = series.season_count || 0;
-                          handleInviteToWatchParty({
-                            id: series.id, title: series.title, description: series.description,
-                            poster: series.poster_url, year: series.release_year, genre: series.genre,
-                            rating: series.rating, duration: `${sc} Season${sc !== 1 ? "s" : ""}`,
-                            language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
-                          } as Movie);
-                        }}
+                        onClick={() => handleSeriesClick(series)}
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
