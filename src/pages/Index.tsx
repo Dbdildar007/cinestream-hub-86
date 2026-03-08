@@ -228,7 +228,7 @@ export default function Index() {
         {playingMovie && (
           <VideoPlayer
             movie={playingMovie}
-            onClose={() => setPlayingMovie(null)}
+            onClose={() => { setPlayingMovie(null); setOverrideInitialTime(null); }}
             onProgressUpdate={updateProgress}
             initialTime={overrideInitialTime ?? getProgress(playingMovie.id)?.currentTime ?? 0}
             allMovies={allMovies}
