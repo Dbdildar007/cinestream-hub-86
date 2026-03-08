@@ -66,7 +66,8 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
   const [reminderSet, setReminderSet] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [trailerUrl, setTrailerUrl] = useState<string | null>(movie?.url?.trim() || null);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const [trailerChecked, setTrailerChecked] = useState(false);
 
   // Check if reminder exists
   useEffect(() => {
