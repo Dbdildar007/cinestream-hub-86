@@ -42,20 +42,24 @@ export function useWatchProgress() {
 
     // Then sync from DB
     const fetchProgress = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("watch_progress")
         .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched")
         .eq("user_id", user.id);
 
-      if (data) {
-        const dbList: WatchProgress[] = (data as any[]).map((d: any) => ({
-          movieId: d.movie_id,
-          episodeId: d.episode_id || undefined,
-          mediaType: (d.media_type as 'movie' | 'series') || 'movie',
-          currentTime: Number(d.current_time_sec),
-          duration: Number(d.duration_sec),
-          lastWatched: new Date(d.last_watched).getTime(),
-        }));
+      if (error || !data) return;
+
+      const dbList: WatchProgress[] = (data as any[]).map((d: any) => ({
+        movieId: d.movie_id,
+        episodeId: d.episode_id || undefined,
+        mediaType: (d.media_type as 'movie' | 'series') || 'movie',
+        currentTime: Number(d.current_time_sec),
+        duration: Number(d.duration_sec),
+        lastWatched: new Date(d.last_watched).getTime(),
+      }));
+
+      // Prevent UI blink: don't replace valid cached progress with transient empty DB reads
+      if (dbList.length > 0 || cached.length === 0) {
         setProgressList(dbList);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dbList));
       }

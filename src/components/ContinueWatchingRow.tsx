@@ -126,6 +126,6 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
           <ChevronRight className="w-6 h-6 text-foreground" />
         </button>
       </div>
-    </motion.section>
+    </section>
   );
 }

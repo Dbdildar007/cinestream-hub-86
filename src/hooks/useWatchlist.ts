@@ -29,13 +29,17 @@ export function useWatchlist() {
 
     // Then sync from DB
     const fetch = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("watchlist")
         .select("movie_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      if (data) {
-        const ids = data.map(d => d.movie_id);
+
+      if (error || !data) return;
+
+      const ids = data.map(d => d.movie_id);
+      // Prevent UI blink: don't replace valid cached list with transient empty DB reads
+      if (ids.length > 0 || cached.length === 0) {
         setWatchlist(ids);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
       }
