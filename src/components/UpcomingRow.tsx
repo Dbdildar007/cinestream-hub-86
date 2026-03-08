@@ -1,6 +1,9 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Clock, Tv, Bell, BellOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, Tv, Bell } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import type { Movie } from "@/services/movieService";
 
 interface UpcomingRowProps {
@@ -65,12 +68,33 @@ function formatUpcomingDate(dateStr: string) {
 
 export default function UpcomingRow({ movies, onMovieSelect }: UpcomingRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [reminders, setReminders] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem("cinestream-reminders");
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
-  });
+  const { user } = useAuth();
+  const [reminders, setReminders] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState<Set<string>>(new Set());
+
+  // Fetch reminders from DB
+  useEffect(() => {
+    if (!user) {
+      // Fall back to localStorage for non-logged-in users
+      try {
+        const saved = localStorage.getItem("cinestream-reminders");
+        if (saved) setReminders(new Set(JSON.parse(saved)));
+      } catch {}
+      return;
+    }
+
+    const fetchReminders = async () => {
+      const { data } = await supabase
+        .from("movie_reminders")
+        .select("movie_id")
+        .eq("user_id", user.id)
+        .eq("notified", false);
+      if (data) {
+        setReminders(new Set(data.map((r: any) => r.movie_id)));
+      }
+    };
+    fetchReminders();
+  }, [user]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -78,15 +102,46 @@ export default function UpcomingRow({ movies, onMovieSelect }: UpcomingRowProps)
     }
   };
 
-  const toggleReminder = (movieId: string) => {
-    setReminders(prev => {
+  const toggleReminder = useCallback(async (movieId: string) => {
+    if (!user) {
+      toast.error("Please sign in to set reminders");
+      return;
+    }
+
+    setLoading(prev => new Set(prev).add(movieId));
+
+    const isSet = reminders.has(movieId);
+
+    if (isSet) {
+      // Remove reminder
+      await supabase
+        .from("movie_reminders")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("movie_id", movieId);
+
+      setReminders(prev => {
+        const next = new Set(prev);
+        next.delete(movieId);
+        return next;
+      });
+      toast("Reminder removed");
+    } else {
+      // Add reminder
+      await supabase
+        .from("movie_reminders")
+        .upsert({ user_id: user.id, movie_id: movieId, notified: false });
+
+      setReminders(prev => new Set(prev).add(movieId));
+      toast.success("You'll be notified when this is available!");
+    }
+
+    setLoading(prev => {
       const next = new Set(prev);
-      if (next.has(movieId)) next.delete(movieId);
-      else next.add(movieId);
-      localStorage.setItem("cinestream-reminders", JSON.stringify([...next]));
+      next.delete(movieId);
       return next;
     });
-  };
+  }, [user, reminders]);
 
   if (movies.length === 0) return null;
 
@@ -123,30 +178,24 @@ export default function UpcomingRow({ movies, onMovieSelect }: UpcomingRowProps)
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent" />
 
-                {/* Type badge */}
                 {movie.isSeries && (
                   <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/90 text-primary-foreground uppercase tracking-wider flex items-center gap-1">
                     <Tv className="w-2.5 h-2.5" /> Series
                   </span>
                 )}
 
-                {/* Remind me button */}
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleReminder(movie.id); }}
+                  disabled={loading.has(movie.id)}
                   className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors z-10 ${
                     reminders.has(movie.id)
                       ? "bg-primary text-primary-foreground"
                       : "bg-background/70 text-foreground hover:bg-background"
-                  }`}
+                  } ${loading.has(movie.id) ? "opacity-50" : ""}`}
                 >
-                  {reminders.has(movie.id) ? (
-                    <Bell className="w-3.5 h-3.5 fill-current" />
-                  ) : (
-                    <Bell className="w-3.5 h-3.5" />
-                  )}
+                  <Bell className={`w-3.5 h-3.5 ${reminders.has(movie.id) ? "fill-current" : ""}`} />
                 </button>
 
-                {/* Countdown overlay */}
                 <div className="absolute bottom-2 left-2 right-2">
                   <CountdownTimer targetDate={movie.upcomingDate!} />
                 </div>
