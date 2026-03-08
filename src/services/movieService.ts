@@ -112,7 +112,8 @@ export const movieService = {
 
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         data: data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        version: CACHE_VERSION,
       }));
 
       return data.map(mapDbMovie);
