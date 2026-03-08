@@ -30,6 +30,7 @@ export interface Movie {
   isEditorChoice?: boolean;
   isSeries?: boolean;
   upcomingDate?: string;
+  isPremium?: boolean;
 }
 
 export const posterMap: Record<string, string> = {
@@ -77,11 +78,12 @@ function mapDbMovie(row: any): Movie {
     isEditorChoice: !!row.is_editor_choice || !!row.isEditorChoice,
     isSeries: !!row.is_series || !!row.isSeries,
     upcomingDate: row.upcoming_date || undefined,
+    isPremium: !!row.is_premium || !!row.isPremium,
   };
 }
 
 const CACHE_KEY = 'movies_cache';
-const CACHE_VERSION = 'v2_upcoming';
+const CACHE_VERSION = 'v3_premium';
 const CACHE_DURATION = 5 * 60 * 1000;
 
 export const movieService = {

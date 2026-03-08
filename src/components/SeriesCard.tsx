@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Tv, Plus, CheckCircle } from "lucide-react"; 
+import { Star, Tv, Plus, CheckCircle, Crown } from "lucide-react"; 
 import type { Series } from "@/services/seriesService";
 
 
@@ -59,6 +59,14 @@ export default function SeriesCard({
           <Tv className="w-2.5 h-2.5" />
           Series
         </div>
+
+        {/* Premium badge */}
+        {series.isPremium && (
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-yellow-500/90 px-1.5 py-0.5 rounded text-[10px] font-bold text-black z-10">
+            <Crown className="w-2.5 h-2.5" />
+            PRO
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0 }}
