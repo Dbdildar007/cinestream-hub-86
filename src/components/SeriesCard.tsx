@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Tv, Plus, CheckCircle, Crown } from "lucide-react"; 
+import { Star, Tv, Plus, CheckCircle } from "lucide-react"; 
 import type { Series } from "@/services/seriesService";
 
 
