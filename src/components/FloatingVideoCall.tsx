@@ -2,8 +2,10 @@ import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff,
-  Minus, Maximize2, MessageCircle, Send, Smile, X
+  Minus, Maximize2, MessageCircle, Send, Smile
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { CallState } from "@/hooks/useVideoCall";
 
 interface FloatingVideoCallProps {
@@ -18,7 +20,7 @@ interface ChatMessage {
   id: string;
   text: string;
   isMine: boolean;
-  timestamp: number;
+  timestamp: string;
 }
 
 const EMOJIS = ["😀", "😂", "❤️", "🔥", "👍", "😱", "🎬", "🍿"];
@@ -30,34 +32,109 @@ export default function FloatingVideoCall({
   onToggleMinimize,
   onEndCall,
 }: FloatingVideoCallProps) {
+  const { user } = useAuth();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showEmojis, setShowEmojis] = useState(false);
-  const [position, setPosition] = useState({ x: 16, y: 16 });
-  const dragRef = useRef<HTMLDivElement>(null);
 
+  // Attach local stream
   useEffect(() => {
     if (localVideoRef.current && callState.localStream) {
       localVideoRef.current.srcObject = callState.localStream;
     }
   }, [callState.localStream]);
 
+  // Attach remote stream
   useEffect(() => {
     if (remoteVideoRef.current && callState.remoteStream) {
       remoteVideoRef.current.srcObject = callState.remoteStream;
     }
   }, [callState.remoteStream]);
 
-  const sendMessage = () => {
-    if (!chatInput.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text: chatInput, isMine: true, timestamp: Date.now() },
-    ]);
+  // Load existing messages and subscribe to realtime
+  useEffect(() => {
+    if (!user || !callState.remoteUserId || callState.status !== "connected") return;
+
+    const remoteId = callState.remoteUserId;
+
+    // Load existing messages between the two users
+    const loadMessages = async () => {
+      const { data } = await supabase
+        .from("call_messages")
+        .select("*")
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${remoteId}),and(sender_id.eq.${remoteId},receiver_id.eq.${user.id})`
+        )
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+      if (data) {
+        setMessages(
+          data.map((m: any) => ({
+            id: m.id,
+            text: m.message,
+            isMine: m.sender_id === user.id,
+            timestamp: m.created_at,
+          }))
+        );
+      }
+    };
+    loadMessages();
+
+    // Subscribe to new messages in realtime
+    const channel = supabase
+      .channel(`chat-${[user.id, remoteId].sort().join("-")}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "call_messages" },
+        (payload) => {
+          const m = payload.new as any;
+          // Only add if it's between us
+          if (
+            (m.sender_id === user.id && m.receiver_id === remoteId) ||
+            (m.sender_id === remoteId && m.receiver_id === user.id)
+          ) {
+            setMessages((prev) => {
+              if (prev.some((p) => p.id === m.id)) return prev;
+              return [
+                ...prev,
+                {
+                  id: m.id,
+                  text: m.message,
+                  isMine: m.sender_id === user.id,
+                  timestamp: m.created_at,
+                },
+              ];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, callState.remoteUserId, callState.status]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!chatInput.trim() || !user || !callState.remoteUserId) return;
+    const text = chatInput.trim();
     setChatInput("");
+
+    await supabase.from("call_messages").insert({
+      sender_id: user.id,
+      receiver_id: callState.remoteUserId,
+      message: text,
+    } as any);
   };
 
   if (callState.status !== "connected") return null;
@@ -81,7 +158,6 @@ export default function FloatingVideoCall({
 
   return (
     <motion.div
-      ref={dragRef}
       drag
       dragMomentum={false}
       initial={{ scale: 0.8, opacity: 0 }}
@@ -90,7 +166,6 @@ export default function FloatingVideoCall({
     >
       {/* Video feeds */}
       <div className="relative aspect-video bg-secondary">
-        {/* Remote video */}
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -119,13 +194,12 @@ export default function FloatingVideoCall({
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover mirror"
+              className="w-full h-full object-cover"
               style={{ transform: "scaleX(-1)" }}
             />
           )}
         </div>
 
-        {/* Remote name */}
         <div className="absolute top-2 left-2 bg-background/60 backdrop-blur-sm px-2 py-0.5 rounded text-xs text-foreground font-medium">
           {callState.remoteDisplayName}
         </div>
@@ -151,7 +225,7 @@ export default function FloatingVideoCall({
         </button>
         <button
           onClick={() => setShowChat(!showChat)}
-          className={`p-2 rounded-full transition-colors ${
+          className={`p-2 rounded-full transition-colors relative ${
             showChat ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80 text-foreground"
           }`}
         >
@@ -176,11 +250,11 @@ export default function FloatingVideoCall({
         {showChat && (
           <motion.div
             initial={{ height: 0 }}
-            animate={{ height: 200 }}
+            animate={{ height: 220 }}
             exit={{ height: 0 }}
             className="overflow-hidden border-t border-border"
           >
-            <div className="h-[160px] overflow-y-auto p-2 space-y-1.5">
+            <div className="h-[170px] overflow-y-auto p-2 space-y-1.5">
               {messages.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">Send a message...</p>
               )}
@@ -200,6 +274,7 @@ export default function FloatingVideoCall({
                   </span>
                 </div>
               ))}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Emoji row */}
