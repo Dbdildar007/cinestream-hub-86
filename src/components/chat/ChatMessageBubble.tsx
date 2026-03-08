@@ -8,6 +8,8 @@ interface ChatMessageBubbleProps {
   isRemoteOnline?: boolean;
   replyToMessage?: ChatMessage | null;
   onReply?: (msg: ChatMessage) => void;
+  onContextAction?: (msg: ChatMessage, position: { x: number; y: number }) => void;
+  isEditing?: boolean;
 }
 
 function formatTime(ts: string) {
@@ -30,6 +32,8 @@ export default function ChatMessageBubble({
   isRemoteOnline = false,
   replyToMessage,
   onReply,
+  onContextAction,
+  isEditing = false,
 }: ChatMessageBubbleProps) {
   const isMine = msg.isMine;
   const isMobile = useIsMobile();
@@ -37,20 +41,43 @@ export default function ChatMessageBubble({
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const triggeredRef = useRef(false);
   const isSwipingRef = useRef(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!onReply) return;
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     triggeredRef.current = false;
     isSwipingRef.current = false;
-  }, [onReply]);
+    longPressTriggeredRef.current = false;
+
+    // Long press detection
+    if (onContextAction) {
+      longPressTimerRef.current = setTimeout(() => {
+        if (!isSwipingRef.current && touchStartRef.current) {
+          longPressTriggeredRef.current = true;
+          if (navigator.vibrate) navigator.vibrate(20);
+          onContextAction(msg, { x: touchStartRef.current.x, y: touchStartRef.current.y });
+        }
+      }, 500);
+    }
+  }, [onContextAction, msg]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current || !onReply || triggeredRef.current) return;
+    if (!touchStartRef.current || longPressTriggeredRef.current) return;
     const touch = e.touches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
     const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+
+    // Cancel long press if moved
+    if (Math.abs(deltaX) > 8 || deltaY > 8) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+
+    if (triggeredRef.current) return;
 
     // If vertical scroll is dominant, cancel swipe
     if (!isSwipingRef.current && deltaY > 10 && Math.abs(deltaX) < deltaY) {
@@ -58,7 +85,8 @@ export default function ChatMessageBubble({
       return;
     }
 
-    // For own messages: swipe left (negative). For received: swipe right (positive).
+    if (!onReply) return;
+
     const direction = isMine ? -1 : 1;
     const raw = deltaX * direction;
 
@@ -70,7 +98,6 @@ export default function ChatMessageBubble({
 
       if (clamped >= SWIPE_THRESHOLD && !triggeredRef.current) {
         triggeredRef.current = true;
-        // Haptic feedback if available
         if (navigator.vibrate) navigator.vibrate(15);
         onReply(msg);
       }
@@ -81,13 +108,25 @@ export default function ChatMessageBubble({
     touchStartRef.current = null;
     isSwipingRef.current = false;
     setSwipeX(0);
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   }, []);
 
-  // Swipe reply icon opacity based on distance
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (isMobile) return;
+    e.preventDefault();
+    onContextAction?.(msg, { x: e.clientX, y: e.clientY });
+  }, [isMobile, onContextAction, msg]);
+
   const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_THRESHOLD, 1);
 
   return (
-    <div className={`group relative overflow-hidden ${isMine ? "flex justify-end" : "flex justify-start"}`}>
+    <div
+      className={`group relative overflow-hidden ${isMine ? "flex justify-end" : "flex justify-start"}`}
+      onContextMenu={handleContextMenu}
+    >
       {/* Swipe reply indicator */}
       {isMobile && onReply && swipeX !== 0 && (
         <div
@@ -146,10 +185,15 @@ export default function ChatMessageBubble({
               isMine
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground"
-            }`}
+            } ${isEditing ? "ring-2 ring-accent" : ""}`}
           >
             <p className="text-sm break-words">{msg.text}</p>
             <span className="flex items-center gap-0.5 flex-shrink-0 pb-0.5">
+              {msg.editedAt && (
+                <span className={`text-[9px] leading-none ${isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"}`}>
+                  edited
+                </span>
+              )}
               <span
                 className={`text-[10px] leading-none ${
                   isMine ? "text-primary-foreground/50" : "text-muted-foreground"

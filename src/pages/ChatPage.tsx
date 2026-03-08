@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Smile, X, Reply } from "lucide-react";
+import { Send, Smile, X, Pencil } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import ChatLoadingSkeleton from "@/components/chat/ChatLoadingSkeleton";
 import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
+import MessageActionMenu from "@/components/chat/MessageActionMenu";
 
 export interface ChatMessage {
   id: string;
@@ -17,6 +19,7 @@ export interface ChatMessage {
   timestamp: string;
   readAt: string | null;
   replyToId: string | null;
+  editedAt?: string | null;
 }
 
 interface RemoteProfile {
@@ -39,11 +42,14 @@ export default function ChatPage() {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [contextMenu, setContextMenu] = useState<{ message: ChatMessage; position: { x: number; y: number } } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remoteTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -57,6 +63,7 @@ export default function ChatPage() {
     timestamp: m.created_at,
     readAt: m.read_at || null,
     replyToId: m.reply_to_id || null,
+    editedAt: m.edited_at || null,
   }), []);
 
   // Load remote profile
@@ -102,7 +109,6 @@ export default function ChatPage() {
         setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
       setIsLoading(false);
-      // Instant scroll to bottom on initial load (no smooth)
       requestAnimationFrame(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "instant" });
         setInitialLoadDone(true);
@@ -123,10 +129,7 @@ export default function ChatPage() {
             (m.sender_id === user.id && m.receiver_id === remoteUserId) ||
             (m.sender_id === remoteUserId && m.receiver_id === user.id)
           ) {
-            // Ignore our own realtime insert to avoid temp+persisted double-render.
-            // Own messages are reconciled by insert response + polling.
             if (m.sender_id === user.id) return;
-
             setMessages((prev) => {
               if (prev.some((p) => p.id === m.id)) return prev;
               return [...prev, mapMessage(m, user.id)];
@@ -142,9 +145,19 @@ export default function ChatPage() {
           const m = payload.new as any;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === m.id ? { ...msg, readAt: m.read_at } : msg
+              msg.id === m.id ? { ...msg, text: m.message, readAt: m.read_at, editedAt: m.edited_at } : msg
             )
           );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "chat_messages" },
+        (payload) => {
+          const old = payload.old as any;
+          if (old?.id) {
+            setMessages((prev) => prev.filter((msg) => msg.id !== old.id));
+          }
         }
       )
       .on("broadcast", { event: "typing" }, (payload) => {
@@ -159,9 +172,7 @@ export default function ChatPage() {
     channelRef.current = channel;
 
     const pollInterval = setInterval(async () => {
-      // Skip poll if there's a pending optimistic message to avoid flicker
       if (sendLockRef.current) return;
-
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
@@ -173,7 +184,6 @@ export default function ChatPage() {
 
       if (data) {
         setMessages((prev) => {
-          // Don't overwrite if we still have temp messages
           const hasTemp = prev.some((m) => m.id.startsWith("temp-"));
           if (hasTemp) return prev;
           return data.map((m: any) => mapMessage(m, user.id));
@@ -189,32 +199,25 @@ export default function ChatPage() {
     };
   }, [user, remoteUserId, mapMessage, markAsRead]);
 
-  // Scroll to bottom on new messages + handle keyboard resize on mobile
   const scrollToBottom = useCallback((instant = false) => {
     chatEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
-    if (initialLoadDone) {
-      scrollToBottom();
-    }
+    if (initialLoadDone) scrollToBottom();
   }, [messages, remoteIsTyping, scrollToBottom, initialLoadDone]);
 
-  // Handle mobile keyboard: keep input visible above keyboard
   useEffect(() => {
     const vv = typeof visualViewport !== "undefined" ? visualViewport : null;
     if (!vv) return;
-
     const handleResize = () => {
       const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
       setKeyboardInset(inset);
       setTimeout(() => scrollToBottom(true), 50);
     };
-
     vv.addEventListener("resize", handleResize);
     vv.addEventListener("scroll", handleResize);
     handleResize();
-
     return () => {
       vv.removeEventListener("resize", handleResize);
       vv.removeEventListener("scroll", handleResize);
@@ -223,11 +226,7 @@ export default function ChatPage() {
 
   const broadcastTyping = useCallback(() => {
     if (!channelRef.current || !user) return;
-    channelRef.current.send({
-      type: "broadcast",
-      event: "typing",
-      payload: { userId: user.id },
-    });
+    channelRef.current.send({ type: "broadcast", event: "typing", payload: { userId: user.id } });
   }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,6 +238,38 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     if (!input.trim() || !user || !remoteUserId || sendLockRef.current) return;
+
+    // Handle edit mode
+    if (editingMessage) {
+      const newText = input.trim();
+      if (newText === editingMessage.text) {
+        setEditingMessage(null);
+        setInput("");
+        return;
+      }
+      sendLockRef.current = true;
+      setIsSending(true);
+      try {
+        const { error } = await supabase
+          .from("chat_messages")
+          .update({ message: newText, edited_at: new Date().toISOString() } as any)
+          .eq("id", editingMessage.id)
+          .eq("sender_id", user.id);
+        if (error) throw error;
+        setMessages((prev) =>
+          prev.map((m) => m.id === editingMessage.id ? { ...m, text: newText, editedAt: new Date().toISOString() } : m)
+        );
+        toast.success("Message edited");
+      } catch {
+        toast.error("Failed to edit message");
+      } finally {
+        sendLockRef.current = false;
+        setIsSending(false);
+        setEditingMessage(null);
+        setInput("");
+      }
+      return;
+    }
 
     const text = input.trim();
     const tempId = `temp-${Date.now()}`;
@@ -253,11 +284,7 @@ export default function ChatPage() {
     ]);
 
     try {
-      const insertPayload: any = {
-        sender_id: user.id,
-        receiver_id: remoteUserId,
-        message: text,
-      };
+      const insertPayload: any = { sender_id: user.id, receiver_id: remoteUserId, message: text };
       if (replyId) insertPayload.reply_to_id = replyId;
 
       const { data, error } = await supabase
@@ -271,7 +298,6 @@ export default function ChatPage() {
       if (data) {
         setMessages((prev) => {
           const mapped = mapMessage(data as any, user.id);
-          // Keep the tempId as stableKey so React doesn't re-animate
           mapped.stableKey = tempId;
           const alreadyExists = prev.some((m) => m.id === mapped.id);
           const replaced = prev.map((m) => (m.id === tempId ? mapped : m));
@@ -287,16 +313,46 @@ export default function ChatPage() {
     }
   };
 
+  const handleDelete = async (msg: ChatMessage) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("id", msg.id)
+        .eq("sender_id", user.id);
+      if (error) throw error;
+      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      toast.success("Message deleted");
+    } catch {
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const handleEdit = (msg: ChatMessage) => {
+    setEditingMessage(msg);
+    setReplyTo(null);
+    setInput(msg.text);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const handleCopy = (msg: ChatMessage) => {
+    navigator.clipboard.writeText(msg.text);
+    toast.success("Copied to clipboard");
+  };
+
+  const cancelEdit = () => {
+    setEditingMessage(null);
+    setInput("");
+  };
+
   if (!user) {
     navigate("/auth", { replace: true });
     return null;
   }
 
   return (
-    <div
-      id="chat-container"
-      className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0"
-    >
+    <div id="chat-container" className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0">
       <ChatHeader
         remoteProfile={remoteProfile}
         remoteIsTyping={remoteIsTyping}
@@ -319,9 +375,7 @@ export default function ChatPage() {
         ) : (
           <>
             {messages.map((msg) => {
-              const replyMsg = msg.replyToId
-                ? messages.find((m) => m.id === msg.replyToId) || null
-                : null;
+              const replyMsg = msg.replyToId ? messages.find((m) => m.id === msg.replyToId) || null : null;
               return (
                 <ChatMessageBubble
                   key={msg.stableKey}
@@ -329,6 +383,8 @@ export default function ChatPage() {
                   isRemoteOnline={remoteProfile?.is_online ?? false}
                   replyToMessage={replyMsg}
                   onReply={(m) => setReplyTo(m)}
+                  onContextAction={(m, pos) => setContextMenu({ message: m, position: pos })}
+                  isEditing={editingMessage?.id === msg.id}
                 />
               );
             })}
@@ -338,6 +394,17 @@ export default function ChatPage() {
         {remoteIsTyping && <ChatTypingIndicator />}
         <div ref={chatEndRef} />
       </div>
+
+      {/* Context menu */}
+      <MessageActionMenu
+        message={contextMenu?.message ?? null}
+        position={contextMenu?.position ?? null}
+        onClose={() => setContextMenu(null)}
+        onReply={(m) => setReplyTo(m)}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onCopy={handleCopy}
+      />
 
       {/* Emoji picker */}
       <AnimatePresence>
@@ -352,10 +419,7 @@ export default function ChatPage() {
             {EMOJIS.map((emoji) => (
               <button
                 key={emoji}
-                onClick={() => {
-                  setInput((prev) => prev + emoji);
-                  setShowEmojis(false);
-                }}
+                onClick={() => { setInput((prev) => prev + emoji); setShowEmojis(false); }}
                 className="text-xl hover:scale-125 transition-transform active:scale-95"
               >
                 {emoji}
@@ -365,8 +429,24 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
+      {/* Edit preview */}
+      {editingMessage && (
+        <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
+          <div className="w-1 h-8 rounded-full bg-accent flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold text-accent flex items-center gap-1">
+              <Pencil className="w-3 h-3" /> Editing message
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{editingMessage.text}</p>
+          </div>
+          <button onClick={cancelEdit} className="p-1 rounded-full hover:bg-secondary text-muted-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Reply preview */}
-      {replyTo && (
+      {replyTo && !editingMessage && (
         <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
           <div className="w-1 h-8 rounded-full bg-primary flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -375,10 +455,7 @@ export default function ChatPage() {
             </p>
             <p className="text-xs text-muted-foreground truncate">{replyTo.text}</p>
           </div>
-          <button
-            onClick={() => setReplyTo(null)}
-            className="p-1 rounded-full hover:bg-secondary text-muted-foreground"
-          >
+          <button onClick={() => setReplyTo(null)} className="p-1 rounded-full hover:bg-secondary text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -396,17 +473,16 @@ export default function ChatPage() {
           <Smile className="w-5 h-5" />
         </button>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={handleInputChange}
           onFocus={() => setTimeout(() => scrollToBottom(true), 80)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.repeat) {
-              e.preventDefault();
-              sendMessage();
-            }
+            if (e.key === "Enter" && !e.shiftKey && !e.repeat) { e.preventDefault(); sendMessage(); }
+            if (e.key === "Escape" && editingMessage) cancelEdit();
           }}
-          placeholder="Type a message..."
+          placeholder={editingMessage ? "Edit message..." : "Type a message..."}
           className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         <button
@@ -414,7 +490,7 @@ export default function ChatPage() {
           disabled={!input.trim() || isSending}
           className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
         >
-          <Send className="w-4 h-4" />
+          {editingMessage ? <Pencil className="w-4 h-4" /> : <Send className="w-4 h-4" />}
         </button>
       </div>
     </div>
