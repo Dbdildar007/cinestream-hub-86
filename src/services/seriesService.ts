@@ -40,7 +40,7 @@ export interface SeriesWithSeasons extends Series {
   seasons: SeriesSeason[];
 }
 
-const SERIES_CACHE_KEY = 'series_cache';
+const SERIES_CACHE_KEY = 'series_cache_v2';
 const CACHE_DURATION = 5 * 60 * 1000;
 
 function mapSeries(row: any): Series {
