@@ -292,5 +292,12 @@ export default function SeriesModal({ series, onClose, onPlayEpisode, userRating
         </>
       )}
     </AnimatePresence>
+
+    <PremiumPaywall
+      open={showPaywall}
+      onClose={() => setShowPaywall(false)}
+      title={series?.title || ""}
+    />
+    </>
   );
 }
