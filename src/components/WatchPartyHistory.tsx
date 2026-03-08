@@ -149,14 +149,11 @@ export default function WatchPartyHistory({ onResumeMovie, onResumeSeries }: Wat
                       </span>
                     </div>
 
-                    {/* Play icon center with tooltip */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity">
+                    {/* Play icon center */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity">
                       <div className="p-3 rounded-full bg-primary/90">
                         <Play className="w-6 h-6 text-primary-foreground fill-current" />
                       </div>
-                      <span className="mt-2 px-2 py-1 rounded bg-background/80 backdrop-blur-sm text-[10px] font-medium text-foreground">
-                        Resume where you left off
-                      </span>
                     </div>
 
                     {/* Progress bar */}
