@@ -64,7 +64,7 @@ export default function SeriesRow({ title, seriesList, onSeriesSelect, onRate,ge
 
         <button
           onClick={() => scroll("right")}
-          className="absolute right-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-l from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute right-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-l from-background to-transparent"
         >
           <ChevronRight className="w-6 h-6 text-foreground" />
         </button>
