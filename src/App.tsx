@@ -141,7 +141,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
-        <AppContent />
+        <WatchPartyProvider>
+          <AppContent />
+        </WatchPartyProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
