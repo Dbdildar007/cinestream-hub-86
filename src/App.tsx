@@ -71,6 +71,7 @@ function AppContent() {
         <Route path="/my-ratings" element={<MyRatingsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/chat/:userId" element={<ChatPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
