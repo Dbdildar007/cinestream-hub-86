@@ -195,5 +195,5 @@ const clearProgress = useCallback(async (movieId: string, episodeId?: string) =>
   }
 }, [user, supabase]);
 
-  return { updateProgress, getProgress, getContinueWatching, clearProgress };
+  return { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress };
 }
