@@ -95,8 +95,12 @@ export default function ChatPage() {
       if (data) {
         setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
-      // Small delay for smooth skeleton → messages transition
-      setTimeout(() => setIsLoading(false), 400);
+      setIsLoading(false);
+      // Instant scroll to bottom on initial load (no smooth)
+      requestAnimationFrame(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "instant" });
+        setInitialLoadDone(true);
+      });
       markAsRead();
     };
     loadMessages();
