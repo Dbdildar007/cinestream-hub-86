@@ -1,16 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, Smile, Check, CheckCheck } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import ChatHeader from "@/components/chat/ChatHeader";
+import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
+import ChatLoadingSkeleton from "@/components/chat/ChatLoadingSkeleton";
+import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 
-interface Message {
+export interface ChatMessage {
   id: string;
   text: string;
   isMine: boolean;
   timestamp: string;
   readAt: string | null;
+}
+
+interface RemoteProfile {
+  display_name: string;
+  avatar_url: string | null;
+  is_online: boolean;
+  last_seen: string | null;
 }
 
 const EMOJIS = ["😀", "😂", "❤️", "🔥", "👍", "😱", "🎬", "🍿", "👋", "😊", "🎉", "💯"];
@@ -19,17 +30,18 @@ export default function ChatPage() {
   const { userId: remoteUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [remoteName, setRemoteName] = useState("");
+  const [remoteProfile, setRemoteProfile] = useState<RemoteProfile | null>(null);
   const [showEmojis, setShowEmojis] = useState(false);
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remoteTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const mapMessage = useCallback((m: any, userId: string): Message => ({
+  const mapMessage = useCallback((m: any, userId: string): ChatMessage => ({
     id: m.id,
     text: m.message,
     isMine: m.sender_id === userId,
@@ -42,11 +54,11 @@ export default function ChatPage() {
     if (!remoteUserId) return;
     supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, avatar_url, is_online, last_seen")
       .eq("user_id", remoteUserId)
       .single()
       .then(({ data }) => {
-        if (data) setRemoteName(data.display_name);
+        if (data) setRemoteProfile(data);
       });
   }, [remoteUserId]);
 
@@ -66,6 +78,7 @@ export default function ChatPage() {
     if (!user || !remoteUserId) return;
 
     const loadMessages = async () => {
+      setIsLoading(true);
       const { data } = await supabase
         .from("call_messages")
         .select("*")
@@ -78,12 +91,12 @@ export default function ChatPage() {
       if (data) {
         setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
-      // Mark incoming messages as read
+      // Small delay for smooth skeleton → messages transition
+      setTimeout(() => setIsLoading(false), 400);
       markAsRead();
     };
     loadMessages();
 
-    // Realtime subscription for messages + typing
     const channelName = `chat-${[user.id, remoteUserId].sort().join("-")}`;
     const channel = supabase
       .channel(channelName)
@@ -100,7 +113,6 @@ export default function ChatPage() {
               if (prev.some((p) => p.id === m.id)) return prev;
               return [...prev, mapMessage(m, user.id)];
             });
-            // If incoming message, mark as read immediately
             if (m.sender_id === remoteUserId) {
               markAsRead();
             }
@@ -112,7 +124,6 @@ export default function ChatPage() {
         { event: "UPDATE", schema: "public", table: "call_messages" },
         (payload) => {
           const m = payload.new as any;
-          // Update read_at status
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === m.id ? { ...msg, readAt: m.read_at } : msg
@@ -120,7 +131,6 @@ export default function ChatPage() {
           );
         }
       )
-      // Typing indicator via broadcast
       .on("broadcast", { event: "typing" }, (payload) => {
         if (payload.payload?.userId === remoteUserId) {
           setRemoteIsTyping(true);
@@ -132,7 +142,6 @@ export default function ChatPage() {
 
     channelRef.current = channel;
 
-    // Fallback polling every 3s
     const pollInterval = setInterval(async () => {
       const { data } = await supabase
         .from("call_messages")
@@ -160,7 +169,6 @@ export default function ChatPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, remoteIsTyping]);
 
-  // Broadcast typing indicator
   const broadcastTyping = useCallback(() => {
     if (!channelRef.current || !user) return;
     channelRef.current.send({
@@ -200,11 +208,6 @@ export default function ChatPage() {
     }
   };
 
-  const formatTime = (ts: string) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
   if (!user) {
     navigate("/auth", { replace: true });
     return null;
@@ -216,116 +219,62 @@ export default function ChatPage() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background flex flex-col pt-16 md:pt-20 pb-20 md:pb-4"
     >
-      {/* Header */}
-      <div className="sticky top-16 md:top-20 z-30 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => navigate("/friends")}
-          className="p-1.5 rounded-full hover:bg-secondary transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-xs font-bold text-primary">
-            {remoteName?.charAt(0)?.toUpperCase() || "?"}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">{remoteName || "Chat"}</h2>
-          {remoteIsTyping && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[11px] text-primary"
-            >
-              typing...
-            </motion.p>
-          )}
-        </div>
-      </div>
+      <ChatHeader
+        remoteProfile={remoteProfile}
+        remoteIsTyping={remoteIsTyping}
+        onBack={() => navigate("/friends")}
+      />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-        {messages.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
-          </div>
-        )}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}
+        {isLoading ? (
+          <ChatLoadingSkeleton />
+        ) : messages.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="text-center py-16"
           >
-            <div
-              className={`max-w-[75%] px-3 py-2 rounded-2xl ${
-                msg.isMine
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-secondary text-secondary-foreground rounded-bl-sm"
-              }`}
-            >
-              <p className="text-sm break-words">{msg.text}</p>
-              <div className={`flex items-center gap-1 mt-0.5 ${msg.isMine ? "justify-end" : ""}`}>
-                <span className={`text-[10px] ${msg.isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {formatTime(msg.timestamp)}
-                </span>
-                {msg.isMine && (
-                  msg.readAt ? (
-                    <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
-                  ) : msg.id.startsWith("temp-") ? (
-                    <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
-                  ) : (
-                    <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/40" />
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Typing indicator bubble */}
-        {remoteIsTyping && (
-          <div className="flex justify-start">
-            <div className="bg-secondary rounded-2xl rounded-bl-sm px-4 py-3">
-              <div className="flex items-center gap-1">
-                <motion.span
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.2, delay: 0 }}
-                  className="w-2 h-2 rounded-full bg-muted-foreground"
-                />
-                <motion.span
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
-                  className="w-2 h-2 rounded-full bg-muted-foreground"
-                />
-                <motion.span
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }}
-                  className="w-2 h-2 rounded-full bg-muted-foreground"
-                />
-              </div>
-            </div>
-          </div>
+            <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
+          </motion.div>
+        ) : (
+          <AnimatePresence initial={true}>
+            {messages.map((msg, index) => (
+              <ChatMessageBubble key={msg.id} message={msg} index={index} />
+            ))}
+          </AnimatePresence>
         )}
 
+        {remoteIsTyping && <ChatTypingIndicator />}
         <div ref={chatEndRef} />
       </div>
 
       {/* Emoji picker */}
-      {showEmojis && (
-        <div className="px-4 pb-1 flex flex-wrap gap-2">
-          {EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => {
-                setInput((prev) => prev + emoji);
-                setShowEmojis(false);
-              }}
-              className="text-xl hover:scale-125 transition-transform active:scale-95"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {showEmojis && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="px-4 pb-1 flex flex-wrap gap-2 overflow-hidden"
+          >
+            {EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  setInput((prev) => prev + emoji);
+                  setShowEmojis(false);
+                }}
+                className="text-xl hover:scale-125 transition-transform active:scale-95"
+              >
+                {emoji}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Input */}
       <div className="sticky bottom-20 md:bottom-0 bg-card border-t border-border px-4 py-3 flex items-center gap-2">
