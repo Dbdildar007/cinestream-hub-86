@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Smile } from "lucide-react";
+import { Send, Smile, X, Reply } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,11 +11,12 @@ import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 
 export interface ChatMessage {
   id: string;
-  stableKey: string; // stays constant across temp→real swap
+  stableKey: string;
   text: string;
   isMine: boolean;
   timestamp: string;
   readAt: string | null;
+  replyToId: string | null;
 }
 
 interface RemoteProfile {
@@ -37,6 +38,7 @@ export default function ChatPage() {
   const [showEmojis, setShowEmojis] = useState(false);
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
@@ -54,6 +56,7 @@ export default function ChatPage() {
     isMine: m.sender_id === userId,
     timestamp: m.created_at,
     readAt: m.read_at || null,
+    replyToId: m.reply_to_id || null,
   }), []);
 
   // Load remote profile
@@ -242,19 +245,24 @@ export default function ChatPage() {
     sendLockRef.current = true;
     setIsSending(true);
     setInput("");
+    const replyId = replyTo?.id.startsWith("temp-") ? null : replyTo?.id || null;
+    setReplyTo(null);
     setMessages((prev) => [
       ...prev,
-      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
+      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null, replyToId: replyId },
     ]);
 
     try {
+      const insertPayload: any = {
+        sender_id: user.id,
+        receiver_id: remoteUserId,
+        message: text,
+      };
+      if (replyId) insertPayload.reply_to_id = replyId;
+
       const { data, error } = await supabase
         .from("chat_messages")
-        .insert({
-          sender_id: user.id,
-          receiver_id: remoteUserId,
-          message: text,
-        } as any)
+        .insert(insertPayload)
         .select()
         .single();
 
@@ -310,13 +318,20 @@ export default function ChatPage() {
           </motion.div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <ChatMessageBubble
-                key={msg.stableKey}
-                message={msg}
-                isRemoteOnline={remoteProfile?.is_online ?? false}
-              />
-            ))}
+            {messages.map((msg) => {
+              const replyMsg = msg.replyToId
+                ? messages.find((m) => m.id === msg.replyToId) || null
+                : null;
+              return (
+                <ChatMessageBubble
+                  key={msg.stableKey}
+                  message={msg}
+                  isRemoteOnline={remoteProfile?.is_online ?? false}
+                  replyToMessage={replyMsg}
+                  onReply={(m) => setReplyTo(m)}
+                />
+              );
+            })}
           </>
         )}
 
@@ -349,6 +364,25 @@ export default function ChatPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
+          <div className="w-1 h-8 rounded-full bg-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold text-primary">
+              {replyTo.isMine ? "You" : remoteProfile?.display_name || "Them"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.text}</p>
+          </div>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="p-1 rounded-full hover:bg-secondary text-muted-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Input */}
       <div
