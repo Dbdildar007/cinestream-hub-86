@@ -309,16 +309,16 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
           </motion.div>
         ) : (
-          <AnimatePresence initial={false}>
+          <>
             {messages.map((msg, index) => (
               <ChatMessageBubble
-                key={msg.id}
+                key={msg.stableKey}
                 message={msg}
                 index={index}
                 skipAnimation={!initialLoadDone}
               />
             ))}
-          </AnimatePresence>
+          </>
         )}
 
         {remoteIsTyping && <ChatTypingIndicator />}
