@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle, Tv, LayoutGrid, List } from "lucide-react";
 import { getAvatarUrl } from "@/utils/avatarUrl";
