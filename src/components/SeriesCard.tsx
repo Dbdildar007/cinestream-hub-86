@@ -11,7 +11,6 @@ interface SeriesCardProps {
   userRating?: number;
   onToggleWatchlist?: (id: string) => void;
   isWatchlisted?: boolean;
-  index?: number;
 }
 
 // 1. Updated destructuring to include userRating and isWatchlisted
@@ -19,10 +18,9 @@ export default function SeriesCard({
   series, 
   onSelect, 
   onRate, 
-  userRating = 0,
+  userRating = 0, // Default to 0 if not provided
   onToggleWatchlist,
-  isWatchlisted = false,
-  index = 0
+  isWatchlisted = false // Default to false
 }: SeriesCardProps) {
   const [hovered, setHovered] = useState(false);
 
@@ -37,10 +35,8 @@ export default function SeriesCard({
   return (
     <motion.div
       className="relative flex-shrink-0 w-[140px] md:w-[180px] group cursor-pointer"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4), ease: "easeOut" }}
       whileHover={{ scale: 1.05, zIndex: 10 }}
+      transition={{ duration: 0.2 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       onClick={() => onSelect(series)}

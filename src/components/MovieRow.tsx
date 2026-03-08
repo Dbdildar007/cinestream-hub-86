@@ -53,7 +53,7 @@ export default function MovieRow({
         </button>
 
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
-          {movies.map((movie, index) => (
+          {movies.map((movie) => (
             <div key={movie.id} className="relative flex-shrink-0 group/card">
               {showRemoveButton && onToggleWatchlist && (
                 <button
@@ -72,7 +72,6 @@ export default function MovieRow({
                 onRate={onRate}
                 isInWatchlist={isInWatchlist?.(movie.id)}
                 onToggleWatchlist={showRemoveButton ? undefined : onToggleWatchlist}
-                index={index}
               />
             </div>
           ))}

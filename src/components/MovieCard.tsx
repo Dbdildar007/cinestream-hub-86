@@ -12,10 +12,9 @@ interface MovieCardProps {
   onRate: (movieId: string, rating: number) => void;
   isInWatchlist?: boolean;
   onToggleWatchlist?: (movieId: string) => void;
-  index?: number;
 }
 
-export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist, index = 0 }: MovieCardProps) {
+export default function MovieCard({ movie, onSelect, onDownload, downloadState, userRating, onRate, isInWatchlist, onToggleWatchlist }: MovieCardProps) {
  const [hovered, setHovered] = useState(false);
   // NEW: Add isMobile state and listener
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -29,10 +28,8 @@ export default function MovieCard({ movie, onSelect, onDownload, downloadState, 
   return (
     <motion.div
       className="relative flex-shrink-0 w-[140px] md:w-[180px] group cursor-pointer"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4), ease: "easeOut" }}
       whileHover={{ scale: 1.05, zIndex: 10 }}
+      transition={{ duration: 0.2 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       onClick={() => onSelect(movie)}
