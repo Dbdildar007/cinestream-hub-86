@@ -62,7 +62,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute bottom-[15%] md:bottom-[20%] left-0 right-0 px-6 md:px-12">
+      <div className="absolute bottom-[10%] md:bottom-[14%] left-0 right-0 px-6 md:px-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={movie.id}
