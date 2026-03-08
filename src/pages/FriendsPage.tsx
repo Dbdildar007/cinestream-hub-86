@@ -888,7 +888,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto max-h-[62vh] px-3 pb-5 pt-1">
+              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1" style={{ maxHeight: 'calc(90vh - 280px)' }}>
                 {/* GRID VIEW */}
                 {modalView === "grid" && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -900,12 +900,14 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
-                        {/* Always visible on mobile, hover on desktop */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2">
                           <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{movie.year}</span>
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {movie.rating}</span>
+                            {movie.language && (
+                              <span className="text-[9px] md:text-[10px] text-primary-foreground/70">• {movie.language}</span>
+                            )}
                           </div>
                         </div>
                       </motion.button>
@@ -927,13 +929,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-primary/90 px-1.5 py-0.5 rounded text-[9px] font-semibold text-primary-foreground z-10">
-                          <Tv className="w-2.5 h-2.5" />
-                          Series{series.season_count ? ` · ${series.season_count}S` : ""}
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2">
                           <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
-                          <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{series.release_year}</span>
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
+                          </div>
                         </div>
                       </motion.button>
                     ))}
