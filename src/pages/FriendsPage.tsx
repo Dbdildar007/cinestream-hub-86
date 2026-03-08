@@ -383,9 +383,9 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background pt-20 md:pt-24 px-4 md:px-12 pb-24"
+      className="min-h-screen bg-background pt-16 md:pt-24 px-4 md:px-12 pb-24"
     >
-      <h1 className="text-3xl md:text-4xl font-display tracking-wider text-foreground mb-6">FRIENDS</h1>
+      <h1 className="text-3xl md:text-4xl font-display tracking-wider text-foreground mb-4 md:mb-6">FRIENDS</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
