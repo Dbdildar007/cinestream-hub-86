@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Phone, PhoneOff } from "lucide-react";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 
 interface IncomingCallOverlayProps {
   callerName: string | null;
