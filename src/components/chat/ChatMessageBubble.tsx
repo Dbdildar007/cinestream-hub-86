@@ -164,7 +164,7 @@ export default function ChatMessageBubble({
 
   return (
     <div
-      className={`group relative overflow-visible ${isMine ? "flex justify-end" : "flex justify-start"}`}
+      className={`relative overflow-visible py-0.5 ${isMine ? "flex justify-end" : "flex justify-start"}`}
       onContextMenu={handleContextMenu}
     >
       {/* Swipe reply indicator */}
@@ -180,7 +180,7 @@ export default function ChatMessageBubble({
       )}
 
       <div
-        className={`flex items-center gap-1 ${isMine ? "justify-end" : "justify-start"}`}
+        className={`group flex items-center gap-1 ${isMine ? "justify-end" : "justify-start"}`}
         style={{
           transform: swipeX !== 0 ? `translateX(${swipeX}px)` : undefined,
           transition: swipeX === 0 ? "transform 0.25s ease-out" : undefined,
