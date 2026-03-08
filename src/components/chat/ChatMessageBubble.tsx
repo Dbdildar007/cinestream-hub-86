@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Check, CheckCheck, CornerUpLeft, Heart, MoreVertical } from "lucide-react";
+import { Check, CheckCheck, Undo2, Heart, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChatMessage } from "@/pages/ChatPage";
@@ -177,7 +177,7 @@ export default function ChatMessageBubble({
           style={{ opacity: swipeProgress }}
         >
           <div className={`p-1.5 rounded-full bg-secondary ${swipeProgress >= 1 ? "scale-110" : ""} transition-transform`}>
-            <CornerUpLeft className="w-4 h-4 text-muted-foreground" />
+            <Undo2 className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
       )}
@@ -201,7 +201,7 @@ export default function ChatMessageBubble({
                 onClick={() => onReply(msg)}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
-                <CornerUpLeft className="w-3.5 h-3.5" />
+                <Undo2 className="w-3.5 h-3.5" />
               </button>
             )}
             {onContextAction && (
@@ -305,7 +305,7 @@ export default function ChatMessageBubble({
                 onClick={() => onReply(msg)}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
-                <CornerUpLeft className="w-3.5 h-3.5" />
+                <Undo2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
