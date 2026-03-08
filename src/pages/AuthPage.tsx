@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, MailOpen, Loader2 } from "lucide-react";
+import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { useDeviceSession } from "@/hooks/useDeviceSession";
 import { useNavigate } from "react-router-dom";
@@ -316,6 +317,8 @@ export default function AuthPage() {
               )}
             </button>
           </div>
+
+          {!isLogin && <PasswordStrengthIndicator password={password} />}
 
           {isLogin && (
             <div className="text-right -mt-2">
