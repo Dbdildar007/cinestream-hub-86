@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle } from "lucide-react";
+import { Search, UserPlus, UserCheck, Users, Circle, X, Send, Film, Phone, Loader2, CheckCircle, MessageCircle, Tv } from "lucide-react";
 import { getAvatarUrl } from "@/utils/avatarUrl";
 import {
   AlertDialog,
@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useMovies } from "@/hooks/useMovies";
+import { useAllSeries } from "@/hooks/useSeries";
 import type { Movie } from "@/services/movieService";
 
 interface Profile {
@@ -53,6 +54,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const navigate = useNavigate();
   const { sendNotification } = useNotifications();
   const { allMovies } = useMovies();
+  const { allSeries } = useAllSeries();
   const { friends, pendingRequests, sentRequests, loading, invalidate } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -66,11 +68,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
   const [movieSearch, setMovieSearch] = useState("");
+  const [modalTab, setModalTab] = useState<"movies" | "series">("movies");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
 
   const filteredMovies = movieSearch
-    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 8)
-    : allMovies.slice(0, 8);
+    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
+    : allMovies.slice(0, 10);
+
+  const filteredSeries = movieSearch
+    ? allSeries.filter(s => s.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
+    : allSeries.slice(0, 10);
 
   // Build relationship map for search results
   const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
@@ -748,14 +755,14 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6"
-            onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}
+            onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); }}
           >
             <motion.div
               initial={{ y: "100%", scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: "100%", scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="bg-card rounded-t-3xl md:rounded-3xl w-full max-w-xl max-h-[85vh] overflow-hidden border border-border/50 shadow-2xl"
+              className="bg-card rounded-t-3xl md:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-border/50 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with avatar & gradient */}
@@ -778,10 +785,10 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <h3 className="text-lg font-display tracking-wider text-foreground truncate">
                       Watch with {invitingFriend.profile?.display_name}
                     </h3>
-                    <p className="text-xs text-muted-foreground">Choose a movie to start the party 🍿</p>
+                    <p className="text-xs text-muted-foreground">Choose something to watch together 🍿</p>
                   </div>
                   <button
-                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); }}
+                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); }}
                     className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
                   >
                     <X className="w-4 h-4 text-muted-foreground" />
@@ -789,21 +796,47 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 </div>
 
                 {/* Search */}
-                <div className="relative">
+                <div className="relative mb-3">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={movieSearch}
                     onChange={(e) => setMovieSearch(e.target.value)}
-                    placeholder="Search for a movie..."
+                    placeholder={`Search for a ${modalTab === "movies" ? "movie" : "series"}...`}
                     className="w-full bg-secondary/80 text-foreground placeholder:text-muted-foreground rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                   />
                 </div>
+
+                {/* Movies / Series toggle */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setModalTab("movies")}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      modalTab === "movies"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Film className="w-3.5 h-3.5" />
+                    Movies
+                  </button>
+                  <button
+                    onClick={() => setModalTab("series")}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      modalTab === "series"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Tv className="w-3.5 h-3.5" />
+                    Series
+                  </button>
+                </div>
               </div>
 
-              {/* Movie list */}
-              <div className="overflow-y-auto max-h-[60vh] px-3 pb-4 pt-1 space-y-1">
-                {filteredMovies.map((movie) => (
+              {/* Content list */}
+              <div className="overflow-y-auto max-h-[62vh] px-3 pb-5 pt-1 space-y-1">
+                {modalTab === "movies" && filteredMovies.map((movie) => (
                   <motion.button
                     key={movie.id}
                     whileTap={{ scale: 0.98 }}
@@ -830,10 +863,56 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     </div>
                   </motion.button>
                 ))}
-                {filteredMovies.length === 0 && (
+
+                {modalTab === "series" && filteredSeries.map((series) => (
+                  <motion.button
+                    key={series.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleInviteToWatchParty({
+                      id: series.id,
+                      title: series.title,
+                      description: series.description,
+                      poster: series.poster_url,
+                      year: series.release_year,
+                      genre: series.genre,
+                      rating: series.rating,
+                      duration: `${series.seasons?.length || 0} Season${(series.seasons?.length || 0) !== 1 ? "s" : ""}`,
+                      language: "",
+                      category: [],
+                      isSeries: true,
+                      isTrending: false,
+                      isFeatured: false,
+                      isEditorChoice: false,
+                    } as Movie)}
+                    className="w-full flex items-center gap-3.5 p-3 rounded-xl hover:bg-primary/10 transition-all text-left group"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={series.poster_url}
+                        alt={series.title}
+                        className="w-14 h-20 rounded-lg object-cover shadow-md group-hover:shadow-primary/20 transition-shadow"
+                      />
+                      <div className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-all">
+                        <Tv className="w-5 h-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{series.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{series.release_year} • {series.genre.slice(0, 2).join(", ")}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                          {series.seasons?.length || 0} Season{(series.seasons?.length || 0) !== 1 ? "s" : ""}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">⭐ {series.rating}</span>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+
+                {((modalTab === "movies" && filteredMovies.length === 0) || (modalTab === "series" && filteredSeries.length === 0)) && (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <Film className="w-10 h-10 mb-3 opacity-40" />
-                    <p className="text-sm">No movies found</p>
+                    {modalTab === "movies" ? <Film className="w-10 h-10 mb-3 opacity-40" /> : <Tv className="w-10 h-10 mb-3 opacity-40" />}
+                    <p className="text-sm">No {modalTab} found</p>
                   </div>
                 )}
               </div>
