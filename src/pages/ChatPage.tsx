@@ -294,12 +294,13 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">No messages yet. Say hi! 👋</p>
           </motion.div>
         ) : (
-          <AnimatePresence initial={true}>
+          <AnimatePresence initial={false}>
             {messages.map((msg, index) => (
               <ChatMessageBubble
                 key={msg.id}
                 message={msg}
                 index={index}
+                skipAnimation={!initialLoadDone}
               />
             ))}
           </AnimatePresence>
