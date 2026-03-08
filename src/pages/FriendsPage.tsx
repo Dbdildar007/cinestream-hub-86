@@ -510,26 +510,30 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             </div>
           ) : (
             friends.map((f) => (
-              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
                 f.profile?.is_online 
-                  ? "bg-primary/10 border border-primary/20 hover:bg-primary/15" 
+                  ? "bg-green-500/5 border border-green-500/20 hover:bg-green-500/10" 
                   : "bg-secondary hover:bg-secondary/80"
               }`}>
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary">
-                      {f.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                    </span>
-                  </div>
-                  <Circle
-                    className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
-                      f.profile?.is_online ? "text-primary fill-primary" : "text-muted-foreground fill-muted-foreground"
+                  {f.profile?.avatar_url ? (
+                    <img src={f.profile.avatar_url} alt={f.profile.display_name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">
+                        {f.profile?.display_name?.charAt(0).toUpperCase() || "?"}
+                      </span>
+                    </div>
+                  )}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                      f.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
                     }`}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{f.profile?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className={`text-xs ${f.profile?.is_online ? "text-green-500 font-medium" : "text-muted-foreground"}`}>
                     {f.profile?.is_online ? "Online" : "Offline"}
                   </p>
                 </div>
