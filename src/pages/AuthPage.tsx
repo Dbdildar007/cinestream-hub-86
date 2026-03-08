@@ -286,7 +286,7 @@ export default function AuthPage() {
                     placeholder="Display Name"
                     value={displayName}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      const val = e.target.value.replace(/\s{2,}/g, ' ');
                       setDisplayName(val);
                       if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
                       if (val.trim().length < 2) {
@@ -303,6 +303,7 @@ export default function AuthPage() {
                         setUsernameStatus(data && data.length > 0 ? "taken" : "available");
                       }, 500);
                     }}
+                    onBlur={() => setDisplayName(prev => prev.trim())}
                     required={!isLogin}
                     className={`w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 ${
                       usernameStatus === "taken" ? "focus:ring-destructive/50 ring-1 ring-destructive/30" 
