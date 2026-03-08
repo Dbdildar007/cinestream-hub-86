@@ -448,11 +448,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             {searching && <LoadingSpinner size="sm" text="Searching..." />}
             {!searching && searchResults.map((profile) => (
               <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">
-                    {profile.display_name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <img
+                  src={getAvatarUrl(profile.avatar_url, profile.display_name)}
+                  alt={profile.display_name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{profile.display_name}</p>
                   <p className="text-xs text-muted-foreground">{profile.unique_id}</p>
