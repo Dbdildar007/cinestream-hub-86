@@ -772,7 +772,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               animate={{ y: 0, scale: 1 }}
               exit={{ y: "100%", scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="bg-card rounded-t-3xl md:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-border/50 shadow-2xl"
+              className="bg-card rounded-none md:rounded-3xl w-full md:max-w-2xl h-full md:h-auto md:max-h-[90vh] overflow-hidden border-0 md:border border-border/50 shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with avatar & gradient */}
