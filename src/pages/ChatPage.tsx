@@ -154,6 +154,9 @@ export default function ChatPage() {
     channelRef.current = channel;
 
     const pollInterval = setInterval(async () => {
+      // Skip poll if there's a pending optimistic message to avoid flicker
+      if (sendLockRef.current) return;
+
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
@@ -164,9 +167,14 @@ export default function ChatPage() {
         .limit(200);
 
       if (data) {
-        setMessages(data.map((m: any) => mapMessage(m, user.id)));
+        setMessages((prev) => {
+          // Don't overwrite if we still have temp messages
+          const hasTemp = prev.some((m) => m.id.startsWith("temp-"));
+          if (hasTemp) return prev;
+          return data.map((m: any) => mapMessage(m, user.id));
+        });
       }
-    }, 3000);
+    }, 5000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -341,8 +349,8 @@ export default function ChatPage() {
 
       {/* Input */}
       <div
-        className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2"
-        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 8px) + ${keyboardInset}px)` }}
+        className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2 mb-2 md:mb-0"
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 12px) + ${keyboardInset}px)` }}
       >
         <button
           onClick={() => setShowEmojis(!showEmojis)}
