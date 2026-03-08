@@ -81,6 +81,7 @@ function mapDbMovie(row: any): Movie {
 }
 
 const CACHE_KEY = 'movies_cache';
+const CACHE_VERSION = 'v2_upcoming';
 const CACHE_DURATION = 5 * 60 * 1000;
 
 export const movieService = {
@@ -88,8 +89,8 @@ export const movieService = {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
+        const { data, timestamp, version } = JSON.parse(cached);
+        if (version === CACHE_VERSION && Date.now() - timestamp < CACHE_DURATION) {
           return data.map(mapDbMovie);
         }
       }
@@ -111,7 +112,8 @@ export const movieService = {
 
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         data: data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        version: CACHE_VERSION,
       }));
 
       return data.map(mapDbMovie);
