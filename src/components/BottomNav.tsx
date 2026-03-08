@@ -33,7 +33,7 @@ export default function BottomNav() {
                 onSendNotification={sendNotification}
                 isMobile
               />
-              <span className="text-[10px] font-medium text-muted-foreground">Alerts</span>
+              <span className="text-[10px] font-bold text-foreground">Alerts</span>
             </div>
           );
         }
@@ -43,11 +43,11 @@ export default function BottomNav() {
             key={path}
             to={path}
             className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors relative ${
-              active ? "text-primary" : "text-muted-foreground"
+              active ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            <Icon className="w-5 h-5" />
-            <span className="text-[10px] font-medium">{label}</span>
+            <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
+            <span className={`text-[10px] ${active ? "font-bold text-foreground" : "font-medium"}`}>{label}</span>
           </Link>
         );
       })}

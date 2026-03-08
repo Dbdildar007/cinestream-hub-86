@@ -31,7 +31,7 @@ export default function TopNav() {
             <Link
               key={item.path}
               to={item.path}
-              className={`text-sm font-medium transition-colors hover:text-foreground ${
+              className={`text-sm font-bold transition-colors hover:text-foreground ${
                 location.pathname === item.path ? "text-foreground" : "text-muted-foreground"
               }`}
             >
@@ -42,7 +42,7 @@ export default function TopNav() {
       </div>
       <div className="flex items-center gap-4">
         <Link to="/search" className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Search className="w-5 h-5 text-foreground" />
+          <Search className="w-5 h-5 text-foreground" strokeWidth={2.5} />
         </Link>
         <NotificationDropdown
           notifications={notifications}
@@ -53,10 +53,10 @@ export default function TopNav() {
           onSendNotification={sendNotification}
         />
         <Link to="/friends" className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Users className="w-5 h-5 text-foreground" />
+          <Users className="w-5 h-5 text-foreground" strokeWidth={2.5} />
         </Link>
         <Link to="/profile" className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <User className="w-5 h-5 text-foreground" />
+          <User className="w-5 h-5 text-foreground" strokeWidth={2.5} />
         </Link>
       </div>
     </motion.header>
