@@ -28,13 +28,17 @@ export function useWatchProgress() {
   const [progressList, setProgressList] = useState<WatchProgress[]>(loadLocalProgress);
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
- // Load from DB on login
+ // Clear on logout, load from DB on login
   useEffect(() => {
-    if (!user) return;
-  const fetchProgress = async () => {
+    if (!user) {
+      setProgressList([]);
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    const fetchProgress = async () => {
       const { data } = await supabase
         .from("watch_progress")
-        .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched, season_number, episode_number")
+        .select("movie_id, episode_id, media_type, current_time_sec, duration_sec, last_watched")
         .eq("user_id", user.id);
 
       if (data) {
@@ -44,8 +48,6 @@ export function useWatchProgress() {
           mediaType: (d.media_type as 'movie' | 'series') || 'movie',
           currentTime: Number(d.current_time_sec),
           duration: Number(d.duration_sec),
-          seasonNumber: d.season_number,
-          episodeNumber: d.episode_number,
           lastWatched: new Date(d.last_watched).getTime(),
         }));
         setProgressList(dbList);
