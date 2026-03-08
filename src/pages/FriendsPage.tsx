@@ -332,10 +332,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       { party_id: data.id, movie_id: movie.id }
     );
 
-    toast.success(`Watch party started! ${invitingFriend.profile.display_name} will join automatically.`);
+    toast.success(`Watch party started! Waiting for ${invitingFriend.profile.display_name} to join.`);
     setInvitingFriend(null);
     setMovieSearch("");
-    navigate("/");
+
+    // Open the video player for the host immediately via context
+    wpCtx.startWatchParty(movie, data.id);
   };
 
   if (!user) {
