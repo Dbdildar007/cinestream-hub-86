@@ -211,25 +211,45 @@ export default function ChatPage() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || !user || !remoteUserId) return;
+    if (!input.trim() || !user || !remoteUserId || sendLockRef.current) return;
+
     const text = input.trim();
-    setInput("");
     const tempId = `temp-${Date.now()}`;
+    sendLockRef.current = true;
+    setIsSending(true);
+    setInput("");
     setMessages((prev) => [
       ...prev,
       { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
-    const { data } = await supabase.from("chat_messages").insert({
-      sender_id: user.id,
-      receiver_id: remoteUserId,
-      message: text,
-    } as any).select().single();
-    if (data) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId ? mapMessage(data as any, user.id) : m
-        )
-      );
+
+    try {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .insert({
+          sender_id: user.id,
+          receiver_id: remoteUserId,
+          message: text,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setMessages((prev) => {
+          const mapped = mapMessage(data as any, user.id);
+          const alreadyExists = prev.some((m) => m.id === mapped.id);
+          const replaced = prev.map((m) => (m.id === tempId ? mapped : m));
+          return alreadyExists ? replaced.filter((m) => m.id !== tempId) : replaced;
+        });
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setInput(text);
+    } finally {
+      sendLockRef.current = false;
+      setIsSending(false);
     }
   };
 
