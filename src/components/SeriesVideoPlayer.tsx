@@ -7,7 +7,7 @@ import {
   RefreshCw, AlertCircle, Subtitles, Users, Loader2
 } from "lucide-react";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
-import { useSeriesDetail } from "@/hooks/useSeries";
+import { useSeriesDetail, useAllSeries } from "@/hooks/useSeries";
 import { useWatchProgress } from '@/hooks/useWatchProgress'; 
 import type { PartyPhase } from "@/hooks/useWatchParty";
 
