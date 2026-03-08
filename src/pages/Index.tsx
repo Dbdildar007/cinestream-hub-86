@@ -25,6 +25,7 @@ export default function Index() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const [initialLoad, setInitialLoad] = useState(false);
+  const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
