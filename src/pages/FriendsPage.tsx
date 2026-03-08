@@ -930,9 +930,12 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                           <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{series.release_year}</span>
                             <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
+                            {series.language && (
+                              <span className="text-[9px] md:text-[10px] text-primary-foreground/70">• {series.language}</span>
+                            )}
                           </div>
                         </div>
                       </motion.button>
