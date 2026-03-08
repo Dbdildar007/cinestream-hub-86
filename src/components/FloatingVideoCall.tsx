@@ -130,7 +130,7 @@ export default function FloatingVideoCall({
     const text = chatInput.trim();
     setChatInput("");
 
-    await supabase.from("call_messages").insert({
+    await supabase.from("chat_messages").insert({
       sender_id: user.id,
       receiver_id: callState.remoteUserId,
       message: text,
