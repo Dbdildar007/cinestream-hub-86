@@ -64,7 +64,7 @@ export default function FloatingVideoCall({
     // Load existing messages between the two users
     const loadMessages = async () => {
       const { data } = await supabase
-        .from("call_messages")
+        .from("chat_messages")
         .select("*")
         .or(
           `and(sender_id.eq.${user.id},receiver_id.eq.${remoteId}),and(sender_id.eq.${remoteId},receiver_id.eq.${user.id})`
@@ -90,7 +90,7 @@ export default function FloatingVideoCall({
       .channel(`chat-${[user.id, remoteId].sort().join("-")}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "call_messages" },
+        { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           // Only add if it's between us
@@ -130,7 +130,7 @@ export default function FloatingVideoCall({
     const text = chatInput.trim();
     setChatInput("");
 
-    await supabase.from("call_messages").insert({
+    await supabase.from("chat_messages").insert({
       sender_id: user.id,
       receiver_id: callState.remoteUserId,
       message: text,

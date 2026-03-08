@@ -66,7 +66,7 @@ export default function ChatPage() {
   const markAsRead = useCallback(async () => {
     if (!user || !remoteUserId) return;
     await supabase
-      .from("call_messages")
+      .from("chat_messages")
       .update({ read_at: new Date().toISOString() } as any)
       .eq("sender_id", remoteUserId)
       .eq("receiver_id", user.id)
@@ -80,7 +80,7 @@ export default function ChatPage() {
     const loadMessages = async () => {
       setIsLoading(true);
       const { data } = await supabase
-        .from("call_messages")
+        .from("chat_messages")
         .select("*")
         .or(
           `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
@@ -102,7 +102,7 @@ export default function ChatPage() {
       .channel(channelName)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "call_messages" },
+        { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           if (
@@ -121,7 +121,7 @@ export default function ChatPage() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "call_messages" },
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           setMessages((prev) =>
@@ -144,7 +144,7 @@ export default function ChatPage() {
 
     const pollInterval = setInterval(async () => {
       const { data } = await supabase
-        .from("call_messages")
+        .from("chat_messages")
         .select("*")
         .or(
           `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
@@ -215,7 +215,7 @@ export default function ChatPage() {
       ...prev,
       { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
-    const { data } = await supabase.from("call_messages").insert({
+    const { data } = await supabase.from("chat_messages").insert({
       sender_id: user.id,
       receiver_id: remoteUserId,
       message: text,
