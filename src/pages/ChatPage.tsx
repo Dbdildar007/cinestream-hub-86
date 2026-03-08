@@ -245,9 +245,11 @@ export default function ChatPage() {
     sendLockRef.current = true;
     setIsSending(true);
     setInput("");
+    const replyId = replyTo?.id.startsWith("temp-") ? null : replyTo?.id || null;
+    setReplyTo(null);
     setMessages((prev) => [
       ...prev,
-      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
+      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null, replyToId: replyId },
     ]);
 
     try {
