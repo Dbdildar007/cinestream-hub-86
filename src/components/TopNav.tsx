@@ -23,8 +23,13 @@ export default function TopNav() {
       className="fixed top-0 left-0 right-0 z-50 hidden md:flex items-center justify-between px-8 py-4 bg-gradient-to-b from-background/95 to-background/0 backdrop-blur-sm"
     >
       <div className="flex items-center gap-8">
-        <Link to="/" className="text-3xl font-display tracking-wider text-primary">
-          CINESTREAM
+        <Link to="/" className="flex items-center gap-1.5 group">
+          <span className="text-3xl font-display tracking-wider font-black bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent drop-shadow-lg">
+            CINE
+          </span>
+          <span className="text-3xl font-display tracking-wider font-light text-foreground">
+            STREAM
+          </span>
         </Link>
         <nav className="flex items-center gap-6">
           {navItems.map((item) => (
