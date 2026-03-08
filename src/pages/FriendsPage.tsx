@@ -570,61 +570,94 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground text-sm">No friends yet. Start by searching for users!</p>
             </div>
-          ) : (
-            friends.map((f) => (
-              <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                f.profile?.is_online 
-                  ? "bg-green-500/5 border border-green-500/20 hover:bg-green-500/10" 
-                  : "bg-secondary hover:bg-secondary/80"
-              }`}>
-                <div className="relative">
-                  <img
-                    src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
-                    alt={f.profile?.display_name || "User"}
-                    className="w-10 h-10 rounded-full object-cover bg-primary/10"
-                  />
-                  <span
-                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                      f.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
-                    }`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{f.profile?.display_name}</p>
-                  <p className={`text-xs ${f.profile?.is_online ? "text-green-500 font-medium" : "text-muted-foreground"}`}>
-                    {f.profile?.is_online ? "Online" : "Offline"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    if (f.profile) {
-                      navigate(`/chat/${f.profile.user_id}`);
-                    }
-                  }}
-                  className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
-                  title="Message"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </button>
-                {onStartCall && (
+          ) : (() => {
+            const onlineFriends = friends.filter(f => f.profile?.is_online);
+            const offlineFriends = friends.filter(f => !f.profile?.is_online);
+            const renderFriend = (f: Friendship) => {
+              const isOnline = f.profile?.is_online;
+              return (
+                <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
+                  isOnline
+                    ? "bg-green-500/5 border border-green-500/20 hover:bg-green-500/10"
+                    : "bg-secondary/50 border border-border/30 opacity-70"
+                }`}>
+                  <div className="relative">
+                    <img
+                      src={getAvatarUrl(f.profile?.avatar_url, f.profile?.display_name)}
+                      alt={f.profile?.display_name || "User"}
+                      className={`w-10 h-10 rounded-full object-cover bg-primary/10 ${!isOnline ? "grayscale-[30%]" : ""}`}
+                    />
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                        isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{f.profile?.display_name}</p>
+                    <p className={`text-xs ${isOnline ? "text-green-500 font-medium" : "text-muted-foreground"}`}>
+                      {isOnline ? "● Online" : "Offline"}
+                    </p>
+                  </div>
                   <button
-                    onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}
-                    className={`p-2 rounded-full hover:bg-primary/20 transition-colors ${f.profile?.is_online ? "text-primary" : "text-muted-foreground"}`}
-                    title={f.profile?.is_online ? "Video Call" : "Offline"}
+                    onClick={() => {
+                      if (f.profile) navigate(`/chat/${f.profile.user_id}`);
+                    }}
+                    className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                    title="Message"
                   >
-                    <Phone className="w-4 h-4" />
+                    <MessageCircle className="w-4 h-4" />
                   </button>
+                  {onStartCall && (
+                    <button
+                      onClick={() => isOnline && onStartCall(f.profile!.user_id, f.profile!.display_name)}
+                      disabled={!isOnline}
+                      className={`p-2 rounded-full transition-colors ${
+                        isOnline
+                          ? "hover:bg-primary/20 text-primary cursor-pointer"
+                          : "text-muted-foreground/40 cursor-not-allowed"
+                      }`}
+                      title={isOnline ? "Video Call" : "User is offline"}
+                    >
+                      <Phone className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => isOnline && setInvitingFriend(f)}
+                    disabled={!isOnline}
+                    className={`p-2 rounded-full transition-colors ${
+                      isOnline
+                        ? "hover:bg-primary/20 text-primary cursor-pointer"
+                        : "text-muted-foreground/40 cursor-not-allowed"
+                    }`}
+                    title={isOnline ? "Watch Together" : "User is offline"}
+                  >
+                    <Film className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            };
+            return (
+              <>
+                {onlineFriends.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-green-500 uppercase tracking-wider px-1 flex items-center gap-1.5">
+                      <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500" /> Online ({onlineFriends.length})
+                    </h3>
+                    {onlineFriends.map(renderFriend)}
+                  </div>
                 )}
-                <button
-                  onClick={() => setInvitingFriend(f)}
-                  className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
-                  title="Watch Together"
-                >
-                  <Film className="w-4 h-4" />
-                </button>
-              </div>
-            ))
-          )}
+                {offlineFriends.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                      Offline ({offlineFriends.length})
+                    </h3>
+                    {offlineFriends.map(renderFriend)}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
