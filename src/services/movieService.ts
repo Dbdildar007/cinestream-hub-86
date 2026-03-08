@@ -81,6 +81,7 @@ function mapDbMovie(row: any): Movie {
 }
 
 const CACHE_KEY = 'movies_cache';
+const CACHE_VERSION = 'v2_upcoming';
 const CACHE_DURATION = 5 * 60 * 1000;
 
 export const movieService = {
