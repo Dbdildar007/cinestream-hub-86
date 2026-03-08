@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Download, Star, Clock, Calendar, Globe, Check, Plus, CheckCircle, Tv } from "lucide-react";
+import { X, Play, Star, Clock, Calendar, Globe, Plus, CheckCircle, Tv } from "lucide-react";
 import type { Movie } from "@/services/movieService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
@@ -7,8 +7,6 @@ import { useState } from "react";
 interface MovieModalProps {
   movie: Movie | null;
   onClose: () => void;
-  onDownload: (movieId: string) => void;
-  downloadState?: { progress: number; status: string };
   userRating: number;
   onRate: (movieId: string, rating: number) => void;
   onWatch?: (movie: Movie) => void;
@@ -17,7 +15,7 @@ interface MovieModalProps {
 }
 
 export default function MovieModal({
-  movie, onClose, onDownload, downloadState, userRating, onRate, onWatch,
+  movie, onClose, userRating, onRate, onWatch,
   isInWatchlist, onToggleWatchlist,
 }: MovieModalProps) {
   const isMobile = useIsMobile();
@@ -46,7 +44,6 @@ export default function MovieModal({
     <AnimatePresence>
       {movie && (
         <>
-          {/* 1. Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -55,7 +52,6 @@ export default function MovieModal({
             onClick={onClose}
           />
 
-          {/* 2. Modal Content */}
           <motion.div
             variants={variants}
             initial="hidden"
@@ -68,7 +64,6 @@ export default function MovieModal({
                 : "top-0 right-0 bottom-0 w-[480px] border-l border-border"
             }`}
           >
-            {/* Header image section - FIXED: Added opening <div> */}
             <div className="relative aspect-[4/3] md:aspect-video">
               <img 
                 src={movie.heroImage || movie.poster} 
@@ -90,7 +85,6 @@ export default function MovieModal({
               )}
             </div>
 
-            {/* Content section - Now safely inside motion.div */}
             <div className="px-6 pb-8 -mt-16 relative">
               <h2 className="text-3xl font-display tracking-wider text-foreground mb-2">
                 {movie.title.toUpperCase()}
@@ -125,7 +119,7 @@ export default function MovieModal({
 
                 <p className="text-foreground/80 text-sm leading-relaxed mb-6">{movie.description}</p>
 
-             {/* Star rating - Row layout fix */}
+             {/* Star rating */}
 <div className="mb-6 flex items-center gap-4">
   <p className="text-xs text-muted-foreground whitespace-nowrap">Like it</p>
   <div className="flex gap-1">
@@ -144,8 +138,6 @@ export default function MovieModal({
     ))}
   </div>
 </div>
-
-              
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2 mb-4">
