@@ -580,6 +580,32 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Decline confirmation dialog */}
+      <AlertDialog open={!!declineTarget} onOpenChange={(open) => { if (!open) setDeclineTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline friend request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the request from {declineTarget?.profile?.display_name || "this user"}. They will be notified. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (declineTarget) {
+                  declineRequest(declineTarget.id, declineTarget.profile);
+                  setDeclineTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
