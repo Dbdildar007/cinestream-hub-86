@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, Smile } from "lucide-react";
+import { ArrowLeft, Send, Smile, Check, CheckCheck } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ interface Message {
   text: string;
   isMine: boolean;
   timestamp: string;
+  readAt: string | null;
 }
 
 const EMOJIS = ["😀", "😂", "❤️", "🔥", "👍", "😱", "🎬", "🍿", "👋", "😊", "🎉", "💯"];
@@ -22,7 +23,19 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [remoteName, setRemoteName] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
+  const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remoteTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const mapMessage = useCallback((m: any, userId: string): Message => ({
+    id: m.id,
+    text: m.message,
+    isMine: m.sender_id === userId,
+    timestamp: m.created_at,
+    readAt: m.read_at || null,
+  }), []);
 
   // Load remote profile
   useEffect(() => {
@@ -36,6 +49,17 @@ export default function ChatPage() {
         if (data) setRemoteName(data.display_name);
       });
   }, [remoteUserId]);
+
+  // Mark unread messages as read
+  const markAsRead = useCallback(async () => {
+    if (!user || !remoteUserId) return;
+    await supabase
+      .from("call_messages")
+      .update({ read_at: new Date().toISOString() } as any)
+      .eq("sender_id", remoteUserId)
+      .eq("receiver_id", user.id)
+      .is("read_at", null);
+  }, [user, remoteUserId]);
 
   // Load messages and subscribe
   useEffect(() => {
@@ -52,21 +76,17 @@ export default function ChatPage() {
         .limit(200);
 
       if (data) {
-        setMessages(
-          data.map((m: any) => ({
-            id: m.id,
-            text: m.message,
-            isMine: m.sender_id === user.id,
-            timestamp: m.created_at,
-          }))
-        );
+        setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
+      // Mark incoming messages as read
+      markAsRead();
     };
     loadMessages();
 
-    // Realtime subscription
+    // Realtime subscription for messages + typing
+    const channelName = `chat-${[user.id, remoteUserId].sort().join("-")}`;
     const channel = supabase
-      .channel(`chat-page-${[user.id, remoteUserId].sort().join("-")}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "call_messages" },
@@ -77,24 +97,42 @@ export default function ChatPage() {
             (m.sender_id === remoteUserId && m.receiver_id === user.id)
           ) {
             setMessages((prev) => {
-              // Skip if already exists (including temp messages with same text)
               if (prev.some((p) => p.id === m.id)) return prev;
-              return [
-                ...prev,
-                {
-                  id: m.id,
-                  text: m.message,
-                  isMine: m.sender_id === user.id,
-                  timestamp: m.created_at,
-                },
-              ];
+              return [...prev, mapMessage(m, user.id)];
             });
+            // If incoming message, mark as read immediately
+            if (m.sender_id === remoteUserId) {
+              markAsRead();
+            }
           }
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "call_messages" },
+        (payload) => {
+          const m = payload.new as any;
+          // Update read_at status
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === m.id ? { ...msg, readAt: m.read_at } : msg
+            )
+          );
+        }
+      )
+      // Typing indicator via broadcast
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.userId === remoteUserId) {
+          setRemoteIsTyping(true);
+          if (remoteTypingTimeoutRef.current) clearTimeout(remoteTypingTimeoutRef.current);
+          remoteTypingTimeoutRef.current = setTimeout(() => setRemoteIsTyping(false), 3000);
+        }
+      })
       .subscribe();
 
-    // Fallback polling every 3s to catch missed realtime events
+    channelRef.current = channel;
+
+    // Fallback polling every 3s
     const pollInterval = setInterval(async () => {
       const { data } = await supabase
         .from("call_messages")
@@ -106,49 +144,57 @@ export default function ChatPage() {
         .limit(200);
 
       if (data) {
-        setMessages(
-          data.map((m: any) => ({
-            id: m.id,
-            text: m.message,
-            isMine: m.sender_id === user.id,
-            timestamp: m.created_at,
-          }))
-        );
+        setMessages(data.map((m: any) => mapMessage(m, user.id)));
       }
     }, 3000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
+      channelRef.current = null;
+      if (remoteTypingTimeoutRef.current) clearTimeout(remoteTypingTimeoutRef.current);
     };
-  }, [user, remoteUserId]);
+  }, [user, remoteUserId, mapMessage, markAsRead]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, remoteIsTyping]);
+
+  // Broadcast typing indicator
+  const broadcastTyping = useCallback(() => {
+    if (!channelRef.current || !user) return;
+    channelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId: user.id },
+    });
+  }, [user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    broadcastTyping();
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {}, 2000);
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || !user || !remoteUserId) return;
     const text = input.trim();
     setInput("");
-    // Optimistic UI - show message immediately
     const tempId = `temp-${Date.now()}`;
     setMessages((prev) => [
       ...prev,
-      { id: tempId, text, isMine: true, timestamp: new Date().toISOString() },
+      { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
     const { data } = await supabase.from("call_messages").insert({
       sender_id: user.id,
       receiver_id: remoteUserId,
       message: text,
     } as any).select().single();
-    // Replace temp with real message
     if (data) {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === tempId
-            ? { id: (data as any).id, text: (data as any).message, isMine: true, timestamp: (data as any).created_at }
-            : m
+          m.id === tempId ? mapMessage(data as any, user.id) : m
         )
       );
     }
@@ -183,7 +229,18 @@ export default function ChatPage() {
             {remoteName?.charAt(0)?.toUpperCase() || "?"}
           </span>
         </div>
-        <h2 className="text-sm font-semibold text-foreground">{remoteName || "Chat"}</h2>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">{remoteName || "Chat"}</h2>
+          {remoteIsTyping && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[11px] text-primary"
+            >
+              typing...
+            </motion.p>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -206,12 +263,49 @@ export default function ChatPage() {
               }`}
             >
               <p className="text-sm break-words">{msg.text}</p>
-              <p className={`text-[10px] mt-0.5 ${msg.isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                {formatTime(msg.timestamp)}
-              </p>
+              <div className={`flex items-center gap-1 mt-0.5 ${msg.isMine ? "justify-end" : ""}`}>
+                <span className={`text-[10px] ${msg.isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                  {formatTime(msg.timestamp)}
+                </span>
+                {msg.isMine && (
+                  msg.readAt ? (
+                    <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                  ) : msg.id.startsWith("temp-") ? (
+                    <Check className="w-3.5 h-3.5 text-primary-foreground/40" />
+                  ) : (
+                    <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/40" />
+                  )
+                )}
+              </div>
             </div>
           </div>
         ))}
+
+        {/* Typing indicator bubble */}
+        {remoteIsTyping && (
+          <div className="flex justify-start">
+            <div className="bg-secondary rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex items-center gap-1">
+                <motion.span
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ repeat: Infinity, duration: 1.2, delay: 0 }}
+                  className="w-2 h-2 rounded-full bg-muted-foreground"
+                />
+                <motion.span
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
+                  className="w-2 h-2 rounded-full bg-muted-foreground"
+                />
+                <motion.span
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }}
+                  className="w-2 h-2 rounded-full bg-muted-foreground"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={chatEndRef} />
       </div>
 
@@ -244,7 +338,7 @@ export default function ChatPage() {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Type a message..."
           className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
