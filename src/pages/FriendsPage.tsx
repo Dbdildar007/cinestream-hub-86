@@ -69,6 +69,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
   const [movieSearch, setMovieSearch] = useState("");
   const [modalTab, setModalTab] = useState<"movies" | "series">("movies");
+  const [modalView, setModalView] = useState<"list" | "grid">("list");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
 
   const filteredMovies = movieSearch
