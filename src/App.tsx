@@ -115,16 +115,25 @@ function AppContent() {
       {/* Watch Party Video Player - renders at App level */}
       <AnimatePresence>
         {wpCtx.playingMovie && (
-          <VideoPlayer
-            movie={wpCtx.playingMovie}
-            onClose={wpCtx.closePlayer}
-            watchPartyActive={!!wpCtx.activeParty}
-            isHost={wpCtx.isHost}
-            onSyncPlayback={wpCtx.syncPlayback}
-            onForceSyncPlayback={wpCtx.forceSyncPlayback}
-            onSyncReceived={wpCtx.onSyncReceived}
-            onEndParty={wpCtx.endParty}
-          />
+          <div className="fixed inset-0 z-[90]">
+            <VideoPlayer
+              movie={wpCtx.playingMovie}
+              onClose={wpCtx.closePlayer}
+              watchPartyActive={!!wpCtx.activeParty}
+              isHost={wpCtx.isHost}
+              onSyncPlayback={wpCtx.syncPlayback}
+              onForceSyncPlayback={wpCtx.forceSyncPlayback}
+              onSyncReceived={wpCtx.onSyncReceived}
+              onEndParty={wpCtx.endParty}
+              guestName={wpCtx.friendName}
+            />
+            <WatchPartyCountdown
+              phase={wpCtx.partyPhase}
+              isHost={wpCtx.isHost}
+              friendName={wpCtx.friendName}
+              movieTitle={wpCtx.playingMovie.title}
+            />
+          </div>
         )}
       </AnimatePresence>
 
