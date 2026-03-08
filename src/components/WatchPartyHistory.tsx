@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Film, Clock, Users } from "lucide-react";
+import { Film, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovies } from "@/hooks/useMovies";
@@ -13,7 +13,6 @@ interface PartyHistoryItem {
   movie_id: string;
   started_at: string;
   ended_at: string | null;
-  duration_watched_sec: number;
   friend_name?: string;
 }
 
@@ -54,12 +53,6 @@ export default function WatchPartyHistory() {
 
     fetchHistory();
   }, [user]);
-
-  const formatDuration = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -107,10 +100,6 @@ export default function WatchPartyHistory() {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="w-3 h-3" />
                   <span className="truncate">with {item.friend_name}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>{formatDuration(item.duration_watched_sec)}</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground/60">{formatDate(item.started_at)}</p>
               </div>
