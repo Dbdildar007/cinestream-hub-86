@@ -100,13 +100,46 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
     setLoadingReminder(false);
   }, [movie, user, reminderSet]);
 
+  useEffect(() => {
+    setShowTrailer(false);
+    setTrailerUrl(movie?.url?.trim() || null);
+  }, [movie?.id, movie?.url]);
+
+  const handlePlayTrailer = useCallback(async () => {
+    if (showTrailer) {
+      setShowTrailer(false);
+      return;
+    }
+
+    let resolvedUrl = trailerUrl;
+
+    if (!resolvedUrl && movie?.id) {
+      const { data } = await supabase
+        .from("movies")
+        .select("url")
+        .eq("id", movie.id)
+        .maybeSingle();
+
+      const freshUrl = data?.url?.trim() || null;
+      if (freshUrl) {
+        resolvedUrl = freshUrl;
+        setTrailerUrl(freshUrl);
+      }
+    }
+
+    if (resolvedUrl) {
+      setShowTrailer(true);
+      return;
+    }
+
+    toast("Trailer coming soon");
+  }, [movie?.id, showTrailer, trailerUrl]);
+
   if (!movie) return null;
 
   const mobileVariants = { hidden: { y: "100%" }, visible: { y: 0 }, exit: { y: "100%" } };
   const desktopVariants = { hidden: { x: "100%" }, visible: { x: 0 }, exit: { x: "100%" } };
   const variants = isMobile ? mobileVariants : desktopVariants;
-
-  const hasTrailer = !!(movie?.url && movie.url.trim() !== "");
 
   return (
     <AnimatePresence>
