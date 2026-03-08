@@ -21,7 +21,7 @@ interface VideoPlayerProps {
   onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
-  onEndParty?: () => void;
+  onEndParty?: (currentTimeSec: number, durationSec: number) => void;
   guestName?: string;
   allMovies?: Movie[];
   onPlayMovie?: (movie: Movie) => void;
