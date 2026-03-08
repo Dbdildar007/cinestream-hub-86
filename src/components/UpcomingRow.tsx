@@ -146,7 +146,7 @@ export default function UpcomingRow({ movies, onMovieSelect }: UpcomingRowProps)
   if (movies.length === 0) return null;
 
   return (
-    <section className="relative px-4 md:px-12 mb-8">
+    <section className="relative px-4 md:px-12 mb-8 mt-6 md:mt-10">
       <h2 className="text-xl md:text-2xl font-display tracking-wide text-foreground mb-4 flex items-center gap-2">
         <Calendar className="w-5 h-5 text-primary" />
         COMING SOON
