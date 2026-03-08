@@ -21,7 +21,7 @@ interface WatchPartyContextType {
   friendName: string;
   friendUserId: string;
   pendingInvite: PendingInvite | null;
-  startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string) => void;
+  startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => void;
   acceptInvite: () => Promise<void>;
   declineInvite: () => Promise<void>;
   closePlayer: () => void;
