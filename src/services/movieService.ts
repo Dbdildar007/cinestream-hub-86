@@ -29,6 +29,7 @@ export interface Movie {
   isTrending?: boolean;
   isEditorChoice?: boolean;
   isSeries?: boolean;
+  upcomingDate?: string;
 }
 
 export const posterMap: Record<string, string> = {
@@ -75,6 +76,7 @@ function mapDbMovie(row: any): Movie {
     isTrending: !!row.is_trending || !!row.isTrending,
     isEditorChoice: !!row.is_editor_choice || !!row.isEditorChoice,
     isSeries: !!row.is_series || !!row.isSeries,
+    upcomingDate: row.upcoming_date || undefined,
   };
 }
 

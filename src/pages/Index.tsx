@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import HeroCarousel from "@/components/HeroCarousel";
 import MovieRow from "@/components/MovieRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
+import UpcomingRow from "@/components/UpcomingRow";
 import MovieModal from "@/components/MovieModal";
 import VideoPlayer from "@/components/VideoPlayer";
 import WatchPartyHistory from "@/components/WatchPartyHistory";
@@ -158,6 +159,11 @@ export default function Index() {
       />
 
       <div className="-mt-10 md:-mt-35 relative z-10">
+        <UpcomingRow
+          movies={allMovies.filter(m => m.upcomingDate && new Date(m.upcomingDate) > new Date())}
+          onMovieSelect={handleCardClick}
+        />
+
         <ContinueWatchingRow
           movies={continueWatchingMovies}
           onWatch={handleWatch}
