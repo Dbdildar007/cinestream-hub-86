@@ -28,6 +28,7 @@ interface Profile {
   unique_id: string;
   is_online: boolean;
   avatar_url: string | null;
+  location?: string | null;
 }
 
 interface Friendship {
