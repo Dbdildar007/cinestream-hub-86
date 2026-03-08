@@ -77,19 +77,21 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       .eq("status", "accepted")
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
-    if (data) {
-      const friendsWithProfiles = await Promise.all(
-        data.map(async (f) => {
-          const friendUserId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", friendUserId)
-            .single();
-          return { ...f, profile: profile || undefined };
-        })
-      );
+    if (data && data.length > 0) {
+      const friendUserIds = data.map(f => f.requester_id === user.id ? f.addressee_id : f.requester_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", friendUserIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      const friendsWithProfiles = data.map(f => {
+        const friendUserId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+        return { ...f, profile: profileMap.get(friendUserId) || undefined };
+      });
       setFriends(friendsWithProfiles);
+    } else {
+      setFriends([]);
     }
     setLoading(false);
   }, [user]);
