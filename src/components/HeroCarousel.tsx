@@ -57,8 +57,9 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             style={{ aspectRatio: "16 / 9" }}
             loading="eager" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-transparent" />
+          {/* Dark mode: use background token. Light mode: use black cinematic overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent dark:from-background dark:via-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent dark:from-background/30" />
         </motion.div>
       </AnimatePresence>
 
@@ -71,10 +72,10 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h1 className="text-4xl md:text-7xl font-display tracking-wider text-foreground mb-3">
+            <h1 className="text-4xl md:text-7xl font-display tracking-wider text-white dark:text-foreground mb-3 drop-shadow-lg">
               {movie.title.toUpperCase()}
             </h1>
-            <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-3 mb-4 text-sm text-white/70 dark:text-muted-foreground flex-wrap">
               <span className="text-primary font-semibold">{movie.rating}/10</span>
               <span>•</span>
               <span>{movie.year}</span>
@@ -89,7 +90,7 @@ export default function HeroCarousel({ onMovieSelect, onWatch, isInWatchlist, on
                 </>
               )}
             </div>
-            <p className="text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none">
+            <p className="text-white/80 dark:text-foreground/80 max-w-lg text-sm md:text-base mb-6 line-clamp-2 md:line-clamp-none drop-shadow-sm">
               {movie.description}
             </p>
             <div className="flex gap-3 flex-wrap">
