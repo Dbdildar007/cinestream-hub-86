@@ -79,7 +79,7 @@ export default function SettingsPage() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 p-4 rounded-lg bg-secondary">
           <h3 className="text-sm font-semibold text-foreground mb-2">Privacy Policy</h3>
           <div className="text-xs text-muted-foreground space-y-2">
-            <p>CineStream respects your privacy and is committed to protecting your personal data. This policy explains how we collect, use, and share your information.</p>
+            <p>Flicker respects your privacy and is committed to protecting your personal data. This policy explains how we collect, use, and share your information.</p>
             <p><strong>Data We Collect:</strong> Account info (email, name), watch history, ratings, preferences, and device information.</p>
             <p><strong>How We Use It:</strong> To provide personalized recommendations, improve our service, and communicate with you about your account.</p>
             <p><strong>Data Sharing:</strong> We do not sell your personal data. We may share anonymized analytics with partners.</p>
