@@ -25,6 +25,7 @@ interface VideoPlayerProps {
   guestName?: string;
   allMovies?: Movie[];
   onPlayMovie?: (movie: Movie) => void;
+  partyPhase?: PartyPhase;
 }
 
 export default function VideoPlayer({
