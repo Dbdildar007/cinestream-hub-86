@@ -1,5 +1,8 @@
-import { User, MapPin, Copy, Edit2, Check } from "lucide-react";
+import { User, MapPin, Copy, Edit2, Check, Camera, Loader2 } from "lucide-react";
 import { getAvatarUrl } from "@/utils/avatarUrl";
+import { useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { User as AuthUser } from "@supabase/supabase-js";
 
 interface ProfileHeaderProps {
@@ -16,25 +19,115 @@ interface ProfileHeaderProps {
   setEditingLocation: (v: boolean) => void;
   saveLocation: () => void;
   copyUniqueId: () => void;
+  onAvatarUpdated?: (url: string) => void;
 }
 
 export default function ProfileHeader({
   profile, user, editingLocation, locationInput,
-  setLocationInput, setEditingLocation, saveLocation, copyUniqueId
+  setLocationInput, setEditingLocation, saveLocation, copyUniqueId, onAvatarUpdated
 }: ProfileHeaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      // Add cache-bust param
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      onAvatarUpdated?.(avatarUrl);
+      toast.success("Profile picture updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload");
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="relative px-4 md:px-12">
-      {/* Clean background */}
-
       <div className="relative flex flex-col items-center pt-8 pb-4">
-        {/* Avatar */}
-        <div className="relative mb-4">
+        {/* Avatar with upload */}
+        <div className="relative mb-4 group">
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-secondary border-4 border-primary/30 flex items-center justify-center overflow-hidden shadow-lg">
-            <img src={getAvatarUrl(profile?.avatar_url, profile?.display_name)} alt="Avatar" className="w-full h-full object-cover" />
+            <img
+              src={getAvatarUrl(profile?.avatar_url, profile?.display_name)}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md">
-            <div className="w-3 h-3 rounded-full bg-primary-foreground" />
-          </div>
+
+          {/* Upload overlay */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            {uploading ? (
+              <Loader2 className="w-6 h-6 text-white animate-spin" />
+            ) : (
+              <Camera className="w-6 h-6 text-white" />
+            )}
+          </button>
+
+          {/* Mobile-visible camera badge */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+          >
+            {uploading ? (
+              <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" />
+            ) : (
+              <Camera className="w-3.5 h-3.5 text-primary-foreground" />
+            )}
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
         </div>
 
         {/* Name */}
