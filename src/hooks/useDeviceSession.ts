@@ -5,6 +5,7 @@ import { getDeviceInfo } from "@/utils/deviceInfo";
 export function useDeviceSession(userId: string | undefined, onEvicted: () => void) {
   const deviceIdRef = useRef<string>("");
   const channelRef = useRef<any>(null);
+  const hasEvictedRef = useRef(false);
 
   // Get or create persistent device ID
   const getDeviceId = useCallback(() => {
@@ -17,6 +18,32 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     deviceIdRef.current = id;
     return id;
   }, []);
+
+  const triggerEviction = useCallback(() => {
+    if (hasEvictedRef.current) return;
+    hasEvictedRef.current = true;
+    onEvicted();
+  }, [onEvicted]);
+
+  const verifyActiveSession = useCallback(
+    async (targetUserId?: string) => {
+      const effectiveUserId = targetUserId ?? userId;
+      if (!effectiveUserId) return;
+
+      const deviceId = getDeviceId();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("active_session_id")
+        .eq("user_id", effectiveUserId)
+        .maybeSingle();
+
+      if (error || !data?.active_session_id) return;
+      if (data.active_session_id !== deviceId) {
+        triggerEviction();
+      }
+    },
+    [userId, getDeviceId, triggerEviction]
+  );
 
   const registerDevice = useCallback(
     async (
@@ -54,11 +81,11 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
     [userId, getDeviceId]
   );
 
-  // Listen for eviction via realtime
+  // Listen for eviction via realtime + polling fallback
   useEffect(() => {
     if (!userId) return;
 
-    const deviceId = getDeviceId();
+    hasEvictedRef.current = false;
 
     channelRef.current = supabase
       .channel(`device-eviction-${userId}`)
@@ -70,30 +97,38 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
           table: "profiles",
           filter: `user_id=eq.${userId}`,
         },
-        async (payload) => {
-          const newSession = payload.new?.active_session_id;
-          // If session changed to something else (not us), verify with a fresh query
-          if (newSession && newSession !== deviceId) {
-            // Double-check from DB to avoid false evictions on WiFi reconnect
-            const { data } = await supabase
-              .from("profiles")
-              .select("active_session_id")
-              .eq("user_id", userId)
-              .single();
-            if (data && data.active_session_id && data.active_session_id !== deviceId) {
-              onEvicted();
-            }
-          }
+        async () => {
+          await verifyActiveSession(userId);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void verifyActiveSession(userId);
+        }
+      });
+
+    const pollId = window.setInterval(() => {
+      void verifyActiveSession(userId);
+    }, 3000);
+
+    const onFocusOrVisible = () => {
+      if (document.visibilityState === "visible") {
+        void verifyActiveSession(userId);
+      }
+    };
+
+    window.addEventListener("focus", onFocusOrVisible);
+    document.addEventListener("visibilitychange", onFocusOrVisible);
 
     return () => {
+      window.clearInterval(pollId);
+      window.removeEventListener("focus", onFocusOrVisible);
+      document.removeEventListener("visibilitychange", onFocusOrVisible);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [userId, getDeviceId, onEvicted]);
+  }, [userId, verifyActiveSession]);
 
   // Clear session on logout
   const clearSession = useCallback(async () => {
