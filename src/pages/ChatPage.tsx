@@ -121,7 +121,7 @@ export default function ChatPage() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "call_messages" },
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
         (payload) => {
           const m = payload.new as any;
           setMessages((prev) =>
