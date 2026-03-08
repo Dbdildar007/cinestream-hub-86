@@ -71,14 +71,23 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [modalTab, setModalTab] = useState<"movies" | "series">("movies");
   const [modalView, setModalView] = useState<"list" | "grid">("grid");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
-  const filteredMovies = movieSearch
-    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
-    : allMovies.slice(0, 10);
+  // Collect all genres from movies & series
+  const allGenres = [...new Set([
+    ...allMovies.flatMap(m => m.genre),
+    ...allSeries.flatMap(s => s.genre),
+  ])].sort();
 
-  const filteredSeries = movieSearch
-    ? allSeries.filter(s => s.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
-    : allSeries.slice(0, 10);
+  const filteredMovies = allMovies
+    .filter(m => !movieSearch || m.title.toLowerCase().includes(movieSearch.toLowerCase()))
+    .filter(m => !selectedGenre || m.genre.includes(selectedGenre))
+    .slice(0, 20);
+
+  const filteredSeries = allSeries
+    .filter(s => !movieSearch || s.title.toLowerCase().includes(movieSearch.toLowerCase()))
+    .filter(s => !selectedGenre || s.genre.includes(selectedGenre))
+    .slice(0, 20);
 
   // Build relationship map for search results
   const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
