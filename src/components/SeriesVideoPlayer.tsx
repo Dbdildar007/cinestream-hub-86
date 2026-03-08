@@ -97,10 +97,18 @@ export default function SeriesVideoPlayer({
     }
   }, [series?.id, currentEpisode?.id, isSeeking, updateProgress]);
 
+  const initialTimeUsedRef = useRef(false);
+
   const onLoadedMetadata = () => {
     const v = videoRef.current;
     if (!v) return;
     setDuration(v.duration);
+    // Use override initialTime first (e.g. from watch party history), only once
+    if (initialTime && initialTime > 5 && !initialTimeUsedRef.current) {
+      initialTimeUsedRef.current = true;
+      v.currentTime = initialTime;
+      return;
+    }
     // Resume from saved progress
     const saved = getProgress(series.id, currentEpisode.id);
     if (saved && saved.currentTime > 5 && saved.currentTime / v.duration < 0.95) {
