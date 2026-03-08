@@ -21,7 +21,7 @@ interface SeriesVideoPlayerProps {
   onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
   onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
-  onEndParty?: () => void;
+  onEndParty?: (currentTimeSec: number, durationSec: number) => void;
   guestName?: string;
   partyPhase?: PartyPhase;
   onEpisodeChangeReceived?: (cb: (data: { episode: SeriesEpisode; seasonNumber: number }) => void) => void;

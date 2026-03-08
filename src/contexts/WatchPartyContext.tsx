@@ -224,9 +224,9 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
     setPendingInvite(null);
   }, []);
 
-  const closePlayer = useCallback(() => {
+  const closePlayer = useCallback((currentTimeSec?: number, durationSec?: number) => {
     if (watchParty.activeParty) {
-      watchParty.endParty();
+      watchParty.endParty(currentTimeSec, durationSec);
     }
     setPlayingMovie(null);
     setPlayingSeries(null);
