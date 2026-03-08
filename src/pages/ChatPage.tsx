@@ -244,7 +244,7 @@ export default function ChatPage() {
     setInput("");
     setMessages((prev) => [
       ...prev,
-      { id: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
+      { id: tempId, stableKey: tempId, text, isMine: true, timestamp: new Date().toISOString(), readAt: null },
     ]);
 
     try {
