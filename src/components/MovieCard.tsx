@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Plus, CheckCircle, Tv, Crown } from "lucide-react";
+import { Star, Plus, CheckCircle, Tv } from "lucide-react";
 import type { Movie } from "@/services/movieService";
 
 interface MovieCardProps {
