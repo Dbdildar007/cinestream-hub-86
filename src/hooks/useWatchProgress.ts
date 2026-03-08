@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export interface WatchProgress {
   movieId: string;
-  episodeId?: string;      // Ensure this is here
+  episodeId?: string;
   mediaType?: 'movie' | 'series'; 
   currentTime: number;
   duration: number;
@@ -15,6 +15,10 @@ export interface WatchProgress {
 
 const STORAGE_KEY = "cinestream_watch_progress";
 
+// ── Shared module-level store ──
+let sharedProgressList: WatchProgress[] = [];
+const listeners = new Set<() => void>();
+
 function loadLocalProgress(): WatchProgress[] {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -23,22 +27,38 @@ function loadLocalProgress(): WatchProgress[] {
   }
 }
 
+// Initialize from localStorage
+sharedProgressList = loadLocalProgress();
+
+function setSharedProgress(list: WatchProgress[]) {
+  sharedProgressList = list;
+  listeners.forEach((l) => l());
+}
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => { listeners.delete(cb); };
+}
+
+function getSnapshot() {
+  return sharedProgressList;
+}
+
 export function useWatchProgress() {
   const { user } = useAuth();
-  const [progressList, setProgressList] = useState<WatchProgress[]>(loadLocalProgress);
+  const progressList = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
- // Clear on logout, load cache + sync on login
+  // Clear on logout, load cache + sync on login
   useEffect(() => {
     if (!user) {
-      // Clear React state but keep localStorage cache for instant display on re-login
-      setProgressList([]);
+      setSharedProgress([]);
       return;
     }
 
     // Instantly show cached data
     const cached = loadLocalProgress();
-    if (cached.length) setProgressList(cached);
+    if (cached.length) setSharedProgress(cached);
 
     // Then sync from DB
     const fetchProgress = async () => {
@@ -58,51 +78,47 @@ export function useWatchProgress() {
         lastWatched: new Date(d.last_watched).getTime(),
       }));
 
-      // Prevent UI blink: don't replace valid cached progress with transient empty DB reads
       if (dbList.length > 0 || cached.length === 0) {
-        setProgressList(dbList);
+        setSharedProgress(dbList);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dbList));
       }
     };
     fetchProgress();
   }, [user]);
 
-  // Persist locally (only when logged in, so logout reset doesn't overwrite cleared cache)
+  // Persist locally whenever shared list changes
   useEffect(() => {
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progressList));
     }
   }, [progressList, user]);
 
- const updateProgress = useCallback((movieId: string, currentTime: number, duration: number, mediaType: 'movie' | 'series' = 'movie', episodeId?: string, 
-  seasonNumber?: number, episodeNumber?: number) => {
+  const updateProgress = useCallback((movieId: string, currentTime: number, duration: number, mediaType: 'movie' | 'series' = 'movie', episodeId?: string, 
+    seasonNumber?: number, episodeNumber?: number) => {
     if (duration <= 0) return;
 
-    // 1. IMMEDIATE LOCAL UPDATE (Optimistic UI)
- const newItem: WatchProgress = { 
-  movieId, 
-  episodeId, 
-  mediaType, 
-  currentTime, 
-  duration, 
-  seasonNumber, // Add this
-  episodeNumber, // Add this
-  lastWatched: Date.now() 
-};
+    const newItem: WatchProgress = { 
+      movieId, 
+      episodeId, 
+      mediaType, 
+      currentTime, 
+      duration, 
+      seasonNumber,
+      episodeNumber,
+      lastWatched: Date.now() 
+    };
 
-    setProgressList((prev) => {
-      // Filter out the old version of this specific item/episode
-      const filtered = prev.filter((p) => !(p.movieId === movieId && p.episodeId === episodeId));
-      
-      const percent = currentTime / duration;
-      // If watched less than 5s or more than 95%, we don't show it in "Continue Watching"
-      if (currentTime < 5 || percent > 0.95) return filtered;
-      
-      // Add the new progress to the top of the list immediately
-      return [newItem, ...filtered];
-    });
+    // IMMEDIATE SHARED UPDATE (all components see it instantly)
+    const prev = sharedProgressList;
+    const filtered = prev.filter((p) => !(p.movieId === movieId && p.episodeId === episodeId));
+    const percent = currentTime / duration;
+    if (currentTime < 5 || percent > 0.95) {
+      setSharedProgress(filtered);
+    } else {
+      setSharedProgress([newItem, ...filtered]);
+    }
 
-    // 2. FASTER DB SYNC (Reduced from 3s to 1s)
+    // DB SYNC (debounced)
     if (user) {
       const debounceKey = `${movieId}_${episodeId || ''}`;
       if (debounceRef.current[debounceKey]) clearTimeout(debounceRef.current[debounceKey]);
@@ -111,14 +127,12 @@ export function useWatchProgress() {
         const percent = currentTime / duration;
         const episodeVal = episodeId || '';
 
-        // Clean up old entry
         await (supabase.from("watch_progress") as any)
           .delete()
           .eq("user_id", user.id)
           .eq("movie_id", movieId)
           .eq("episode_id", episodeVal);
 
-        // Insert fresh progress if within 5% - 95% range
         if (percent <= 0.95 && currentTime >= 5) {
           await (supabase.from("watch_progress") as any).insert({
             user_id: user.id,
@@ -130,17 +144,17 @@ export function useWatchProgress() {
             last_watched: new Date().toISOString(),
           });
         }
-      }, 1000); // Syncs to database after 1 second of pause
+      }, 1000);
     }
   }, [user]);
-  
 
   const getProgress = useCallback((movieId: string, episodeId?: string): WatchProgress | undefined => {
+    const list = sharedProgressList;
     if (episodeId) {
-      return progressList.find((p) => p.movieId === movieId && p.episodeId === episodeId);
+      return list.find((p) => p.movieId === movieId && p.episodeId === episodeId);
     }
-    return progressList.find((p) => p.movieId === movieId);
-  }, [progressList]);
+    return list.find((p) => p.movieId === movieId);
+  }, []);
 
   const getContinueWatching = useCallback((): WatchProgress[] => {
     return [...progressList].sort((a, b) => b.lastWatched - a.lastWatched).slice(0, 10);
@@ -161,39 +175,34 @@ export function useWatchProgress() {
       duration: Number(d.duration_sec),
       lastWatched: new Date(d.last_watched).getTime(),
     }));
-    setProgressList(dbList);
+    setSharedProgress(dbList);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dbList));
   }, [user]);
 
-const clearProgress = useCallback(async (movieId: string, episodeId?: string) => {
-  // Update local state first
-  setProgressList((prev) =>
-    prev.filter((p) => {
-      // If we have an episodeId, only remove that specific episode
+  const clearProgress = useCallback(async (movieId: string, episodeId?: string) => {
+    const prev = sharedProgressList;
+    const filtered = prev.filter((p) => {
       if (episodeId) {
         return !(p.movieId === movieId && p.episodeId === episodeId);
-      } 
-      // If no episodeId (Series level delete), remove EVERYTHING for this series ID
+      }
       return p.movieId !== movieId;
-    })
-  );
+    });
+    setSharedProgress(filtered);
 
-  if (user) {
-    // Delete from Supabase
-    let query = supabase.from("watch_progress")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("movie_id", movieId);
+    if (user) {
+      let query = supabase.from("watch_progress")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("movie_id", movieId);
 
-    // Only add the episode filter if we are deleting a single episode
-    if (episodeId) {
-      query = query.eq("episode_id", episodeId);
+      if (episodeId) {
+        query = query.eq("episode_id", episodeId);
+      }
+      
+      const { error } = await query;
+      if (error) console.error("Error deleting progress:", error);
     }
-    
-    const { error } = await query;
-    if (error) console.error("Error deleting progress:", error);
-  }
-}, [user, supabase]);
+  }, [user]);
 
   return { updateProgress, getProgress, getContinueWatching, clearProgress, refetchProgress };
 }
