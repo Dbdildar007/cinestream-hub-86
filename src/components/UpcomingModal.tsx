@@ -167,10 +167,9 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
           >
             {/* Hero image / Trailer */}
             <div className="relative aspect-[4/3] md:aspect-video">
-              {showTrailer && movie.url ? (
+              {showTrailer && trailerUrl ? (
                 <video
-                  ref={videoRef}
-                  src={movie.url}
+                  src={trailerUrl}
                   className="w-full h-full object-cover object-center bg-black"
                   controls
                   autoPlay
