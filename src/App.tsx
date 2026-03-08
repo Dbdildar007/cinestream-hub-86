@@ -48,7 +48,19 @@ function AppContent() {
     setShowEvicted(true);
   }, []);
 
-  useDeviceSession(user?.id, handleEvicted);
+  const { registerDevice } = useDeviceSession(user?.id, handleEvicted);
+
+  // Re-register device on page refresh when user session is restored
+  const hasReregistered = useRef(false);
+  useEffect(() => {
+    if (user?.id && !hasReregistered.current) {
+      hasReregistered.current = true;
+      registerDevice(false, user.id);
+    }
+    if (!user) {
+      hasReregistered.current = false;
+    }
+  }, [user?.id, registerDevice]);
 
   const handleEvictedAcknowledge = async () => {
     setShowEvicted(false);
