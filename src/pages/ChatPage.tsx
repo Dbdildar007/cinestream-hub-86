@@ -66,7 +66,7 @@ export default function ChatPage() {
   const markAsRead = useCallback(async () => {
     if (!user || !remoteUserId) return;
     await supabase
-      .from("call_messages")
+      .from("chat_messages")
       .update({ read_at: new Date().toISOString() } as any)
       .eq("sender_id", remoteUserId)
       .eq("receiver_id", user.id)
