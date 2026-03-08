@@ -71,14 +71,23 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   const [modalTab, setModalTab] = useState<"movies" | "series">("movies");
   const [modalView, setModalView] = useState<"list" | "grid">("grid");
   const [declineTarget, setDeclineTarget] = useState<{ id: string; profile?: Profile } | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
-  const filteredMovies = movieSearch
-    ? allMovies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
-    : allMovies.slice(0, 10);
+  // Collect all genres from movies & series
+  const allGenres = [...new Set([
+    ...allMovies.flatMap(m => m.genre),
+    ...allSeries.flatMap(s => s.genre),
+  ])].sort();
 
-  const filteredSeries = movieSearch
-    ? allSeries.filter(s => s.title.toLowerCase().includes(movieSearch.toLowerCase())).slice(0, 10)
-    : allSeries.slice(0, 10);
+  const filteredMovies = allMovies
+    .filter(m => !movieSearch || m.title.toLowerCase().includes(movieSearch.toLowerCase()))
+    .filter(m => !selectedGenre || m.genre.includes(selectedGenre))
+    .slice(0, 20);
+
+  const filteredSeries = allSeries
+    .filter(s => !movieSearch || s.title.toLowerCase().includes(movieSearch.toLowerCase()))
+    .filter(s => !selectedGenre || s.genre.includes(selectedGenre))
+    .slice(0, 20);
 
   // Build relationship map for search results
   const buildRelationshipMap = useCallback(async (profiles: Profile[]) => {
@@ -756,7 +765,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6"
-            onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("list"); }}
+            onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("grid"); setSelectedGenre(null); }}
           >
             <motion.div
               initial={{ y: "100%", scale: 0.95 }}
@@ -789,7 +798,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <p className="text-xs text-muted-foreground">Choose something to watch together 🍿</p>
                   </div>
                   <button
-                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("list"); }}
+                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("grid"); setSelectedGenre(null); }}
                     className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
                   >
                     <X className="w-4 h-4 text-muted-foreground" />
@@ -853,6 +862,29 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     </button>
                   </div>
                 </div>
+
+                {/* Genre filter chips */}
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 mt-3">
+                  <button
+                    onClick={() => setSelectedGenre(null)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      !selectedGenre ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    All
+                  </button>
+                  {allGenres.map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => setSelectedGenre(selectedGenre === genre ? null : genre)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        selectedGenre === genre ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Content */}
@@ -864,21 +896,17 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       <motion.button
                         key={movie.id}
                         whileTap={{ scale: 0.95 }}
-                        whileHover={{ scale: 1.03 }}
                         onClick={() => handleInviteToWatchParty(movie)}
-                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary"
+                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                          <p className="text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
+                        {/* Always visible on mobile, hover on desktop */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                          <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{movie.title}</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-[10px] text-primary-foreground/70">{movie.year}</span>
-                            <span className="text-[10px] text-primary-foreground/70">⭐ {movie.rating}</span>
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">{movie.year}</span>
+                            <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {movie.rating}</span>
                           </div>
-                        </div>
-                        {/* Always-visible title on mobile */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 md:hidden">
-                          <p className="text-[10px] font-medium text-primary-foreground truncate">{movie.title}</p>
                         </div>
                       </motion.button>
                     ))}
@@ -887,7 +915,6 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                       <motion.button
                         key={series.id}
                         whileTap={{ scale: 0.95 }}
-                        whileHover={{ scale: 1.03 }}
                         onClick={() => {
                           const sc = series.season_count || 0;
                           handleInviteToWatchParty({
@@ -897,19 +924,16 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                             language: "", category: [], isSeries: true, isTrending: false, isEditorChoice: false,
                           } as Movie);
                         }}
-                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary"
+                        className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-secondary md:hover:scale-[1.03] transition-transform"
                       >
                         <img src={series.poster_url} alt={series.title} className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-primary/90 px-1.5 py-0.5 rounded text-[9px] font-semibold text-primary-foreground z-10">
                           <Tv className="w-2.5 h-2.5" />
                           Series{series.season_count ? ` · ${series.season_count}S` : ""}
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                          <p className="text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
-                          <span className="text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 md:hidden">
-                          <p className="text-[10px] font-medium text-primary-foreground truncate">{series.title}</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:opacity-0 md:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                          <p className="text-[10px] md:text-xs font-semibold text-primary-foreground truncate">{series.title}</p>
+                          <span className="text-[9px] md:text-[10px] text-primary-foreground/70">⭐ {series.rating}</span>
                         </div>
                       </motion.button>
                     ))}
