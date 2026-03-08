@@ -262,7 +262,7 @@ export default function ChatPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="h-[100dvh] bg-background flex flex-col pt-14 md:pt-20 pb-0"
+      className="h-[100dvh] bg-background flex flex-col pt-0 md:pt-20 pb-0"
     >
       <ChatHeader
         remoteProfile={remoteProfile}
