@@ -538,15 +538,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   : "bg-secondary hover:bg-secondary/80"
               }`}>
                 <div className="relative">
-                  {f.profile?.avatar_url ? (
-                    <img src={f.profile.avatar_url} alt={f.profile.display_name} className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">
-                        {f.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                      </span>
-                    </div>
-                  )}
+                  <img
+                    src={f.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.profile?.display_name || f.id}`}
+                    alt={f.profile?.display_name || "User"}
+                    className="w-10 h-10 rounded-full object-cover bg-primary/10"
+                  />
                   <span
                     className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
                       f.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
