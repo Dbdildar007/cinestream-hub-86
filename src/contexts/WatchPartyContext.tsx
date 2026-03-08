@@ -19,6 +19,7 @@ interface WatchPartyContextType {
   isHost: boolean;
   partyPhase: PartyPhase;
   friendName: string;
+  friendUserId: string;
   pendingInvite: PendingInvite | null;
   startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string) => void;
   acceptInvite: () => Promise<void>;
