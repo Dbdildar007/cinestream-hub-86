@@ -37,7 +37,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
       <div className="relative group">
         <button
           onClick={() => scroll("left")}
-          className="absolute left-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-r from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute left-0 top-0 bottom-8 z-10 w-10 hidden md:flex items-center justify-center bg-gradient-to-r from-background to-transparent"
         >
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
