@@ -364,6 +364,6 @@ export default function ChatPage() {
           <Send className="w-4 h-4" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
