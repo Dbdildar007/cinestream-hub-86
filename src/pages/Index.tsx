@@ -25,6 +25,7 @@ export default function Index() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const [initialLoad, setInitialLoad] = useState(false);
+  const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   const { startDownload, getDownloadState } = useDownloads();
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
@@ -84,8 +85,29 @@ export default function Index() {
 
   const handleWatch = (movie: Movie) => {
     setSelectedMovie(null);
+    setOverrideInitialTime(null);
     setPlayingMovie(movie);
   };
+
+  const handleResumeMovieFromParty = useCallback((movie: Movie, currentTime: number) => {
+    setOverrideInitialTime(currentTime);
+    setPlayingMovie(movie);
+  }, []);
+
+  const handleResumeSeriesFromParty = useCallback(async (movie: Movie, episodeId: string, currentTime: number) => {
+    const detail = await seriesService.getSeriesWithSeasons(movie.id);
+    if (!detail) return;
+    for (const season of detail.seasons) {
+      const episode = season.episodes.find(e => e.id === episodeId);
+      if (episode) {
+        setOverrideInitialTime(currentTime);
+        setPlayingSeries({ series: movieToSeries(movie), episode, season: season.number });
+        return;
+      }
+    }
+    // Fallback: open series modal
+    setSelectedSeries(movieToSeries(movie));
+  }, [movieToSeries]);
 
   const handlePlaySeriesEpisode = (series: Series, episode: SeriesEpisode, season: number) => {
     setSelectedSeries(null);
@@ -143,7 +165,10 @@ export default function Index() {
           onRemove={clearProgress}
         />
 
-        <WatchPartyHistory />
+        <WatchPartyHistory
+          onResumeMovie={handleResumeMovieFromParty}
+          onResumeSeries={handleResumeSeriesFromParty}
+        />
 
         {myListMovies.length > 0 && (
           <MovieRow
@@ -203,9 +228,9 @@ export default function Index() {
         {playingMovie && (
           <VideoPlayer
             movie={playingMovie}
-            onClose={() => setPlayingMovie(null)}
+            onClose={() => { setPlayingMovie(null); setOverrideInitialTime(null); }}
             onProgressUpdate={updateProgress}
-            initialTime={getProgress(playingMovie.id)?.currentTime || 0}
+            initialTime={overrideInitialTime ?? getProgress(playingMovie.id)?.currentTime ?? 0}
             allMovies={allMovies}
             onPlayMovie={(m) => { setPlayingMovie(null); setTimeout(() => setPlayingMovie(m), 100); }}
           />
@@ -218,7 +243,8 @@ export default function Index() {
             series={playingSeries.series}
             initialEpisode={playingSeries.episode}
             initialSeason={playingSeries.season}
-            onClose={() => setPlayingSeries(null)}
+            initialTime={overrideInitialTime ?? undefined}
+            onClose={() => { setPlayingSeries(null); setOverrideInitialTime(null); }}
           />
         )}
       </AnimatePresence>
