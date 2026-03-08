@@ -311,11 +311,34 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
 
   const handleInviteToWatchParty = async (movie: Movie) => {
     if (!user || !invitingFriend?.profile) return;
-    const friendUserId = invitingFriend.profile.user_id;
+    const friendId = invitingFriend.profile.user_id;
+
+    // Cooldown check (60s per friend)
+    const lastInvite = inviteCooldowns[friendId] || 0;
+    const elapsed = Date.now() - lastInvite;
+    if (elapsed < 60000) {
+      const remaining = Math.ceil((60000 - elapsed) / 1000);
+      toast.error(`Please wait ${remaining}s before sending another invite`);
+      return;
+    }
+
+    // Duplicate check
+    const { data: existing } = await supabase
+      .from("watch_parties")
+      .select("id")
+      .eq("host_id", user.id)
+      .eq("friend_id", friendId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (existing) {
+      toast.error("You already have an active invite for this friend");
+      return;
+    }
 
     const { data, error } = await supabase.from("watch_parties").insert({
       host_id: user.id,
-      friend_id: friendUserId,
+      friend_id: friendId,
       movie_id: movie.id,
       status: "active",
       is_playing: true,
@@ -327,9 +350,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
       return;
     }
 
+    setInviteCooldowns(prev => ({ ...prev, [friendId]: Date.now() }));
+
     const { data: myProfile } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
     await sendNotification(
-      friendUserId,
+      friendId,
       "watch_party",
       "Watch Party Invite",
       `${myProfile?.display_name || "Someone"} invited you to watch "${movie.title}"`,
@@ -340,8 +365,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     setInvitingFriend(null);
     setMovieSearch("");
 
-    // Open the video player for the host immediately via context
-    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name, friendUserId);
+    wpCtx.startWatchParty(movie, data.id, invitingFriend.profile.display_name, friendId);
   };
 
   if (!user) {
