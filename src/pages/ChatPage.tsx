@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import ChatHeader from "@/components/chat/ChatHeader";
-import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
+import ChatMessageBubble, { type MessageReaction } from "@/components/chat/ChatMessageBubble";
 import ChatLoadingSkeleton from "@/components/chat/ChatLoadingSkeleton";
 import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 import MessageActionMenu from "@/components/chat/MessageActionMenu";
@@ -20,6 +20,13 @@ export interface ChatMessage {
   readAt: string | null;
   replyToId: string | null;
   editedAt?: string | null;
+}
+
+interface RawReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
 }
 
 interface RemoteProfile {
@@ -47,6 +54,7 @@ export default function ChatPage() {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [contextMenu, setContextMenu] = useState<{ message: ChatMessage; position: { x: number; y: number } } | null>(null);
+  const [reactions, setReactions] = useState<RawReaction[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -74,12 +82,9 @@ export default function ChatPage() {
       .select("display_name, avatar_url, is_online, last_seen")
       .eq("user_id", remoteUserId)
       .single()
-      .then(({ data }) => {
-        if (data) setRemoteProfile(data);
-      });
+      .then(({ data }) => { if (data) setRemoteProfile(data); });
   }, [remoteUserId]);
 
-  // Mark unread messages as read
   const markAsRead = useCallback(async () => {
     if (!user || !remoteUserId) return;
     await supabase
@@ -90,23 +95,34 @@ export default function ChatPage() {
       .is("read_at", null);
   }, [user, remoteUserId]);
 
-  // Load messages and subscribe
+  // Load messages, reactions, and subscribe
   useEffect(() => {
     if (!user || !remoteUserId) return;
+
+    const msgFilter = `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`;
 
     const loadMessages = async () => {
       setIsLoading(true);
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
-        .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
-        )
+        .or(msgFilter)
         .order("created_at", { ascending: true })
         .limit(200);
 
       if (data) {
-        setMessages(data.map((m: any) => mapMessage(m, user.id)));
+        const mapped = data.map((m: any) => mapMessage(m, user.id));
+        setMessages(mapped);
+
+        // Load reactions for these messages
+        const ids = data.map((m: any) => m.id);
+        if (ids.length > 0) {
+          const { data: rxns } = await supabase
+            .from("message_reactions")
+            .select("id, message_id, user_id, emoji")
+            .in("message_id", ids);
+          if (rxns) setReactions(rxns as RawReaction[]);
+        }
       }
       setIsLoading(false);
       requestAnimationFrame(() => {
@@ -120,46 +136,45 @@ export default function ChatPage() {
     const channelName = `chat-${[user.id, remoteUserId].sort().join("-")}`;
     const channel = supabase
       .channel(channelName)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages" },
-        (payload) => {
-          const m = payload.new as any;
-          if (
-            (m.sender_id === user.id && m.receiver_id === remoteUserId) ||
-            (m.sender_id === remoteUserId && m.receiver_id === user.id)
-          ) {
-            if (m.sender_id === user.id) return;
-            setMessages((prev) => {
-              if (prev.some((p) => p.id === m.id)) return prev;
-              return [...prev, mapMessage(m, user.id)];
-            });
-            markAsRead();
-          }
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+        const m = payload.new as any;
+        if ((m.sender_id === user.id && m.receiver_id === remoteUserId) ||
+            (m.sender_id === remoteUserId && m.receiver_id === user.id)) {
+          if (m.sender_id === user.id) return;
+          setMessages((prev) => {
+            if (prev.some((p) => p.id === m.id)) return prev;
+            return [...prev, mapMessage(m, user.id)];
+          });
+          markAsRead();
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "chat_messages" },
-        (payload) => {
-          const m = payload.new as any;
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === m.id ? { ...msg, text: m.message, readAt: m.read_at, editedAt: m.edited_at } : msg
-            )
-          );
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages" }, (payload) => {
+        const m = payload.new as any;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === m.id ? { ...msg, text: m.message, readAt: m.read_at, editedAt: m.edited_at } : msg
+          )
+        );
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, (payload) => {
+        const old = payload.old as any;
+        if (old?.id) {
+          setMessages((prev) => prev.filter((msg) => msg.id !== old.id));
+          setReactions((prev) => prev.filter((r) => r.message_id !== old.id));
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "chat_messages" },
-        (payload) => {
-          const old = payload.old as any;
-          if (old?.id) {
-            setMessages((prev) => prev.filter((msg) => msg.id !== old.id));
-          }
-        }
-      )
+      })
+      // Reactions realtime
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "message_reactions" }, (payload) => {
+        const r = payload.new as any;
+        setReactions((prev) => {
+          if (prev.some((p) => p.id === r.id)) return prev;
+          return [...prev, { id: r.id, message_id: r.message_id, user_id: r.user_id, emoji: r.emoji }];
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "message_reactions" }, (payload) => {
+        const old = payload.old as any;
+        if (old?.id) setReactions((prev) => prev.filter((r) => r.id !== old.id));
+      })
       .on("broadcast", { event: "typing" }, (payload) => {
         if (payload.payload?.userId === remoteUserId) {
           setRemoteIsTyping(true);
@@ -176,16 +191,12 @@ export default function ChatPage() {
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
-        .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${remoteUserId}),and(sender_id.eq.${remoteUserId},receiver_id.eq.${user.id})`
-        )
+        .or(msgFilter)
         .order("created_at", { ascending: true })
         .limit(200);
-
       if (data) {
         setMessages((prev) => {
-          const hasTemp = prev.some((m) => m.id.startsWith("temp-"));
-          if (hasTemp) return prev;
+          if (prev.some((m) => m.id.startsWith("temp-"))) return prev;
           return data.map((m: any) => mapMessage(m, user.id));
         });
       }
@@ -218,10 +229,7 @@ export default function ChatPage() {
     vv.addEventListener("resize", handleResize);
     vv.addEventListener("scroll", handleResize);
     handleResize();
-    return () => {
-      vv.removeEventListener("resize", handleResize);
-      vv.removeEventListener("scroll", handleResize);
-    };
+    return () => { vv.removeEventListener("resize", handleResize); vv.removeEventListener("scroll", handleResize); };
   }, [scrollToBottom]);
 
   const broadcastTyping = useCallback(() => {
@@ -239,14 +247,9 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!input.trim() || !user || !remoteUserId || sendLockRef.current) return;
 
-    // Handle edit mode
     if (editingMessage) {
       const newText = input.trim();
-      if (newText === editingMessage.text) {
-        setEditingMessage(null);
-        setInput("");
-        return;
-      }
+      if (newText === editingMessage.text) { setEditingMessage(null); setInput(""); return; }
       sendLockRef.current = true;
       setIsSending(true);
       try {
@@ -286,15 +289,8 @@ export default function ChatPage() {
     try {
       const insertPayload: any = { sender_id: user.id, receiver_id: remoteUserId, message: text };
       if (replyId) insertPayload.reply_to_id = replyId;
-
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .insert(insertPayload)
-        .select()
-        .single();
-
+      const { data, error } = await supabase.from("chat_messages").insert(insertPayload).select().single();
       if (error) throw error;
-
       if (data) {
         setMessages((prev) => {
           const mapped = mapMessage(data as any, user.id);
@@ -315,14 +311,11 @@ export default function ChatPage() {
 
   const handleDelete = async (msg: ChatMessage) => {
     if (!user) return;
+    // Optimistically remove
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     try {
-      const { error } = await supabase
-        .from("chat_messages")
-        .delete()
-        .eq("id", msg.id)
-        .eq("sender_id", user.id);
+      const { error } = await supabase.from("chat_messages").delete().eq("id", msg.id).eq("sender_id", user.id);
       if (error) throw error;
-      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
       toast.success("Message deleted");
     } catch {
       toast.error("Failed to delete message");
@@ -341,10 +334,45 @@ export default function ChatPage() {
     toast.success("Copied to clipboard");
   };
 
-  const cancelEdit = () => {
-    setEditingMessage(null);
-    setInput("");
+  const handleReact = async (msg: ChatMessage, emoji: string) => {
+    if (!user) return;
+    // Check if already reacted with this emoji
+    const existing = reactions.find((r) => r.message_id === msg.id && r.user_id === user.id && r.emoji === emoji);
+    if (existing) {
+      // Toggle off
+      setReactions((prev) => prev.filter((r) => r.id !== existing.id));
+      await supabase.from("message_reactions").delete().eq("id", existing.id);
+    } else {
+      // Add reaction optimistically
+      const tempId = `temp-rxn-${Date.now()}`;
+      setReactions((prev) => [...prev, { id: tempId, message_id: msg.id, user_id: user.id, emoji }]);
+      const { data, error } = await supabase
+        .from("message_reactions")
+        .insert({ message_id: msg.id, user_id: user.id, emoji } as any)
+        .select()
+        .single();
+      if (data) {
+        setReactions((prev) => prev.map((r) => r.id === tempId ? { ...r, id: (data as any).id } : r));
+      } else if (error) {
+        setReactions((prev) => prev.filter((r) => r.id !== tempId));
+      }
+    }
   };
+
+  const cancelEdit = () => { setEditingMessage(null); setInput(""); };
+
+  // Build reactions map for each message
+  const getReactionsForMessage = useCallback((msgId: string): MessageReaction[] => {
+    if (!user) return [];
+    const msgReactions = reactions.filter((r) => r.message_id === msgId);
+    const grouped: Record<string, { count: number; isMine: boolean }> = {};
+    for (const r of msgReactions) {
+      if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, isMine: false };
+      grouped[r.emoji].count++;
+      if (r.user_id === user.id) grouped[r.emoji].isMine = true;
+    }
+    return Object.entries(grouped).map(([emoji, data]) => ({ emoji, ...data }));
+  }, [reactions, user]);
 
   if (!user) {
     navigate("/auth", { replace: true });
@@ -359,7 +387,6 @@ export default function ChatPage() {
         onBack={() => navigate("/friends")}
       />
 
-      {/* Messages */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {isLoading ? (
           <ChatLoadingSkeleton />
@@ -384,18 +411,18 @@ export default function ChatPage() {
                   replyToMessage={replyMsg}
                   onReply={(m) => setReplyTo(m)}
                   onContextAction={(m, pos) => setContextMenu({ message: m, position: pos })}
+                  onReact={handleReact}
                   isEditing={editingMessage?.id === msg.id}
+                  reactions={getReactionsForMessage(msg.id)}
                 />
               );
             })}
           </>
         )}
-
         {remoteIsTyping && <ChatTypingIndicator />}
         <div ref={chatEndRef} />
       </div>
 
-      {/* Context menu */}
       <MessageActionMenu
         message={contextMenu?.message ?? null}
         position={contextMenu?.position ?? null}
@@ -406,7 +433,6 @@ export default function ChatPage() {
         onCopy={handleCopy}
       />
 
-      {/* Emoji picker */}
       <AnimatePresence>
         {showEmojis && (
           <motion.div
@@ -429,7 +455,6 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
-      {/* Edit preview */}
       {editingMessage && (
         <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
           <div className="w-1 h-8 rounded-full bg-accent flex-shrink-0" />
@@ -445,7 +470,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Reply preview */}
       {replyTo && !editingMessage && (
         <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-3">
           <div className="w-1 h-8 rounded-full bg-primary flex-shrink-0" />
@@ -461,7 +485,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input */}
       <div
         className="bg-card border-t border-border px-4 py-2 md:py-3 flex items-center gap-2 mb-2 md:mb-4"
         style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 12px) + ${keyboardInset}px)` }}
