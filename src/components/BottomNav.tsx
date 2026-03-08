@@ -23,18 +23,16 @@ export default function BottomNav() {
         // Replace Profile slot with notification dropdown on mobile
         if (label === "Profile") {
           return (
-            <div key={path} className="flex flex-col items-center gap-1 px-3 py-1 relative">
-              <NotificationDropdown
-                notifications={notifications}
-                unreadCount={unreadCount}
-                onMarkAsRead={markAsRead}
-                onMarkAllRead={markAllRead}
-                onClear={clearNotification}
-                onSendNotification={sendNotification}
-                isMobile
-              />
-              <span className="text-[10px] font-bold text-foreground">Alerts</span>
-            </div>
+            <Link
+              key={path}
+              to={path}
+              className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors relative ${
+                active ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
+              <span className={`text-[10px] ${active ? "font-bold text-foreground" : "font-medium"}`}>Profile</span>
+            </Link>
           );
         }
 
