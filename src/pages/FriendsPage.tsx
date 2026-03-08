@@ -798,7 +798,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                     <p className="text-xs text-muted-foreground">Choose something to watch together 🍿</p>
                   </div>
                   <button
-                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("list"); }}
+                    onClick={() => { setInvitingFriend(null); setMovieSearch(""); setModalTab("movies"); setModalView("grid"); setSelectedGenre(null); }}
                     className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
                   >
                     <X className="w-4 h-4 text-muted-foreground" />
