@@ -506,7 +506,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   <UserCheck className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => declineRequest(req.id, req.profile)}
+                  onClick={() => setDeclineTarget({ id: req.id, profile: req.profile })}
                   className="p-2 rounded-full hover:bg-destructive/20 text-destructive transition-colors"
                 >
                   <X className="w-4 h-4" />
