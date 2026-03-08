@@ -254,15 +254,21 @@ export default function UpcomingModal({ movie, onClose }: UpcomingModalProps) {
               <div className="flex flex-col gap-3">
                 {/* Play Trailer */}
                 <button
-                  onClick={handlePlayTrailer}
+                  onClick={() => {
+                    if (showTrailer) setShowTrailer(false);
+                    else if (hasTrailer) setShowTrailer(true);
+                  }}
+                  disabled={!hasTrailer}
                   className={`flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-colors ${
-                    showTrailer
-                      ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                    hasTrailer
+                      ? showTrailer
+                        ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  {showTrailer ? "Stop Trailer" : "Play Trailer"}
+                  {showTrailer ? "Stop Trailer" : hasTrailer ? "Play Trailer" : "Trailer Coming Soon"}
                 </button>
 
                 {/* Remind Me */}
