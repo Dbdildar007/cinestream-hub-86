@@ -10,6 +10,12 @@ interface RemoteProfile {
   last_seen: string | null;
 }
 
+interface ChatHeaderProps {
+  remoteProfile: RemoteProfile | null;
+  remoteIsTyping: boolean;
+  onBack: () => void;
+}
+
 function formatLastSeen(lastSeen: string | null): string {
   if (!lastSeen) return "Offline";
   const diff = Date.now() - new Date(lastSeen).getTime();
