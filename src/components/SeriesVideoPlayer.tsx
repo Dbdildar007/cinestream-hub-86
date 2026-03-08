@@ -279,6 +279,60 @@ export default function SeriesVideoPlayer({
     }
   }, [volume, isMuted]);
 
+  // Watch party: guest sync from host
+  useEffect(() => {
+    if (!watchPartyActive || isHost || !onSyncReceived) return;
+    onSyncReceived((state) => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (Math.abs(v.currentTime - state.currentTimeSec) > 1) {
+        v.currentTime = state.currentTimeSec;
+      }
+      if (state.isPlaying && v.paused) { v.play(); setIsPlaying(true); }
+      else if (!state.isPlaying && !v.paused) { v.pause(); setIsPlaying(false); }
+    });
+  }, [watchPartyActive, isHost, onSyncReceived]);
+
+  // Watch party: host periodic sync
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  useEffect(() => {
+    if (!watchPartyActive || !isHost || !onSyncPlayback) return;
+    syncIntervalRef.current = setInterval(() => {
+      const v = videoRef.current;
+      if (v) onSyncPlayback(!v.paused, v.currentTime);
+    }, 2000);
+    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
+  }, [watchPartyActive, isHost, onSyncPlayback]);
+
+  // Watch party: phase control
+  useEffect(() => {
+    if (!watchPartyActive) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (partyPhase === "waiting" || partyPhase === "countdown") {
+      v.pause();
+      v.currentTime = 0;
+      setIsPlaying(false);
+    } else if (partyPhase === "playing") {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [partyPhase, watchPartyActive]);
+
+  // Watch party: guest receives episode change from host
+  useEffect(() => {
+    if (!watchPartyActive || isHost || !onEpisodeChangeReceived) return;
+    onEpisodeChangeReceived((data) => {
+      setCurrentEpisode(data.episode);
+      setSelectedSeason(data.seasonNumber);
+      setVideoEnded(false);
+      setShowNextEpisode(false);
+      lastSavedTimeRef.current = 0;
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    });
+  }, [watchPartyActive, isHost, onEpisodeChangeReceived]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
