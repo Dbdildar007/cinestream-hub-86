@@ -38,6 +38,7 @@ export default function ChatPage() {
   const [showEmojis, setShowEmojis] = useState(false);
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
