@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useWatchParty } from "@/hooks/useWatchParty";
+import { useWatchParty, type PartyPhase } from "@/hooks/useWatchParty";
 import { useMovies } from "@/hooks/useMovies";
 import type { Movie } from "@/services/movieService";
 
@@ -17,8 +17,10 @@ interface WatchPartyContextType {
   playingMovie: Movie | null;
   activeParty: ReturnType<typeof useWatchParty>["activeParty"];
   isHost: boolean;
+  partyPhase: PartyPhase;
+  friendName: string;
   pendingInvite: PendingInvite | null;
-  startWatchParty: (movie: Movie, partyId: string) => void;
+  startWatchParty: (movie: Movie, partyId: string, friendDisplayName: string) => void;
   acceptInvite: () => Promise<void>;
   declineInvite: () => Promise<void>;
   closePlayer: () => void;
@@ -26,6 +28,8 @@ interface WatchPartyContextType {
   forceSyncPlayback: ReturnType<typeof useWatchParty>["forceSyncPlayback"];
   endParty: ReturnType<typeof useWatchParty>["endParty"];
   onSyncReceived: ReturnType<typeof useWatchParty>["onSyncReceived"];
+  onPhaseChange: ReturnType<typeof useWatchParty>["onPhaseChange"];
+  signalReady: ReturnType<typeof useWatchParty>["signalReady"];
 }
 
 const WatchPartyContext = createContext<WatchPartyContextType | null>(null);
@@ -42,17 +46,18 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const watchParty = useWatchParty();
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
   const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
+  const [friendName, setFriendName] = useState("");
 
-  // Host starts a watch party — open player immediately
-  const startWatchParty = useCallback((movie: Movie, partyId: string) => {
-    watchParty.joinParty(partyId); // host joins the realtime channel too
+  // Host starts a watch party — open player in "waiting" phase
+  const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string) => {
+    setFriendName(friendDisplayName);
+    watchParty.joinParty(partyId, true); // host joins as host
     setPlayingMovie(movie);
   }, [watchParty]);
 
   // Listen for incoming watch party invites
   useEffect(() => {
     if (!user) return;
-
     const channel = supabase
       .channel("wp-invite-global")
       .on("postgres_changes", {
@@ -64,14 +69,12 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
         const party = payload.new as any;
         if (party.status !== "active") return;
 
-        // Get host name
         const { data: hostProfile } = await supabase
           .from("profiles")
           .select("display_name")
           .eq("user_id", party.host_id)
           .single();
 
-        // Get movie title
         const movie = allMovies.find(m => m.id === party.movie_id);
 
         setPendingInvite({
@@ -83,16 +86,22 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
         });
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user, allMovies]);
 
   const acceptInvite = useCallback(async () => {
     if (!pendingInvite) return;
-    const joined = await watchParty.joinParty(pendingInvite.partyId);
+    setFriendName(pendingInvite.hostName);
+    const joined = await watchParty.joinParty(pendingInvite.partyId, false);
     if (joined) {
       const movie = allMovies.find(m => m.id === pendingInvite.movieId);
-      if (movie) setPlayingMovie(movie);
+      if (movie) {
+        setPlayingMovie(movie);
+        // Signal ready to host after a brief delay for player to mount
+        setTimeout(() => {
+          watchParty.signalReady();
+        }, 1500);
+      }
     }
     setPendingInvite(null);
   }, [pendingInvite, watchParty, allMovies]);
@@ -108,13 +117,26 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       watchParty.endParty();
     }
     setPlayingMovie(null);
+    setFriendName("");
   }, [watchParty]);
+
+  // Listen for party end phase from other user
+  useEffect(() => {
+    watchParty.onPhaseChange((phase) => {
+      if (phase === "ended") {
+        setPlayingMovie(null);
+        setFriendName("");
+      }
+    });
+  }, [watchParty.onPhaseChange]);
 
   return (
     <WatchPartyContext.Provider value={{
       playingMovie,
       activeParty: watchParty.activeParty,
       isHost: watchParty.isHost,
+      partyPhase: watchParty.partyPhase,
+      friendName,
       pendingInvite,
       startWatchParty,
       acceptInvite,
@@ -124,6 +146,8 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
       forceSyncPlayback: watchParty.forceSyncPlayback,
       endParty: watchParty.endParty,
       onSyncReceived: watchParty.onSyncReceived,
+      onPhaseChange: watchParty.onPhaseChange,
+      signalReady: watchParty.signalReady,
     }}>
       {children}
     </WatchPartyContext.Provider>

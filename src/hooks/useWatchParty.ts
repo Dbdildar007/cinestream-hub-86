@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type PartyPhase = "waiting" | "countdown" | "playing" | "ended";
+
 export interface WatchPartyState {
   id: string;
   hostId: string;
@@ -16,14 +18,15 @@ export function useWatchParty() {
   const { user } = useAuth();
   const [activeParty, setActiveParty] = useState<WatchPartyState | null>(null);
   const [isHost, setIsHost] = useState(false);
+  const [partyPhase, setPartyPhase] = useState<PartyPhase>("waiting");
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const syncCallbackRef = useRef<((state: { isPlaying: boolean; currentTimeSec: number }) => void) | null>(null);
+  const phaseCallbackRef = useRef<((phase: PartyPhase) => void) | null>(null);
   const lastSyncRef = useRef(0);
 
-  // Listen for watch party changes targeting this user
+  // Listen for watch party deletions targeting this user
   useEffect(() => {
     if (!user) return;
-
     const channel = supabase
       .channel("watch-party-updates")
       .on("postgres_changes", {
@@ -39,43 +42,68 @@ export function useWatchParty() {
         }
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user, activeParty]);
 
-  const createParty = useCallback(async (friendId: string, movieId: string) => {
-    if (!user) return null;
-    const { data, error } = await supabase
-      .from("watch_parties")
-      .insert({
-        host_id: user.id,
-        friend_id: friendId,
-        movie_id: movieId,
-        status: "active",
-        is_playing: true,
-        current_time_sec: 0,
-      })
-      .select()
-      .single();
+  const joinRealtimeChannel = useCallback((partyId: string, host: boolean) => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
 
-    if (error || !data) return null;
+    const channel = supabase.channel(`watch-party-${partyId}`, {
+      config: { broadcast: { self: false } },
+    });
 
-    const party: WatchPartyState = {
-      id: data.id,
-      hostId: data.host_id,
-      friendId: data.friend_id,
-      movieId: data.movie_id,
-      isPlaying: data.is_playing,
-      currentTimeSec: data.current_time_sec,
-      status: data.status,
-    };
-    setActiveParty(party);
-    setIsHost(true);
-    joinRealtimeChannel(party.id, true);
-    return party;
-  }, [user]);
+    // Both host and guest listen for phase events
+    channel.on("broadcast", { event: "party-phase" }, (payload) => {
+      const phase = payload.payload.phase as PartyPhase;
+      setPartyPhase(phase);
+      phaseCallbackRef.current?.(phase);
+    });
 
-  const joinParty = useCallback(async (partyId: string) => {
+    if (!host) {
+      // Guest listens for sync commands from host
+      channel.on("broadcast", { event: "sync" }, (payload) => {
+        const { isPlaying, currentTimeSec } = payload.payload;
+        setActiveParty(prev => prev ? { ...prev, isPlaying, currentTimeSec } : prev);
+        syncCallbackRef.current?.({ isPlaying, currentTimeSec });
+      });
+    }
+
+    if (host) {
+      // Host listens for guest "ready" signal
+      channel.on("broadcast", { event: "guest-ready" }, () => {
+        // Guest is ready — start countdown for both
+        startCountdown();
+      });
+    }
+
+    channel.subscribe();
+    channelRef.current = channel;
+  }, []);
+
+  const startCountdown = useCallback(() => {
+    setPartyPhase("countdown");
+    // Broadcast countdown phase to the other user
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "party-phase",
+      payload: { phase: "countdown" },
+    });
+
+    // After 3 seconds, start playing
+    setTimeout(() => {
+      setPartyPhase("playing");
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "party-phase",
+        payload: { phase: "playing" },
+      });
+      phaseCallbackRef.current?.("playing");
+    }, 3500);
+  }, []);
+
+  const joinParty = useCallback(async (partyId: string, asHost = false) => {
     const { data } = await supabase
       .from("watch_parties")
       .select("*")
@@ -94,32 +122,20 @@ export function useWatchParty() {
       status: data.status,
     };
     setActiveParty(party);
-    setIsHost(false);
-    joinRealtimeChannel(party.id, false);
+    setIsHost(asHost);
+    setPartyPhase("waiting");
+    joinRealtimeChannel(party.id, asHost);
     return party;
-  }, []);
+  }, [joinRealtimeChannel]);
 
-  const joinRealtimeChannel = (partyId: string, host: boolean) => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    const channel = supabase.channel(`watch-party-${partyId}`, {
-      config: { broadcast: { self: false } },
+  // Guest signals ready to host
+  const signalReady = useCallback(() => {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "guest-ready",
+      payload: {},
     });
-
-    if (!host) {
-      // Guest listens for sync commands from host
-      channel.on("broadcast", { event: "sync" }, (payload) => {
-        const { isPlaying, currentTimeSec } = payload.payload;
-        setActiveParty(prev => prev ? { ...prev, isPlaying, currentTimeSec } : prev);
-        syncCallbackRef.current?.({ isPlaying, currentTimeSec });
-      });
-    }
-
-    channel.subscribe();
-    channelRef.current = channel;
-  };
+  }, []);
 
   // Throttled sync - host sends max every 500ms
   const syncPlayback = useCallback((isPlaying: boolean, currentTimeSec: number) => {
@@ -133,7 +149,6 @@ export function useWatchParty() {
       event: "sync",
       payload: { isPlaying, currentTimeSec },
     });
-    // Persist to DB less frequently
     supabase.from("watch_parties").update({
       is_playing: isPlaying,
       current_time_sec: currentTimeSec,
@@ -156,12 +171,18 @@ export function useWatchParty() {
   }, [isHost, activeParty]);
 
   const endParty = useCallback(async () => {
+    // Broadcast end to other user
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "party-phase",
+      payload: { phase: "ended" },
+    });
+
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
     if (activeParty) {
-      // Save to watch party history
       if (user) {
         await supabase.from("watch_party_history").insert({
           host_id: activeParty.hostId,
@@ -175,20 +196,27 @@ export function useWatchParty() {
     }
     setActiveParty(null);
     setIsHost(false);
+    setPartyPhase("waiting");
   }, [activeParty, user]);
 
   const onSyncReceived = useCallback((cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => {
     syncCallbackRef.current = cb;
   }, []);
 
+  const onPhaseChange = useCallback((cb: (phase: PartyPhase) => void) => {
+    phaseCallbackRef.current = cb;
+  }, []);
+
   return {
     activeParty,
     isHost,
-    createParty,
+    partyPhase,
     joinParty,
+    signalReady,
     syncPlayback,
     forceSyncPlayback,
     endParty,
     onSyncReceived,
+    onPhaseChange,
   };
 }

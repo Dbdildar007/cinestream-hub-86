@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { PartyPhase } from "@/hooks/useWatchParty";
 import { Loader2 } from "lucide-react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
@@ -24,19 +25,21 @@ interface VideoPlayerProps {
   guestName?: string;
   allMovies?: Movie[];
   onPlayMovie?: (movie: Movie) => void;
+  partyPhase?: PartyPhase;
 }
 
 export default function VideoPlayer({
   movie, onClose, onProgressUpdate, initialTime = 0,
   watchPartyActive = false, isHost = true,
   onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
-  allMovies = [], onPlayMovie,
+  allMovies = [], onPlayMovie, partyPhase,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const shouldAutoPlay = !watchPartyActive || partyPhase === "playing";
+  const [isPlaying, setIsPlaying] = useState(shouldAutoPlay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -102,6 +105,22 @@ export default function VideoPlayer({
     }, 2000);
     return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
   }, [watchPartyActive, isHost, onSyncPlayback]);
+
+  // Watch party phase: pause during waiting/countdown, auto-play on "playing"
+  useEffect(() => {
+    if (!watchPartyActive) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (partyPhase === "waiting" || partyPhase === "countdown") {
+      v.pause();
+      v.currentTime = 0;
+      setIsPlaying(false);
+    } else if (partyPhase === "playing") {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [partyPhase, watchPartyActive]);
 
   const getNextEpisode = useCallback((): any | null => {
     if (!seriesInfo || !currentEpisode) return null;
@@ -420,7 +439,7 @@ const skip = useCallback((seconds: number) => {
         key={movie.url}
         src={movie.url}
         className="w-full h-full object-contain"
-        autoPlay
+        autoPlay={shouldAutoPlay}
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {

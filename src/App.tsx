@@ -17,6 +17,7 @@ import { EvictedDialog } from "./components/EvictedDialog";
 import { WatchPartyProvider, useWatchPartyContext } from "./contexts/WatchPartyContext";
 import WatchPartyInviteOverlay from "./components/WatchPartyInviteOverlay";
 import VideoPlayer from "./components/VideoPlayer";
+import WatchPartyCountdown from "./components/WatchPartyCountdown";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import FoldersPage from "./pages/FoldersPage";
@@ -114,16 +115,26 @@ function AppContent() {
       {/* Watch Party Video Player - renders at App level */}
       <AnimatePresence>
         {wpCtx.playingMovie && (
-          <VideoPlayer
-            movie={wpCtx.playingMovie}
-            onClose={wpCtx.closePlayer}
-            watchPartyActive={!!wpCtx.activeParty}
-            isHost={wpCtx.isHost}
-            onSyncPlayback={wpCtx.syncPlayback}
-            onForceSyncPlayback={wpCtx.forceSyncPlayback}
-            onSyncReceived={wpCtx.onSyncReceived}
-            onEndParty={wpCtx.endParty}
-          />
+          <div className="fixed inset-0 z-[90]">
+            <VideoPlayer
+              movie={wpCtx.playingMovie}
+              onClose={wpCtx.closePlayer}
+              watchPartyActive={!!wpCtx.activeParty}
+              isHost={wpCtx.isHost}
+              onSyncPlayback={wpCtx.syncPlayback}
+              onForceSyncPlayback={wpCtx.forceSyncPlayback}
+              onSyncReceived={wpCtx.onSyncReceived}
+              onEndParty={wpCtx.endParty}
+              guestName={wpCtx.friendName}
+              partyPhase={wpCtx.partyPhase}
+            />
+            <WatchPartyCountdown
+              phase={wpCtx.partyPhase}
+              isHost={wpCtx.isHost}
+              friendName={wpCtx.friendName}
+              movieTitle={wpCtx.playingMovie.title}
+            />
+          </div>
         )}
       </AnimatePresence>
 
