@@ -573,7 +573,7 @@ export default function SeriesVideoPlayer({
                 {recommendedSeries.map((rec) => (
                   <div key={rec.id} className="group text-left rounded-xl overflow-hidden bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.03]">
                     <div className="relative aspect-[2/3]">
-                      <img src={rec.poster} alt={rec.title} className="w-full h-full object-cover" />
+                      <img src={rec.poster_url} alt={rec.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Play className="w-8 h-8 text-white fill-white" />
                       </div>
