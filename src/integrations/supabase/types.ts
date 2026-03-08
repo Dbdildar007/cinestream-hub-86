@@ -386,6 +386,7 @@ export type Database = {
         Row: {
           created_at: string
           current_time_sec: number
+          episode_id: string | null
           friend_id: string
           host_id: string
           id: string
@@ -397,6 +398,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_time_sec?: number
+          episode_id?: string | null
           friend_id: string
           host_id: string
           id?: string
@@ -408,6 +410,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_time_sec?: number
+          episode_id?: string | null
           friend_id?: string
           host_id?: string
           id?: string

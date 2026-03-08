@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import type { SeriesEpisode } from "@/services/seriesService";
 
 export type PartyPhase = "waiting" | "countdown" | "playing" | "ended";
 
@@ -12,6 +13,7 @@ export interface WatchPartyState {
   isPlaying: boolean;
   currentTimeSec: number;
   status: string;
+  episodeId?: string;
 }
 
 export function useWatchParty() {
@@ -22,6 +24,7 @@ export function useWatchParty() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const syncCallbackRef = useRef<((state: { isPlaying: boolean; currentTimeSec: number }) => void) | null>(null);
   const phaseCallbackRef = useRef<((phase: PartyPhase) => void) | null>(null);
+  const episodeChangeCallbackRef = useRef<((data: { episode: SeriesEpisode; seasonNumber: number }) => void) | null>(null);
   const lastSyncRef = useRef(0);
 
   // Listen for watch party deletions targeting this user
@@ -61,6 +64,12 @@ export function useWatchParty() {
       phaseCallbackRef.current?.(phase);
     });
 
+    // Both listen for episode change events
+    channel.on("broadcast", { event: "episode-change" }, (payload) => {
+      const { episode, seasonNumber } = payload.payload;
+      episodeChangeCallbackRef.current?.({ episode, seasonNumber });
+    });
+
     if (!host) {
       // Guest listens for sync commands from host
       channel.on("broadcast", { event: "sync" }, (payload) => {
@@ -73,7 +82,6 @@ export function useWatchParty() {
     if (host) {
       // Host listens for guest "ready" signal
       channel.on("broadcast", { event: "guest-ready" }, () => {
-        // Guest is ready — start countdown for both
         startCountdown();
       });
     }
@@ -84,14 +92,12 @@ export function useWatchParty() {
 
   const startCountdown = useCallback(() => {
     setPartyPhase("countdown");
-    // Broadcast countdown phase to the other user
     channelRef.current?.send({
       type: "broadcast",
       event: "party-phase",
       payload: { phase: "countdown" },
     });
 
-    // After 3 seconds, start playing
     setTimeout(() => {
       setPartyPhase("playing");
       channelRef.current?.send({
@@ -120,6 +126,7 @@ export function useWatchParty() {
       isPlaying: data.is_playing,
       currentTimeSec: data.current_time_sec,
       status: data.status,
+      episodeId: (data as any).episode_id || undefined,
     };
     setActiveParty(party);
     setIsHost(asHost);
@@ -128,7 +135,6 @@ export function useWatchParty() {
     return party;
   }, [joinRealtimeChannel]);
 
-  // Guest signals ready to host
   const signalReady = useCallback(() => {
     channelRef.current?.send({
       type: "broadcast",
@@ -170,8 +176,22 @@ export function useWatchParty() {
     }).eq("id", activeParty.id).then();
   }, [isHost, activeParty]);
 
+  // Host broadcasts episode change to guest
+  const broadcastEpisodeChange = useCallback((episode: SeriesEpisode, seasonNumber: number) => {
+    if (!channelRef.current || !isHost || !activeParty) return;
+    channelRef.current.send({
+      type: "broadcast",
+      event: "episode-change",
+      payload: { episode, seasonNumber },
+    });
+    // Update DB too
+    supabase.from("watch_parties").update({
+      episode_id: episode.id,
+      current_time_sec: 0,
+    } as any).eq("id", activeParty.id).then();
+  }, [isHost, activeParty]);
+
   const endParty = useCallback(async () => {
-    // Broadcast end to other user
     channelRef.current?.send({
       type: "broadcast",
       event: "party-phase",
@@ -207,6 +227,10 @@ export function useWatchParty() {
     phaseCallbackRef.current = cb;
   }, []);
 
+  const onEpisodeChangeReceived = useCallback((cb: (data: { episode: SeriesEpisode; seasonNumber: number }) => void) => {
+    episodeChangeCallbackRef.current = cb;
+  }, []);
+
   return {
     activeParty,
     isHost,
@@ -215,8 +239,10 @@ export function useWatchParty() {
     signalReady,
     syncPlayback,
     forceSyncPlayback,
+    broadcastEpisodeChange,
     endParty,
     onSyncReceived,
     onPhaseChange,
+    onEpisodeChangeReceived,
   };
 }

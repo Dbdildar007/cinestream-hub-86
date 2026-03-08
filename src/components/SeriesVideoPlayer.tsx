@@ -4,21 +4,35 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, X, ChevronLeft, 
   Lock, Unlock, List, SkipForward as NextIcon, 
-  RefreshCw, AlertCircle, Subtitles
+  RefreshCw, AlertCircle, Subtitles, Users, Loader2
 } from "lucide-react";
 import type { Series, SeriesEpisode } from "@/services/seriesService";
 import { useSeriesDetail } from "@/hooks/useSeries";
 import { useWatchProgress } from '@/hooks/useWatchProgress'; 
+import type { PartyPhase } from "@/hooks/useWatchParty";
 
 interface SeriesVideoPlayerProps {
   series: Series;
   initialEpisode: SeriesEpisode;
   initialSeason: number;
   onClose: () => void;
+  watchPartyActive?: boolean;
+  isHost?: boolean;
+  onSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onForceSyncPlayback?: (isPlaying: boolean, currentTimeSec: number) => void;
+  onSyncReceived?: (cb: (state: { isPlaying: boolean; currentTimeSec: number }) => void) => void;
+  onEndParty?: () => void;
+  guestName?: string;
+  partyPhase?: PartyPhase;
+  onEpisodeChangeReceived?: (cb: (data: { episode: SeriesEpisode; seasonNumber: number }) => void) => void;
+  broadcastEpisodeChange?: (episode: SeriesEpisode, seasonNumber: number) => void;
 }
 
 export default function SeriesVideoPlayer({
   series, initialEpisode, initialSeason, onClose,
+  watchPartyActive = false, isHost = true,
+  onSyncPlayback, onForceSyncPlayback, onSyncReceived, onEndParty, guestName,
+  partyPhase, onEpisodeChangeReceived, broadcastEpisodeChange,
 }: SeriesVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,9 +43,12 @@ export default function SeriesVideoPlayer({
   const { series: seriesDetail } = useSeriesDetail(series.id);
   const { updateProgress, getProgress } = useWatchProgress();
 
+  const controlsDisabled = watchPartyActive && !isHost;
+  const shouldAutoPlay = !watchPartyActive || partyPhase === "playing";
+
   const [currentEpisode, setCurrentEpisode] = useState<SeriesEpisode>(initialEpisode);
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(shouldAutoPlay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -108,21 +125,29 @@ export default function SeriesVideoPlayer({
   const nextEpisode = getNextEpisode();
 
   const playEpisode = useCallback((episode: SeriesEpisode) => {
+    if (controlsDisabled) return;
     setCurrentEpisode(episode);
     setShowEpisodes(false);
     setShowNextEpisode(false);
     setVideoEnded(false);
     lastSavedTimeRef.current = 0;
     if (countdownRef.current) clearInterval(countdownRef.current);
+    let seasonNum = selectedSeason;
     if (seriesDetail) {
       const season = seriesDetail.seasons.find(s => s.episodes.some(e => e.id === episode.id));
-      if (season) setSelectedSeason(season.number);
+      if (season) { setSelectedSeason(season.number); seasonNum = season.number; }
     }
-  }, [seriesDetail]);
+    // Host broadcasts episode change
+    if (watchPartyActive && isHost && broadcastEpisodeChange) {
+      broadcastEpisodeChange(episode, seasonNum);
+    }
+  }, [seriesDetail, controlsDisabled, watchPartyActive, isHost, broadcastEpisodeChange, selectedSeason]);
 
   const handleVideoEnded = useCallback(() => {
     setIsPlaying(false);
     setVideoEnded(true);
+    // In watch party, only host triggers auto-next; guest waits for broadcast
+    if (controlsDisabled) return;
     const next = getNextEpisode();
     if (next) {
       setShowNextEpisode(true);
@@ -138,7 +163,7 @@ export default function SeriesVideoPlayer({
         });
       }, 1000);
     }
-  }, [getNextEpisode, playEpisode]);
+  }, [getNextEpisode, playEpisode, controlsDisabled]);
 
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
@@ -149,6 +174,7 @@ export default function SeriesVideoPlayer({
   }, [isPlaying, isLocked]);
 
   const togglePlay = useCallback(() => {
+    if (controlsDisabled) return;
     const v = videoRef.current;
     if (!v) return;
     if (videoEnded) {
@@ -160,13 +186,23 @@ export default function SeriesVideoPlayer({
       if (v.paused) { v.play(); setIsPlaying(true); }
       else { v.pause(); setIsPlaying(false); }
     }
-  }, [videoEnded]);
+    if (watchPartyActive && isHost && onForceSyncPlayback) {
+      setTimeout(() => {
+        const vid = videoRef.current;
+        if (vid) onForceSyncPlayback(!vid.paused, vid.currentTime);
+      }, 50);
+    }
+  }, [videoEnded, controlsDisabled, watchPartyActive, isHost, onForceSyncPlayback]);
 
   const skip = useCallback((seconds: number) => {
+    if (controlsDisabled) return;
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
+      if (watchPartyActive && isHost && onForceSyncPlayback) {
+        onForceSyncPlayback(!videoRef.current.paused, videoRef.current.currentTime);
+      }
     }
-  }, [duration]);
+  }, [duration, controlsDisabled, watchPartyActive, isHost, onForceSyncPlayback]);
 
   const toggleFullscreen = useCallback(async () => {
     const el = containerRef.current;
@@ -245,6 +281,60 @@ export default function SeriesVideoPlayer({
     }
   }, [volume, isMuted]);
 
+  // Watch party: guest sync from host
+  useEffect(() => {
+    if (!watchPartyActive || isHost || !onSyncReceived) return;
+    onSyncReceived((state) => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (Math.abs(v.currentTime - state.currentTimeSec) > 1) {
+        v.currentTime = state.currentTimeSec;
+      }
+      if (state.isPlaying && v.paused) { v.play(); setIsPlaying(true); }
+      else if (!state.isPlaying && !v.paused) { v.pause(); setIsPlaying(false); }
+    });
+  }, [watchPartyActive, isHost, onSyncReceived]);
+
+  // Watch party: host periodic sync
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  useEffect(() => {
+    if (!watchPartyActive || !isHost || !onSyncPlayback) return;
+    syncIntervalRef.current = setInterval(() => {
+      const v = videoRef.current;
+      if (v) onSyncPlayback(!v.paused, v.currentTime);
+    }, 2000);
+    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
+  }, [watchPartyActive, isHost, onSyncPlayback]);
+
+  // Watch party: phase control
+  useEffect(() => {
+    if (!watchPartyActive) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (partyPhase === "waiting" || partyPhase === "countdown") {
+      v.pause();
+      v.currentTime = 0;
+      setIsPlaying(false);
+    } else if (partyPhase === "playing") {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [partyPhase, watchPartyActive]);
+
+  // Watch party: guest receives episode change from host
+  useEffect(() => {
+    if (!watchPartyActive || isHost || !onEpisodeChangeReceived) return;
+    onEpisodeChangeReceived((data) => {
+      setCurrentEpisode(data.episode);
+      setSelectedSeason(data.seasonNumber);
+      setVideoEnded(false);
+      setShowNextEpisode(false);
+      lastSavedTimeRef.current = 0;
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    });
+  }, [watchPartyActive, isHost, onEpisodeChangeReceived]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
@@ -280,7 +370,7 @@ export default function SeriesVideoPlayer({
         key={currentEpisode.id}
         src={currentEpisode.video_url}
         className="w-full h-full object-contain"
-        autoPlay
+        autoPlay={shouldAutoPlay}
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}

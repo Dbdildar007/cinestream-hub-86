@@ -17,6 +17,7 @@ import { EvictedDialog } from "./components/EvictedDialog";
 import { WatchPartyProvider, useWatchPartyContext } from "./contexts/WatchPartyContext";
 import WatchPartyInviteOverlay from "./components/WatchPartyInviteOverlay";
 import VideoPlayer from "./components/VideoPlayer";
+import SeriesVideoPlayer from "./components/SeriesVideoPlayer";
 import WatchPartyCountdown from "./components/WatchPartyCountdown";
 import WatchPartyComms from "./components/WatchPartyComms";
 import Index from "./pages/Index";
@@ -115,7 +116,7 @@ function AppContent() {
 
       {/* Watch Party Video Player - renders at App level */}
       <AnimatePresence>
-        {wpCtx.playingMovie && (
+        {wpCtx.playingMovie && !wpCtx.playingSeries && (
           <div className="fixed inset-0 z-[90]">
             <VideoPlayer
               movie={wpCtx.playingMovie}
@@ -139,8 +140,38 @@ function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Watch Party Series Player */}
+      <AnimatePresence>
+        {wpCtx.playingSeries && wpCtx.playingEpisode && (
+          <div className="fixed inset-0 z-[90]">
+            <SeriesVideoPlayer
+              series={wpCtx.playingSeries}
+              initialEpisode={wpCtx.playingEpisode}
+              initialSeason={wpCtx.playingSeasonNumber}
+              onClose={wpCtx.closePlayer}
+              watchPartyActive={!!wpCtx.activeParty}
+              isHost={wpCtx.isHost}
+              onSyncPlayback={wpCtx.syncPlayback}
+              onForceSyncPlayback={wpCtx.forceSyncPlayback}
+              onSyncReceived={wpCtx.onSyncReceived}
+              onEndParty={wpCtx.endParty}
+              guestName={wpCtx.friendName}
+              partyPhase={wpCtx.partyPhase}
+              onEpisodeChangeReceived={wpCtx.onEpisodeChangeReceived}
+              broadcastEpisodeChange={wpCtx.broadcastEpisodeChange}
+            />
+            <WatchPartyCountdown
+              phase={wpCtx.partyPhase}
+              isHost={wpCtx.isHost}
+              friendName={wpCtx.friendName}
+              movieTitle={`${wpCtx.playingSeries.title} S${wpCtx.playingSeasonNumber} E${wpCtx.playingEpisode.number}`}
+            />
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Watch Party Comms - video call + chat (renders outside player so it floats) */}
-      {wpCtx.playingMovie && wpCtx.friendUserId && wpCtx.partyPhase === "playing" && (
+      {(wpCtx.playingMovie || wpCtx.playingSeries) && wpCtx.friendUserId && wpCtx.partyPhase === "playing" && (
         <WatchPartyComms
           friendUserId={wpCtx.friendUserId}
           friendName={wpCtx.friendName}
