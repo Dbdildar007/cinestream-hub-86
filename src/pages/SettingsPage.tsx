@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
-import { ChevronLeft, Moon, Sun, Bell, Shield, HelpCircle, Info } from "lucide-react";
+import { ChevronLeft, Bell, Shield, HelpCircle, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useTheme } from "@/hooks/useTheme";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { isDark, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -15,13 +13,6 @@ export default function SettingsPage() {
     {
       title: "Preferences",
       items: [
-        {
-          icon: isDark ? Moon : Sun,
-          label: "Dark Mode",
-          toggle: true,
-          value: isDark,
-          onChange: toggleTheme,
-        },
         {
           icon: Bell,
           label: "Push Notifications",
