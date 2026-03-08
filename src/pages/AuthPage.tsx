@@ -23,73 +23,42 @@ export default function AuthPage() {
   const { registerDevice } = useDeviceSession(pendingUserId || user?.id, useCallback(() => {}, []));
 
   useEffect(() => {
-    if (user && !deviceConflict) {
+    if (user && !deviceConflict && !loading && !pendingUserId) {
       navigate("/", { replace: true });
     }
-  }, [user, navigate, deviceConflict]);
+  }, [user, navigate, deviceConflict, loading, pendingUserId]);
 
   const handleDeviceCheck = async (userId: string) => {
     setPendingUserId(userId);
-    const result = await (async () => {
-      // We need to call registerDevice with the userId directly
-      const { useDeviceSession: _ } = await import("@/hooks/useDeviceSession");
-      // Actually, let's just call the RPC directly here
-      const { getDeviceInfo } = await import("@/utils/deviceInfo");
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      const info = await getDeviceInfo();
-      const deviceInfo = {
-        device: /android|iphone|ipad/i.test(navigator.userAgent) ? "mobile" : "desktop",
-        browser: info.browser,
-        os: info.deviceName,
-        ip: info.ip,
-        last_login: new Date().toLocaleString(),
-      };
-
-      const { data, error } = await (supabase.rpc as any)("handle_single_device_login", {
-        p_user_id: userId,
-        p_device_id: info.deviceId,
-        p_device_info: deviceInfo,
-        p_force_login: false,
-      });
-
-      if (error) {
-        console.error("Device check error:", error);
-        return { status: "ok" }; // Proceed on error
-      }
-      return data as { status: string; existing_device?: any };
-    })();
+    const result = await registerDevice(false, userId);
 
     if (result.status === "conflict") {
       setDeviceConflict(result.existing_device);
-      return false; // Don't proceed
+      return false;
     }
-    return true; // Proceed with login
+
+    if (result.status !== "ok") {
+      toast.error("Unable to verify active session. Please try again.");
+      await signOut();
+      setPendingUserId(null);
+      return false;
+    }
+
+    setPendingUserId(null);
+    return true;
   };
 
   const handleForceLogin = async () => {
     if (!pendingUserId) return;
 
-    const { getDeviceInfo } = await import("@/utils/deviceInfo");
-    const { supabase } = await import("@/integrations/supabase/client");
-
-    const info = await getDeviceInfo();
-    const deviceInfo = {
-      device: /android|iphone|ipad/i.test(navigator.userAgent) ? "mobile" : "desktop",
-      browser: info.browser,
-      os: info.deviceName,
-      ip: info.ip,
-      last_login: new Date().toLocaleString(),
-    };
-
-    await (supabase.rpc as any)("handle_single_device_login", {
-      p_user_id: pendingUserId,
-      p_device_id: info.deviceId,
-      p_device_info: deviceInfo,
-      p_force_login: true,
-    });
+    const result = await registerDevice(true, pendingUserId);
+    if (result.status !== "ok") {
+      toast.error("Couldn't switch active device. Please try again.");
+      return;
+    }
 
     setDeviceConflict(null);
+    setPendingUserId(null);
     toast.success("Welcome back! Other device has been logged out.");
     navigate("/");
   };
