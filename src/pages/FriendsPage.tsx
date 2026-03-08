@@ -887,7 +887,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1">
+              <div className="overflow-y-auto flex-1 px-3 pb-20 md:pb-5 pt-1 scrollbar-hide">
                 {/* GRID VIEW */}
                 {modalView === "grid" && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
