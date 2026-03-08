@@ -96,6 +96,33 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     setRelationshipMap(map);
   }, [user]);
 
+  // Load default suggestions for Find Friends
+  useEffect(() => {
+    if (!user) return;
+    const loadSuggestions = async () => {
+      // Get all friendship user IDs (connected or pending)
+      const { data: friendships } = await supabase
+        .from("friendships")
+        .select("requester_id, addressee_id")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+      const connectedIds = new Set<string>();
+      (friendships || []).forEach(f => {
+        connectedIds.add(f.requester_id === user.id ? f.addressee_id : f.requester_id);
+      });
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .neq("user_id", user.id)
+        .limit(30);
+
+      const filtered = (profiles || []).filter(p => !connectedIds.has(p.user_id));
+      setDefaultSuggestions(filtered);
+    };
+    loadSuggestions();
+  }, [user, friends]);
+
   useEffect(() => {
     if (!user) return;
 
