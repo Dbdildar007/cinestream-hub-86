@@ -56,6 +56,7 @@ export default function ChatPage() {
     isMine: m.sender_id === userId,
     timestamp: m.created_at,
     readAt: m.read_at || null,
+    replyToId: m.reply_to_id || null,
   }), []);
 
   // Load remote profile
