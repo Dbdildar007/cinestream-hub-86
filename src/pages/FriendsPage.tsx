@@ -60,6 +60,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
   // Track relationship status per user_id in search
   const [relationshipMap, setRelationshipMap] = useState<Record<string, RelationshipStatus>>({});
   const [defaultSuggestions, setDefaultSuggestions] = useState<Profile[]>([]);
+  const [sentStaticRequests, setSentStaticRequests] = useState<Profile[]>([]);
 
   // Watch party invite state
   const [invitingFriend, setInvitingFriend] = useState<Friendship | null>(null);
@@ -202,8 +203,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     if (!user) return;
     // Handle static suggestions (demo profiles)
     if (profile.user_id.startsWith("static-")) {
+      setSentStaticRequests((prev) =>
+        prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+      );
+      setDefaultSuggestions((prev) => prev.filter((p) => p.user_id !== profile.user_id));
       toast.success("Friend request sent!");
-      setDefaultSuggestions(prev => prev.filter(p => p.user_id !== profile.user_id));
       return;
     }
     const { error } = await supabase.from("friendships").insert({
@@ -267,14 +271,27 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     }
   };
 
-  const cancelSentRequest = async (friendshipId: string) => {
+  const cancelSentRequest = async (friendshipId: string, profile?: Profile) => {
     const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
     if (!error) {
       toast.success("Request cancelled");
+      if (profile) {
+        setDefaultSuggestions((prev) =>
+          prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+        );
+      }
       invalidate();
     } else {
       toast.error("Failed to cancel request");
     }
+  };
+
+  const cancelStaticSentRequest = (profile: Profile) => {
+    setSentStaticRequests((prev) => prev.filter((p) => p.user_id !== profile.user_id));
+    setDefaultSuggestions((prev) =>
+      prev.some((p) => p.user_id === profile.user_id) ? prev : [profile, ...prev]
+    );
+    toast.success("Request cancelled");
   };
 
   const handleInviteToWatchParty = async (movie: Movie) => {
@@ -340,7 +357,8 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
     );
   }
 
-  const totalRequests = pendingRequests.length + sentRequests.length;
+  const totalSentRequests = sentRequests.length + sentStaticRequests.length;
+  const totalRequests = pendingRequests.length + totalSentRequests;
 
   const tabs = [
     { id: "friends" as const, label: "Friends", count: null },
@@ -643,10 +661,10 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
           )}
 
           {/* Sent requests */}
-          {sentRequests.length > 0 && (
+          {totalSentRequests > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                Sent Requests ({sentRequests.length})
+                Sent Requests ({totalSentRequests})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {sentRequests.map((req, i) => (
@@ -692,7 +710,59 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                         <Send className="w-2.5 h-2.5" /> Request Pending
                       </p>
                       <button
-                        onClick={() => cancelSentRequest(req.id)}
+                        onClick={() => cancelSentRequest(req.id, req.profile)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary border border-border text-muted-foreground text-xs font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 active:scale-95 transition-all"
+                      >
+                        <X className="w-3.5 h-3.5" /> Cancel
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {sentStaticRequests.map((profile, i) => (
+                  <motion.div
+                    key={`static-sent-${profile.user_id}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (sentRequests.length + i) * 0.04, duration: 0.25 }}
+                    className="flex flex-col p-3 rounded-xl bg-secondary/80 border border-border hover:bg-secondary transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="text-base font-bold text-primary">
+                              {profile.display_name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span
+                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                            profile.is_online ? "bg-green-500" : "bg-muted-foreground/40"
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{profile.display_name}</p>
+                        <p className="text-[11px] text-muted-foreground">{profile.unique_id}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {profile.location?.trim() && (
+                            <p className="text-[10px] text-muted-foreground truncate">📍 {profile.location}</p>
+                          )}
+                          <span className={`text-[10px] font-medium ${profile.is_online ? "text-green-500" : "text-muted-foreground"}`}>
+                            {profile.is_online ? "● Online" : "● Offline"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
+                      <p className="text-[10px] text-amber-500 flex items-center gap-1 font-medium">
+                        <Send className="w-2.5 h-2.5" /> Request Pending
+                      </p>
+                      <button
+                        onClick={() => cancelStaticSentRequest(profile)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary border border-border text-muted-foreground text-xs font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 active:scale-95 transition-all"
                       >
                         <X className="w-3.5 h-3.5" /> Cancel
