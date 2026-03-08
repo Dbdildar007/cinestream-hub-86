@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDeviceInfo } from "@/utils/deviceInfo";
-import { toast } from "sonner";
 
 export function useDeviceSession(userId: string | undefined, onEvicted: () => void) {
   const deviceIdRef = useRef<string>("");
