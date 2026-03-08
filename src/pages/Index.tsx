@@ -26,6 +26,7 @@ export default function Index() {
   const { user } = useAuth();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [playingMovie, setPlayingMovie] = useState<Movie | null>(null);
+  const [selectedUpcoming, setSelectedUpcoming] = useState<Movie | null>(null);
   const [initialLoad, setInitialLoad] = useState(false);
   const [overrideInitialTime, setOverrideInitialTime] = useState<number | null>(null);
   
