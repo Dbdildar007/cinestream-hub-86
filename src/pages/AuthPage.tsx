@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, MailOpen, Loader2 } from "lucide-react";
+import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { useDeviceSession } from "@/hooks/useDeviceSession";
 import { useNavigate } from "react-router-dom";
