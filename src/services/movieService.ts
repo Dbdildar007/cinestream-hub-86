@@ -89,8 +89,8 @@ export const movieService = {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
+        const { data, timestamp, version } = JSON.parse(cached);
+        if (version === CACHE_VERSION && Date.now() - timestamp < CACHE_DURATION) {
           return data.map(mapDbMovie);
         }
       }
