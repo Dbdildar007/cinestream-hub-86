@@ -403,11 +403,11 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                 >
                   <MessageCircle className="w-4 h-4" />
                 </button>
-                {f.profile?.is_online && onStartCall && (
+                {onStartCall && (
                   <button
                     onClick={() => onStartCall(f.profile!.user_id, f.profile!.display_name)}
-                    className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
-                    title="Video Call"
+                    className={`p-2 rounded-full hover:bg-primary/20 transition-colors ${f.profile?.is_online ? "text-primary" : "text-muted-foreground"}`}
+                    title={f.profile?.is_online ? "Video Call" : "Offline"}
                   >
                     <Phone className="w-4 h-4" />
                   </button>
