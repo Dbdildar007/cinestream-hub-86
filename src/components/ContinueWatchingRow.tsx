@@ -70,7 +70,7 @@ export default function ContinueWatchingRow({ movies, onWatch, onWatchSeries, on
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                  
 
                   {/* Series badge */}
                   {movie.isSeries && (

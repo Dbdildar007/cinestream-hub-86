@@ -173,10 +173,9 @@ export default function UpcomingRow({ movies, onMovieSelect }: UpcomingRowProps)
                 <img
                   src={movie.heroImage || movie.poster}
                   alt={movie.title}
-                  className="w-full h-full object-cover brightness-75"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent" />
 
                 {movie.isSeries && (
                   <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/90 text-primary-foreground uppercase tracking-wider flex items-center gap-1">
