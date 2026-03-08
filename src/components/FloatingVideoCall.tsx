@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAvatarUrl } from "@/utils/avatarUrl";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff,
   Minus, Maximize2, MessageCircle, Send, Smile
