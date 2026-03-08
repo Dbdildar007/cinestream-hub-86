@@ -51,9 +51,10 @@ export function WatchPartyProvider({ children }: { children: ReactNode }) {
   const [friendUserId, setFriendUserId] = useState("");
 
   // Host starts a watch party — open player in "waiting" phase
-  const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string) => {
+  const startWatchParty = useCallback((movie: Movie, partyId: string, friendDisplayName: string, friendId: string) => {
     setFriendName(friendDisplayName);
-    watchParty.joinParty(partyId, true); // host joins as host
+    setFriendUserId(friendId);
+    watchParty.joinParty(partyId, true);
     setPlayingMovie(movie);
   }, [watchParty]);
 
