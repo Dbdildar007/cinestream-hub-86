@@ -30,7 +30,7 @@ export default function Index() {
   const { getRating, setRating } = useRatings();
   const { updateProgress, getProgress, getContinueWatching, clearProgress } = useWatchProgress();
   const { isInWatchlist, toggleWatchlist, watchlist } = useWatchlist();
-  const { sendNotification } = useNotifications();
+  
 
   const { allMovies, categories, featuredMovies, loading } = useMovies();
 
