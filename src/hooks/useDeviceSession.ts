@@ -34,7 +34,7 @@ export function useDeviceSession(userId: string | undefined, onEvicted: () => vo
       last_login: new Date().toLocaleString(),
     };
 
-    const { data, error } = await supabase.rpc("handle_single_device_login", {
+    const { data, error } = await (supabase.rpc as any)("handle_single_device_login", {
       p_user_id: userId,
       p_device_id: deviceId,
       p_device_info: deviceInfo,
