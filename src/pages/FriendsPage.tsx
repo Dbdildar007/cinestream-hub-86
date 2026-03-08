@@ -649,15 +649,7 @@ export default function FriendsPage({ onStartCall, onStartWatchParty }: FriendsP
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative flex-shrink-0">
-                        {req.profile?.avatar_url ? (
-                          <img src={req.profile.avatar_url} alt={req.profile.display_name} className="w-12 h-12 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-base font-bold text-primary">
-                              {req.profile?.display_name?.charAt(0).toUpperCase() || "?"}
-                            </span>
-                          </div>
-                        )}
+                        <img src={getAvatarUrl(req.profile?.avatar_url, req.profile?.display_name)} alt={req.profile?.display_name || "User"} className="w-12 h-12 rounded-full object-cover" />
                         <span
                           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
                             req.profile?.is_online ? "bg-green-500" : "bg-muted-foreground/40"
